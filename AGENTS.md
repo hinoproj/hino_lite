@@ -27,6 +27,8 @@ add one and register it in the Child Index below.
    inside try/catch. The app must remain fully usable when storage is unavailable.
 5. **Never break the export format silently.** `kana_srs_v1` is a user's only durable backup. A
    shape change needs a new key plus a migration in `normalize()`, not an in-place redefinition.
+   The one exception is a purely additive field that `normalize()` defaults when absent (as
+   `misses` is): old exports still load unchanged, so it stays under the same key.
 6. **Bump `CACHE_NAME` in `sw.js`** in any change that touches a file listed in its `ASSETS`
    array. Cache-first never revalidates, so skipping this ships nothing to installed tablets.
 7. **Tests before "done".** `node tools/selftest.js` must pass, and any change to screens, run
@@ -42,7 +44,7 @@ add one and register it in the Child Index below.
 | `js/srs.js` mode ids or `MODE_INFO` | `js/app.js`, `js/storage.js` consumers | Mode ids are the top-level keys of the saved progress map — renaming one orphans that mode's scores in every existing export. |
 | Any file in `sw.js` `ASSETS` | `sw.js` (`CACHE_NAME`) | Installed copies otherwise keep serving the old bundle. |
 | New element ids in `index.html` | `js/app.js` `cacheDom()` | `app` looks up every node by id at boot. |
-| Scoring constants in `js/srs.js` | `index.html` Settings panel, `README.md` | The rules are printed to the user in two places; drift makes the app lie about its own scoring. |
+| Scoring constants or the mistake-replay rule (`MISS_LIMIT`, `pushMiss`) in `js/srs.js` | `index.html` Settings panel (Scoring, Mistakes), `README.md` | The rules are printed to the user in two places; drift makes the app lie about its own scoring. |
 | `THEMES` in `js/storage.js` | `css/app.css` `:root[data-theme=…]` blocks, `js/app.js` `THEME_BAR_COLOR` | A theme id is the `data-theme` value the palette is keyed on and the key of its status-bar colour; adding one without all three gives an unstyled page. |
 
 ## Verification

@@ -193,6 +193,56 @@ for (let i = 0; i < trials; i++) {
 check('confusable distractors are favoured (ツ offered against シ)', confusableHits / trials > 0.4,
   'rate ' + (confusableHits / trials).toFixed(2));
 
+// --- Mistake replay ---------------------------------------------------
+
+section('Mistake replay');
+
+check('one remembered miss per wrong-option slot', SRS.MISS_LIMIT === SRS.OPTION_COUNT - 1);
+check('newest miss goes first', SRS.pushMiss(['a', 'b'], 'c').join() === 'c,a,b');
+check('a repeated miss moves to the front, not in twice', SRS.pushMiss(['a', 'b', 'c'], 'b').join() === 'b,a,c');
+check('the oldest miss drops past the limit', SRS.pushMiss(['a', 'b', 'c'], 'd').join() === 'd,a,b');
+check('pushMiss starts a list from nothing', SRS.pushMiss(undefined, 'a').join() === 'a');
+const untouched = ['a', 'b'];
+SRS.pushMiss(untouched, 'c');
+check('pushMiss leaves its input untouched', untouched.join() === 'a,b');
+
+const kata = DATA.deckById.kata_basic;
+let missesShown = true;
+[SRS.MODE_MCQ_K2R, SRS.MODE_MCQ_R2K].forEach((mode) => {
+  for (let trial = 0; trial < 20; trial++) {
+    const keys = SRS.buildQuestion(DATA.byKey['シ'], kata, mode, ['ツ', 'ソ', 'ン']).options.map((o) => o.key);
+    if (!['ツ', 'ソ', 'ン'].every((k) => keys.indexOf(k) >= 0)) missesShown = false;
+  }
+});
+check('every remembered miss is on screen, in both MCQ modes', missesShown);
+
+const homophoneQ = SRS.buildQuestion(DATA.byKey['じ'], DATA.deckById.hira_dakuten, SRS.MODE_MCQ_K2R, ['ぢ']);
+check('a miss sharing the answer\'s romaji is skipped',
+  homophoneQ.options.length === SRS.OPTION_COUNT && !homophoneQ.options.some((o) => o.key === 'ぢ'));
+
+const strayQ = SRS.buildQuestion(DATA.byKey['か'], deck, SRS.MODE_MCQ_K2R, ['not-a-kana', 'か', 'ア']);
+check('misses outside the deck, or the answer itself, are ignored',
+  strayQ.options.length === SRS.OPTION_COUNT && strayQ.options.filter((o) => o.correct).length === 1 &&
+  !strayQ.options.some((o) => o.key === 'ア'));
+
+// Every kana, with its next three deck-mates as misses: homophone pairs end up
+// in the same miss list, so the guard has to hold with misses in play too.
+let missProblems = [];
+DATA.decks.forEach((d) => {
+  [SRS.MODE_MCQ_K2R, SRS.MODE_MCQ_R2K].forEach((mode) => {
+    d.items.forEach((item, i) => {
+      const misses = [1, 2, 3].map((n) => d.items[(i + n) % d.items.length].key);
+      const q = SRS.buildQuestion(item, d, mode, misses);
+      const texts = q.options.map((o) => o.text);
+      if (q.options.length !== SRS.OPTION_COUNT) missProblems.push(item.key + ' ' + mode + ' option count');
+      if (q.options.filter((o) => o.correct).length !== 1) missProblems.push(item.key + ' ' + mode + ' correct count');
+      if (new Set(texts).size !== texts.length) missProblems.push(item.key + ' ' + mode + ' duplicate option');
+    });
+  });
+});
+check('questions stay well-formed with misses in every deck', missProblems.length === 0,
+  missProblems.slice(0, 5).join('; '));
+
 // --- Report -----------------------------------------------------------
 
 console.log('\n' + (failures === 0 ? 'All checks passed.' : failures + ' check(s) FAILED.'));

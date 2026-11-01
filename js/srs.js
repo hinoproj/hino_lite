@@ -1,5 +1,5 @@
-// [MODULE] srs | Pure SRS rules: timed point scoring, kana states, run composition, question construction
-// [IFACE] layer: domain | in: item/score/elapsed values -> out: points, state, run item list, question object | crosses: []
+// [MODULE] srs | Pure SRS rules: timed point scoring, kana states, mistake replay, run composition, question construction
+// [IFACE] layer: domain | in: item/score/elapsed/miss-list values -> out: points, state, miss list, run item list, question object | crosses: []
 // [GRAPH] needs: [kana-data] | feeds: [app, index, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
 
@@ -78,6 +78,9 @@
   var RUN_SIZES = [10, 15, 20];
   var OPTION_COUNT = 4;
 
+  // One remembered wrong pick per wrong-option slot, so all of them fit on screen.
+  var MISS_LIMIT = OPTION_COUNT - 1;
+
   /** Type mode asks for rōmaji from kana, which only makes sense for the script you write in. */
   function modesForDeck(deck) {
     return deck.script === 'hiragana' ? MODES.slice() : [MODE_MCQ_K2R, MODE_MCQ_R2K];
@@ -102,6 +105,16 @@
   /** Apply points to a score, keeping the 0 floor. */
   function applyPoints(score, points) {
     return Math.max(0, (score || 0) + points);
+  }
+
+  /**
+   * Remember a wrong pick: newest first, no repeats, at most MISS_LIMIT.
+   * A pick only leaves the list when newer ones push it out -- answering the
+   * kana correctly does not clear it. Returns a new list; the input is untouched.
+   */
+  function pushMiss(misses, pickedKey) {
+    var rest = (misses || []).filter(function (key) { return key !== pickedKey; });
+    return [pickedKey].concat(rest).slice(0, MISS_LIMIT);
   }
 
   function shuffle(list, rng) {
@@ -197,8 +210,12 @@
    * No two options may share a romaji: ぢ/じ and づ/ず are homophones, so the
    * answer's twin would render an identical option (kana->romaji) or a second
    * correct answer (romaji->kana).
+   *
+   * `misses` (keys from pushMiss) take the wrong-option slots first, newest
+   * first: the option the learner fell for last time is the one worth testing
+   * again. Only the slots they leave free are filled as described above.
    */
-  function buildQuestion(item, deck, mode, rng) {
+  function buildQuestion(item, deck, mode, misses, rng) {
     rng = rng || Math.random;
     var info = MODE_INFO[mode];
 
@@ -227,12 +244,22 @@
       }
     }
 
+    // Keys the deck does not hold (a hand-edited import) are skipped, and so is
+    // a pick whose romaji is already on screen.
+    (misses || []).forEach(function (key) {
+      var miss = candidates.filter(function (c) { return c.key === key; })[0];
+      if (!miss || usedRomaji[miss.r] || distractors.length >= OPTION_COUNT - 1) return;
+      usedRomaji[miss.r] = true;
+      distractors.push(miss);
+    });
+
     var lookAlikes = candidates.filter(function (c) {
       return weightOf(c) >= KANA_DATA.SHAPE_WEIGHT;
     });
     // One or two look-alikes, so the same pair of wrong options does not come
     // back every single time a kana with few confusables is asked.
-    draw(lookAlikes, Math.min(lookAlikes.length, 1 + Math.floor(rng() * 2)));
+    draw(lookAlikes, Math.min(lookAlikes.length, 1 + Math.floor(rng() * 2),
+      OPTION_COUNT - 1 - distractors.length));
     draw(candidates, OPTION_COUNT - 1 - distractors.length);
 
     var options = shuffle([item].concat(distractors), rng).map(function (opt) {
@@ -271,6 +298,7 @@
     CONFIDENT_AT: CONFIDENT_AT,
     RUN_SIZES: RUN_SIZES,
     OPTION_COUNT: OPTION_COUNT,
+    MISS_LIMIT: MISS_LIMIT,
     MAX_LEARNED_PER_RUN: MAX_LEARNED_PER_RUN,
     MAX_CONFIDENT_PER_RUN: MAX_CONFIDENT_PER_RUN,
     STATE_NEW: STATE_NEW,
@@ -281,6 +309,7 @@
     stateOf: stateOf,
     pointsFor: pointsFor,
     applyPoints: applyPoints,
+    pushMiss: pushMiss,
     buildRun: buildRun,
     buildQuestion: buildQuestion,
     checkTyped: checkTyped,

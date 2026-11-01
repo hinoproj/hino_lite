@@ -1,5 +1,24 @@
 # Progress Context — kana_srs
 
+## [2026-11-01] Mistake replay: wrong MCQ picks come back as options
+
+- `js/srs.js`: `MISS_LIMIT` (= `OPTION_COUNT − 1` = 3) and `pushMiss()`; `buildQuestion` now takes
+  a `misses` list (signature `item, deck, mode, misses, rng`) and puts those kana in the
+  wrong-option slots before look-alikes and random fill.
+- `js/storage.js`: entries gain `misses` (kana keys, newest first). `record(mode, key, score,
+  misses, correct)` now stores values computed by `srs` — it used to apply the 0 floor itself,
+  duplicating `SRS.applyPoints`, a scoring rule outside `srs` (layer contract 3). Fixed.
+- `js/app.js`: questions are built with the kana's stored misses; a wrong tap passes the picked
+  option's key; the score comes from `SRS.applyPoints`.
+- `index.html`: Settings "Mistakes" panel; `README.md` "Mistakes" section. `sw.js` `CACHE_NAME` v3.
+- `AGENTS.md`: contract 5 allows a purely additive field under the same key; the scoring
+  cross-cutting row now covers the mistake rule.
+- Decisions with the owner: per kana per mode, keep the last 3 (one per wrong-option slot); a
+  pick leaves only when pushed out (answering correctly does not clear it); all 3 slots may be
+  misses; Type mode untouched; run composition unchanged; storage key stays `kana_srs_v1`.
+- Verified: selftest 54/54 (10 new); browser smoke 36/36 in headless Chrome (3 new: wrong pick
+  saved, misses survive export/import, an old-shape import loads with empty lists).
+
 ## [2026-09-15] Themes: Dark / Light / Kids switcher in Settings
 
 - `css/app.css`: palettes moved from a `prefers-color-scheme` media query to explicit

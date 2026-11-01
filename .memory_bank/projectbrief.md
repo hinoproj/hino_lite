@@ -31,7 +31,8 @@ recognition *speed*, which the kanji track's date-free point scheme does not mea
 4. **Introduction order is gojūon row order** — the earliest not-yet-learned kana are what a run
    draws, so there is no tier machinery and no mode gating.
 5. **Distractors must be diagnostic**: MCQ options are biased toward genuine look-alikes
-   (シ/ツ, ソ/ン, ね/れ/わ …) rather than drawn uniformly.
+   (シ/ツ, ソ/ン, ね/れ/わ …) rather than drawn uniformly, and the learner's own last 3 wrong
+   picks for a kana come back as its options.
 
 ## Out of scope
 

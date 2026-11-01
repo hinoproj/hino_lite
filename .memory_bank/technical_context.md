@@ -36,6 +36,10 @@ and the DOM layer holds no rules.
   kanji track's tier/unlock machinery would only add state to keep in sync.
 - **Look-alike distractors.** Uniform sampling put a genuine confusable on screen only ~20 % of the
   time in a 46-kana deck; questions now draw 1–2 options from the answer's shape-confusion set.
+- **Mistake replay.** A wrong MCQ pick is stored on that kana's entry (last 3 per mode, newest
+  first, `misses`) and takes a wrong-option slot the next time the kana is asked. Picks leave only
+  when newer ones push them out. Added as an optional field under `kana_srs_v1`, since old
+  exports load unchanged.
 - **Homophone guard.** ぢ/じ and づ/ず share rōmaji, so options are deduplicated by `r`, and the
   rōmaji-prompt direction shows the wāpuro forms (`di`, `du`, `dya`…) to keep one right answer.
 - **Themes are an explicit setting, not OS-derived.** Dark / Light / Kids are chosen in Settings

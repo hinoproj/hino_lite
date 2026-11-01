@@ -33,6 +33,18 @@ is the whole introduction schedule — there are no tiers and no locked modes.
 Typed answers accept Nihon-shiki and wāpuro spellings as well as Hepburn (`si`/`shi`, `tu`/`tsu`,
 `sya`/`sha`, `zi`/`ji`, `nn`/`n`).
 
+## Mistakes
+
+When you pick a wrong option in Read or Recall, the app remembers it, and the next time that kana
+is asked the wrong pick is one of the choices again. Each kana keeps its last 3 wrong picks per
+mode, newest first; picking the same wrong option twice counts once, and a fourth distinct
+mistake pushes out the oldest. Answering correctly does not clear the list. With three wrong-option
+slots per question, every remembered pick is on screen; any free slots are filled with look-alikes
+and random kana as usual.
+
+Typing mode has no options, so it records nothing here. The picks are saved with your progress
+and follow an export/import; backups made before this feature load with empty lists.
+
 ## Themes
 
 Settings → Theme: **Dark** (default), **Light**, or **Kids** — a warmer palette that cheers on

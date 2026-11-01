@@ -1,5 +1,5 @@
 // [MODULE] storage | Progress persistence: best-effort localStorage plus explicit JSON export/import
-// [IFACE] layer: infrastructure | in: mode/kana score updates, settings (run size, theme), imported JSON -> out: stats reads, export text | crosses: [browser localStorage]
+// [IFACE] layer: infrastructure | in: mode/kana answer records (score, miss list), settings (run size, theme), imported JSON -> out: stats reads, export text | crosses: [browser localStorage]
 // [GRAPH] needs: [] | feeds: [app, index] | group: infrastructure
 // [STATE] stateful | persists: localStorage key kana_srs_v1 | raises: nothing (all storage access is try/guarded)
 
@@ -14,7 +14,12 @@
  *
  * Shape:
  *   { version, settings: {runSize, theme}, progress: { <mode>: { <kana>: entry } } }
- *   entry = { score, seen, right, lastSeen }  (lastSeen = epoch ms)
+ *   entry = { score, seen, right, lastSeen, misses }  (lastSeen = epoch ms)
+ *   misses = keys of the kana wrongly picked for this one, newest first
+ *
+ * `misses` was added without a new key: older exports simply lack it and
+ * load with an empty list. Scores and miss lists arrive here already computed
+ * by `srs`; this module stores them and applies no rules of its own.
  */
 (function (global) {
   'use strict';
@@ -27,7 +32,7 @@
   var THEMES = ['dark', 'light', 'kids'];
   var DEFAULT_THEME = 'dark';
 
-  var EMPTY_ENTRY = { score: 0, seen: 0, right: 0, lastSeen: 0 };
+  var EMPTY_ENTRY = { score: 0, seen: 0, right: 0, lastSeen: 0, misses: [] };
 
   var available = false;
   var state = blankState();
@@ -70,7 +75,10 @@
             score: Math.max(0, Number(e.score) || 0),
             seen: Number(e.seen) || 0,
             right: Number(e.right) || 0,
-            lastSeen: Number(e.lastSeen) || 0
+            lastSeen: Number(e.lastSeen) || 0,
+            misses: Array.isArray(e.misses)
+              ? e.misses.filter(function (k) { return typeof k === 'string'; })
+              : []
           };
         });
       });
@@ -112,20 +120,19 @@
     return entry || EMPTY_ENTRY;
   }
 
-  /** Apply an answer's points and return {before, after} scores. */
-  function record(mode, key, points, correct) {
+  /** Store one answer: the new score and miss list, as computed by `srs`. */
+  function record(mode, key, score, misses, correct) {
     if (!state.progress[mode]) state.progress[mode] = {};
     var entry = state.progress[mode][key];
     if (!entry) {
-      entry = { score: 0, seen: 0, right: 0, lastSeen: 0 };
+      entry = { score: 0, seen: 0, right: 0, lastSeen: 0, misses: [] };
       state.progress[mode][key] = entry;
     }
-    var before = entry.score;
-    entry.score = Math.max(0, entry.score + points);
+    entry.score = score;
+    entry.misses = misses;
     entry.seen += 1;
     if (correct) entry.right += 1;
     entry.lastSeen = Date.now();
-    return { before: before, after: entry.score };
   }
 
   function getSettings() {

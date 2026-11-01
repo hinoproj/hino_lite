@@ -10,7 +10,7 @@
  * BUMP CACHE_NAME on every release, otherwise tablets keep serving the old
  * bundle forever: cache-first never revalidates.
  */
-var CACHE_NAME = 'kana-srs-v2';
+var CACHE_NAME = 'kana-srs-v3';
 
 var ASSETS = [
   './',

@@ -70,10 +70,16 @@ maintenance; those caps relax only when the deck is mastered enough that the run
 be short. `buildQuestion` draws 1–2 look-alike distractors before filling weighted at random, and
 never lets two options share a rōmaji.
 
+Mistake replay (MCQ modes only): `pushMiss` keeps a kana's wrong picks newest first, deduplicated,
+capped at `MISS_LIMIT` (= `OPTION_COUNT − 1`, so every remembered pick fits on screen). A pick
+leaves only when newer ones push it out. `buildQuestion` places the misses in the wrong-option
+slots first, then fills what is left with look-alikes and weighted random kana; keys outside the
+deck or homophones of an option already on screen are skipped.
+
 **Exposes**: `MODES`, `MODE_INFO`, `MODE_MCQ_K2R`, `MODE_MCQ_R2K`, `MODE_TYPE`, `FAST_MS`, `OK_MS`,
-`LEARNED_AT`, `CONFIDENT_AT`, `RUN_SIZES`, `OPTION_COUNT`, `MAX_LEARNED_PER_RUN`,
+`LEARNED_AT`, `CONFIDENT_AT`, `RUN_SIZES`, `OPTION_COUNT`, `MISS_LIMIT`, `MAX_LEARNED_PER_RUN`,
 `MAX_CONFIDENT_PER_RUN`, `STATE_*`, `modesForDeck`, `stateOf`, `pointsFor`, `applyPoints`,
-`buildRun`, `buildQuestion`, `checkTyped`, `shuffle`
+`pushMiss`, `buildRun`, `buildQuestion`, `checkTyped`, `shuffle`
 
 ## storage
 
@@ -87,6 +93,10 @@ a hand-edited or truncated export cannot corrupt the in-memory shape.
 Settings hold `runSize` and `theme`; `THEMES` (`dark`/`light`/`kids`) is the validated list, and an
 unknown theme in an import falls back to `dark`.
 
+A progress entry is `{score, seen, right, lastSeen, misses}`. `record` stores the score and miss
+list it is handed — both computed by `srs` — and applies no rule of its own. `misses` was added
+under the same key: exports without it normalise to an empty list.
+
 **Exposes**: `STORAGE_KEY`, `THEMES`, `load`, `save`, `stats`, `record`, `getSettings`, `setRunSize`,
 `setTheme`, `exportText`, `importText`, `reset`, `isAvailable`, `raw`
 
@@ -97,6 +107,10 @@ unknown theme in an import falls back to `dark`.
 Screen routing, run lifecycle, timer ring, answer handling, settings/backup UI. Holds no rules of
 its own: it calls `srs` for every decision and `storage` for every score. Answers are persisted
 per answer rather than per run, so a sleeping tablet loses nothing.
+
+Per answer, `commitAnswer` reads the stored entry, asks `srs` for the new score (`applyPoints`)
+and, on a wrongly tapped option, the new miss list (`pushMiss`), then hands both to
+`storage.record`. Each question is built with that kana's stored misses.
 
 The verdict and the summary report the points the answer **earned** (the nominal rule value), not
 the net change to the stored score — a miss against a kana already at 0 would otherwise read
@@ -136,12 +150,14 @@ any precached file changes.
 **File**: `tools/selftest.js` · **Layer**: tooling
 
 `node tools/selftest.js`. Evaluates `kana-data` and `srs` in a `vm` context and asserts deck sizes,
-katakana/hiragana parity, scoring tiers, typed-answer variants, run composition caps, and
-well-formed questions for every kana in every deck. No dependencies.
+katakana/hiragana parity, scoring tiers, typed-answer variants, run composition caps,
+well-formed questions for every kana in every deck, and mistake replay (`pushMiss` ordering and
+cap, misses on screen in both MCQ modes, the homophone guard with misses in play). No dependencies.
 
 ## browser-smoke
 
 **File**: `tools/browser-smoke.html` · **Layer**: tooling
 
 End-to-end UI check. Loads `../index.html` in a same-origin iframe, plays a full run, and asserts
-screens, scores, persistence and the export/import round trip. Must be served over http(s).
+screens, scores, persistence (including the remembered wrong pick) and the export/import round
+trip, plus an old-shape import without `misses`. Must be served over http(s).

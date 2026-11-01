@@ -102,6 +102,11 @@ async function run() {
   await wait(120);
   var after = JSON.parse(w.localStorage.getItem('kana_srs_v1')).progress.mcq_k2r[kana];
   log('wrong answer never drives a score below 0', after.score >= 0, 'score ' + after.score);
+  var wrongKey = w.KANA_DATA.deckById.hira_basic.items.filter(function (i) {
+    return i.r === wrong.textContent;
+  })[0].key;
+  log('the wrong pick is remembered for that kana',
+      after.misses.length === 1 && after.misses[0] === wrongKey, JSON.stringify(after.misses));
   log('verdict marks the answer wrong',
       d.getElementById('verdict').getAttribute('data-mark') === 'wrong');
   await wait(1900);
@@ -186,6 +191,11 @@ async function run() {
   log('reset clears every score', Object.keys(w.KanaStore.raw().progress.mcq_k2r || {}).length === 0);
   log('import restores an export', w.KanaStore.importText(exported) &&
       Object.keys(w.KanaStore.raw().progress.mcq_k2r).length === 10);
+  log('import keeps remembered misses', w.KanaStore.stats('mcq_k2r', kana).misses[0] === wrongKey);
+  w.KanaStore.importText(JSON.stringify({ progress: { mcq_k2r: { 'か': { score: 4 } } } }));
+  log('an export without misses loads with an empty list',
+      Array.isArray(w.KanaStore.stats('mcq_k2r', 'か').misses) &&
+      w.KanaStore.stats('mcq_k2r', 'か').misses.length === 0);
   // Last, because it replaces the whole state with a near-empty one.
   log('an unknown theme in an import falls back to the default',
       w.KanaStore.importText(JSON.stringify({ settings: { theme: 'neon' } })) &&

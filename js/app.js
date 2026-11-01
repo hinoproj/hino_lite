@@ -216,7 +216,8 @@
       finishRun();
       return;
     }
-    question = SRS.buildQuestion(session.queue[session.index], session.deck, session.mode);
+    var item = session.queue[session.index];
+    question = SRS.buildQuestion(item, session.deck, session.mode, Store.stats(session.mode, item.key).misses);
 
     el['run-count'].textContent = (session.index + 1) + ' / ' + session.queue.length;
     el['run-bar'].style.width = (session.index / session.queue.length * 100) + '%';
@@ -309,7 +310,7 @@
         if (question.options[i].correct) child.setAttribute('data-mark', 'correct');
       });
     }
-    commitAnswer(opt.correct, elapsed);
+    commitAnswer(opt.correct, elapsed, opt.correct ? null : opt.key);
   }
 
   function answerTyped(raw) {
@@ -318,12 +319,17 @@
     var correct = SRS.checkTyped(raw, question.item);
     el['type-form'].setAttribute('data-mark', correct ? 'correct' : 'wrong');
     el['type-input'].disabled = true;
-    commitAnswer(correct, 0);
+    commitAnswer(correct, 0, null);
   }
 
-  function commitAnswer(correct, elapsed) {
+  /** `wrongKey` is the kana of a wrongly tapped option; typed answers have none. */
+  function commitAnswer(correct, elapsed, wrongKey) {
+    var key = question.item.key;
+    var before = Store.stats(session.mode, key);
     var points = SRS.pointsFor(session.mode, correct, elapsed);
-    var change = Store.record(session.mode, question.item.key, points, correct);
+    var score = SRS.applyPoints(before.score, points);
+    var misses = wrongKey ? SRS.pushMiss(before.misses, wrongKey) : before.misses;
+    Store.record(session.mode, key, score, misses, correct);
     Store.save();
 
     // Report the points the answer EARNED, not the net change to the score.
@@ -334,7 +340,7 @@
       correct: correct,
       elapsed: elapsed,
       points: points,
-      after: change.after
+      after: score
     });
 
     var headline = isKids()
@@ -344,7 +350,7 @@
     el.verdict.innerHTML = headline + ' ' +
       (points >= 0 ? '+' : '') + points +
       '<span class="detail">' + question.item.k + ' = ' + question.item.r +
-      ' · score ' + change.after + ' (' + SRS.stateOf(change.after) + ')</span>';
+      ' · score ' + score + ' (' + SRS.stateOf(score) + ')</span>';
 
     session.index += 1;
     advanceHandle = setTimeout(nextQuestion, correct ? ADVANCE_OK_MS : ADVANCE_WRONG_MS);
