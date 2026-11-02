@@ -1,4 +1,4 @@
-// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji, backup and back navigation
+// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji, backup, sentences and back navigation
 // [IFACE] layer: tooling | in: nothing -> out: report in #out and POSTed to /__report, ending SMOKE PASSED/FAILED | crosses: [browser DOM, localStorage, Cache Storage API, local HTTP server]
 // [GRAPH] needs: [index] | feeds: [browser-smoke-page] | group: tooling
 // [STATE] stateful | persists: clears hino_lite_v2 and the library cache before running | raises: nothing
@@ -63,7 +63,7 @@ async function boot() {
 // --- Kana ---------------------------------------------------------------------
 
 async function kana() {
-  log('tab bar shows four tabs', $$('#tabbar button').length === 4 && !d.getElementById('tabbar').hidden);
+  log('tab bar shows five tabs', $$('#tabbar button').length === 5 && !d.getElementById('tabbar').hidden);
   log('kana is the start tab', visible('screen-kana'));
   const cards = $$('.deck-card');
   log('six deck cards rendered', cards.length === 6, cards.length);
@@ -411,6 +411,121 @@ async function backup() {
   log('switching back restores dark', d.documentElement.getAttribute('data-theme') === 'dark');
 }
 
+// --- Sentences -----------------------------------------------------------------
+
+const promptRows = () => $$('#prompt-rows .prompt-row');
+const rowValue = (row, cls) => row.querySelector('.' + cls).value;
+
+async function sentences() {
+  const st = store();
+  const wordsBefore = st.listWords().length;
+  await tab('sentences');
+  log('sentences tab starts with an empty state', Boolean($('#screen-sentences .empty')));
+
+  $('#btn-add-sentence').click();
+  await waitFor(() => visible('screen-sentence-form'));
+  log('the sentence form hides the tab bar; no Parse yet', d.getElementById('tabbar').hidden && $('#btn-parse').hidden);
+  type($('#sentence-sentence'), 'もう一度（いちど）聞いて（きいて）ください。 — Please listen once more.');
+  log('brackets show Parse', !$('#btn-parse').hidden);
+  $('#btn-parse').click();
+  log('Parse fills sentence, reading and translation', $('#sentence-sentence').value === 'もう一度聞いてください。' &&
+    $('#sentence-reading').value === 'もういちどきいてください。' && $('#sentence-translation').value === 'Please listen once more.',
+    [$('#sentence-sentence').value, $('#sentence-reading').value, $('#sentence-translation').value].join(' | '));
+  $('#btn-parse-undo').click();
+  log('Undo puts the pasted text back', $('#sentence-sentence').value.includes('（いちど）') && $('#sentence-translation').value === '');
+  $('#btn-parse').click();
+  $('#btn-save-sentence').click();
+  await waitFor(() => visible('screen-sentence-words'));
+  let rows = promptRows();
+  log('saving offers its kanji words with their readings', rows.length === 2 && rowValue(rows[0], 'pw-writing') === '一度' &&
+    rowValue(rows[0], 'pw-reading') === 'いちど' && rowValue(rows[1], 'pw-writing') === '聞いて',
+    rows.map((r) => rowValue(r, 'pw-writing') + '/' + rowValue(r, 'pw-reading')).join());
+  log('Add waits for a meaning', rows.every((r) => r.querySelector('.pw-add').disabled));
+  type(rows[1].querySelector('.pw-meaning'), 'listen (て-form of 聞く)');
+  log('a meaning enables Add', !rows[1].querySelector('.pw-add').disabled);
+  rows[1].querySelector('.pw-add').click();
+  await sleep(50);
+  const card = st.listWords().find((x) => x.writing === '聞いて');
+  log('Add saves the word with the sentence as its example', Boolean(card) && card.reading === 'きいて' &&
+    card.example === 'もう一度聞いてください。\nPlease listen once more.' && rows[1].dataset.status === 'added', JSON.stringify(card));
+  log('its kanji join the kanji list', st.isEnrolled('聞'));
+  $('#btn-prompt-done').click();
+  await waitFor(() => visible('screen-sentences'));
+  log('Done returns to the list', $$('#sentence-list .sentence-row').length === 1);
+
+  $('#btn-add-sentence').click();
+  await waitFor(() => visible('screen-sentence-form'));
+  type($('#sentence-sentence'), '質問（しつもん）を聞いて（きいて）もいいですか。 — May I ask a question?');
+  $('#btn-parse').click();
+  $('#btn-save-sentence').click();
+  await waitFor(() => visible('screen-sentence-words'));
+  rows = promptRows();
+  log('a word already in the list is only marked', rows.length === 2 && rows[1].dataset.status === 'dup' &&
+    /already in your list/i.test(rows[1].textContent) && rows[1].querySelector('.pw-add').hidden);
+  w.history.back();
+  await waitFor(() => visible('screen-sentences'));
+  log('the back button leaves the prompt; nothing else added', visible('screen-sentences') && st.listWords().length === wordsBefore + 1);
+
+  $('#btn-add-sentence').click();
+  await waitFor(() => visible('screen-sentence-form'));
+  type($('#sentence-sentence'), '毎日、本を読む。');
+  log('a plain sentence shows no Parse', $('#btn-parse').hidden);
+  $('#btn-save-sentence').click();
+  await waitFor(() => visible('screen-sentence-words'));
+  rows = promptRows();
+  log('without brackets, each kanji run comes with an empty reading', rows.length === 3 &&
+    rowValue(rows[0], 'pw-writing') === '毎日' && rowValue(rows[0], 'pw-reading') === '' && rowValue(rows[1], 'pw-writing') === '本');
+  type(rows[0].querySelector('.pw-meaning'), 'every day');
+  log('Add also needs a reading', rows[0].querySelector('.pw-add').disabled);
+  type(rows[0].querySelector('.pw-reading'), 'mainichi');
+  rows[0].querySelector('.pw-add').click();
+  await sleep(50);
+  log('a rōmaji reading is saved as kana', st.listWords().some((x) => x.writing === '毎日' && x.reading === 'まいにち'));
+  $('#btn-prompt-done').click();
+  await waitFor(() => visible('screen-sentences'));
+
+  type($('#sentences-search'), 'question');
+  log('search finds a sentence by its translation', $$('#sentence-list .sentence-row').length === 1);
+  type($('#sentences-search'), '');
+
+  const open = async (text) => {
+    $$('#sentence-list .sentence-row').find((r) => r.textContent.includes(text)).click();
+    return waitFor(() => $('#sentence-view'));
+  };
+  await open('毎日');
+  $('#btn-edit-sentence').click();
+  await waitFor(() => visible('screen-sentence-form'));
+  log('edit prefills the form', $('#sentence-sentence').value === '毎日、本を読む。');
+  type($('#sentence-translation'), 'I learn every day.');
+  $('#btn-save-sentence').click();
+  await waitFor(() => visible('screen-sentences'));
+  log('editing saves without a prompt', visible('screen-sentences') && st.listSentences().some((x) => x.translation === 'I learn every day.'));
+
+  const exported = st.exportText();
+  st.reset();
+  log('a backup restores the sentences', st.importText(exported).ok && st.listSentences().length === 3);
+
+  await tab('sentences');
+  await open('毎日');
+  $('#btn-delete-sentence').click();
+  await waitFor(() => !visible('sheet-layer'));
+  log('deleting a sentence keeps its word cards', st.listSentences().length === 2 && st.listWords().some((x) => x.writing === '毎日'));
+}
+
+// --- Another tab, a newer version ------------------------------------------------
+
+async function otherTab() {
+  // This page shares the app's localStorage, so writing here is "another tab saving".
+  const data = saved();
+  data.words.other = { id: 'other', writing: '', reading: 'ほか', meaning: 'other', example: '', notes: '', createdAt: 1, updatedAt: 1 };
+  data.fromNewerVersion = { kept: true };
+  localStorage.setItem(KEY, JSON.stringify(data));
+  log('a save from another tab is taken over', Boolean(await waitFor(() => store().getWord('other'))));
+  store().setRunSize(10);
+  log('our next save keeps it, and keeps data from a newer version', Boolean(saved().words.other) &&
+    saved().fromNewerVersion && saved().fromNewerVersion.kept === true && saved().settings.runSize === 10);
+}
+
 async function serviceWorker() {
   const reg = await waitFor(() => w.navigator.serviceWorker.getRegistration().then((r) => r && r.active), 15000);
   log('the service worker installs (every precached file exists)', Boolean(reg));
@@ -423,6 +538,8 @@ async function run() {
   await wordReviews();
   await kanji();
   await backup();
+  await sentences();
+  await otherTab();
   await serviceWorker();
   log('no alerts were raised', alerts.length === 0, alerts.join(' | '));
 }

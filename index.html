@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- [MODULE] index | Page shell: tab and focus screens, kana markup with the timer ring, sheet layer, tab bar, PWA hooks
      [IFACE] layer: presentation | in: nothing -> out: DOM nodes the UI modules fill and bind by id | crosses: [browser DOM]
-     [GRAPH] needs: [app-css, review-css, words-css, kanji-css, main] | feeds: [browser-smoke, scene] | group: presentation
+     [GRAPH] needs: [app-css, review-css, words-css, sentences-css, kanji-css, main] | feeds: [browser-smoke, scene] | group: presentation
      [STATE] stateless | persists: nothing | raises: nothing -->
 <html lang="en">
 <head>
@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/review.css">
   <link rel="stylesheet" href="css/words.css">
+  <link rel="stylesheet" href="css/sentences.css">
   <link rel="stylesheet" href="css/kanji.css">
   <script type="module" src="js/main.js"></script>
 </head>
@@ -107,6 +108,11 @@
   <section class="screen" id="screen-words" data-tab="words" hidden></section>
   <section class="screen" id="screen-word-form" hidden></section>
 
+  <!-- Sentences: filled by js/sentences/sentences-ui.js -->
+  <section class="screen" id="screen-sentences" data-tab="sentences" hidden></section>
+  <section class="screen" id="screen-sentence-form" hidden></section>
+  <section class="screen" id="screen-sentence-words" hidden></section>
+
   <!-- Self-rated review run and summary (words and kanji): js/review/review-ui.js -->
   <section class="screen" id="screen-review" hidden></section>
   <section class="screen" id="screen-review-summary" hidden></section>
@@ -128,7 +134,7 @@
 
     <div class="panel">
       <h2>Backup</h2>
-      <p>Your words, kanji list and scores live on this device only. Export a copy now and then —
+      <p>Your words, sentences, kanji list and scores live on this device only. Export a copy now and then —
         it is the only way back after clearing the browser or moving to a new device.</p>
       <p id="backup-status"></p>
       <div class="actions">
@@ -179,7 +185,7 @@
 
     <div class="panel">
       <h2>Reset</h2>
-      <p>Erases all words, your kanji list and every score. Theme and run length stay. There is no undo — export first.</p>
+      <p>Erases all words and sentences, your kanji list and every score. Theme and run length stay. There is no undo — export first.</p>
       <button class="danger" id="btn-reset" type="button">Erase everything</button>
     </div>
 
@@ -199,6 +205,7 @@
 <nav class="tabbar" id="tabbar" aria-label="Sections">
   <button type="button" data-tab="kana"><span class="tab-icon" lang="ja" aria-hidden="true">あ</span><span>Kana</span></button>
   <button type="button" data-tab="words"><span class="tab-icon" lang="ja" aria-hidden="true">語</span><span>Words</span></button>
+  <button type="button" data-tab="sentences"><span class="tab-icon" lang="ja" aria-hidden="true">文</span><span>Sentences</span></button>
   <button type="button" data-tab="kanji"><span class="tab-icon" lang="ja" aria-hidden="true">漢</span><span>Kanji</span></button>
   <button type="button" data-tab="settings"><span class="tab-icon" aria-hidden="true">⚙</span><span>Settings</span></button>
 </nav>

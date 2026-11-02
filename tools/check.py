@@ -45,7 +45,9 @@ SHOTS = [("words", "words", 390, 844), ("word-form", "word-form", 390, 844),
          ("review", "review", 390, 844), ("kanji", "kanji", 390, 844), ("card", "card", 390, 844),
          ("kana", "kana", 390, 844), ("words-tablet", "words", 1280, 800),
          ("kanji-tablet", "kanji", 1280, 800), ("card-tablet", "card", 1280, 800),
-         ("review-tablet", "review", 1280, 800)]
+         ("review-tablet", "review", 1280, 800), ("sentences", "sentences", 390, 844),
+         ("sentence-form", "sentence-form", 390, 844), ("sentence-words", "sentence-words", 390, 844),
+         ("sentence-words-tablet", "sentence-words", 1280, 800)]
 
 
 class Handler(SimpleHTTPRequestHandler):

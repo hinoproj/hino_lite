@@ -1,6 +1,6 @@
 // [MODULE] dom | Tiny DOM helpers: element builder, Japanese-text spans, toast, segmented control, confirm seam
 // [IFACE] layer: presentation | in: tag names, props, children -> out: DOM nodes | crosses: [browser DOM]
-// [GRAPH] needs: [] | feeds: [shell, kana-ui, words-ui, review-ui, kanji-ui, kanji-card, settings-ui] | group: presentation
+// [GRAPH] needs: [] | feeds: [shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui] | group: presentation
 // [STATE] stateless | persists: nothing | raises: nothing
 
 /**

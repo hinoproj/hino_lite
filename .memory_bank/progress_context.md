@@ -1,5 +1,53 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-02] Older copies of the app can no longer wipe newer data
+
+Fixes the known issue logged with the Sentences tab. Saves write the whole document, so (a) an older
+version's `normalize()` dropped keys it did not know, and (b) any tab left open — even of the same
+version — wrote its stale copy over other tabs' saves (a word added in tab A vanished when tab B
+saved). `js/core/storage.js`: `normalize()` keeps unknown keys at the top level, in settings and in
+each word and sentence (`__proto__` skipped); `load()` listens for the `storage` event and adopts
+another tab's save. Protects future updates; copies already installed before this release still
+have the old behaviour. Selftest +2, smoke +2 (151/151, 95/95). `sw.js` stays `hino-lite-app-v3`
+(not yet released).
+
+## [2026-11-02] Sentences tab: Parse and word cards from a sentence (P13)
+
+Owner's design, recorded as P13 in `.agentic_docs/current_task.md` (P3 and P10 amended).
+
+**Shipped**
+
+- `js/sentences/sentences.js` (rules): `parse` = `splitTranslation` (Latin/Cyrillic tail) +
+  `readAnnotations` (bracket readings, kana-alignment to find where the word starts, お/ご kept,
+  kana-only tokens skipped); `canParse`; `candidates` (Parse's words where they occur, other kanji
+  runs with an empty reading); `exampleFor`, validation (reading optional, rōmaji → kana), search.
+- Storage: `sentences` collection, additive under v2; `listSentences`/`getSentence`/`saveSentence`/
+  `deleteSentence`. Existing data and backups load unchanged.
+- `js/sentences/sentences-ui.js` + `css/sentences.css`: fifth tab (Kana · Words · Sentences · Kanji
+  · Settings), list + search, sheet, form with Parse/Undo, word-card prompt after a new sentence.
+  `sw.js` → `hino-lite-app-v3` with the three new files.
+- Tests: 24 selftest checks, 22 smoke checks, scenes `sentences`, `sentence-form`, `sentence-words`.
+
+**Decisions made during the build**
+
+- Parse also shows for a trailing translation without brackets (owner's spec named brackets only).
+- Add needs a reading as well as a meaning, because a word without a reading cannot be saved; rows
+  for un-bracketed kanji start with an empty reading.
+- Example = sentence, newline, translation. Rows marked "Already in your list" hide their meaning field.
+
+**Known issues**
+
+- Touching kanji runs merge into one candidate: 毎日学ぶ offers 毎日学 (the agreed rule is "each
+  run of kanji"); the row's kanji field is editable. `candidates()` in `js/sentences/sentences.js`.
+- `storage.normalize()` keeps only known keys, so an older app version running after sentences
+  exist would drop them on its next save (e.g. a second tab still on the old code). Only reachable
+  across an update; the new version never loses them.
+
+**Verified**
+
+`uv run tools/check.py`: selftest 149/149, smoke 93/93. Screenshots of the new screens at
+390×844 and 1280×800 reviewed.
+
 ## [2026-11-02] Readings may hold punctuation (phrases like "Jaa, mata")
 
 First device report: the reading じゃあ、また was refused. `toHiragana` now turns `, . ! ? ~` into

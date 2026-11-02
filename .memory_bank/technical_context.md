@@ -11,12 +11,12 @@ Tooling in Python run with `uv` (stdlib only): `tools/build_library.py` builds t
 ```
 data      kana-data            kanji-index (generated)
             ↓                     ↓
-rules     kana-srs   romaji → words, kanji        review (shared rating/run rules)
-            ↓                     ↓                   ↓
+rules     kana-srs   romaji → words, sentences, kanji        review (shared rating/run rules)
+            ↓                     ↓                              ↓
 infra     storage (localStorage)   library (Cache API, one-time download)   sw (app cache)
             ↓
 UI        shell · dom · theme · backup
-          kana-ui · words-ui · kanji-ui · kanji-card · review-ui · settings-ui   ← main (boot)
+          kana-ui · words-ui · sentences-ui · kanji-ui · kanji-card · review-ui · settings-ui   ← main (boot)
 ```
 
 Full graph, boundaries and per-module notes: `.agentic_docs/code_index.md`. Rule modules are pure
@@ -40,7 +40,15 @@ Full graph, boundaries and per-module notes: `.agentic_docs/code_index.md`. Rule
 - **Storage**: one JSON document in `localStorage` (`hino_lite_v2`) = the backup format (`app:
   'hino_lite'`, `version: 2`); `navigator.storage.persist()` at boot. Kanji list stored explicitly
   (`{addedAt, removed}`) so "nothing leaves automatically" holds after edits; removing hides and
-  keeps scores. Old Kana SRS backups are refused.
+  keeps scores. Old Kana SRS backups are refused. `sentences` was added under v2 as an additive
+  collection (`normalize()` defaults it), so no migration and no version bump. Older copies must
+  not destroy newer data: `normalize()` keeps unknown keys, and a `storage` event from another tab
+  replaces the in-memory copy (whole-document saves would otherwise let a stale tab win).
+- **Sentence Parse is a pure rule** (`sentences.js`): bracket readings are attached to the token
+  before them by aligning kana (kanji runs as wildcards), which tells a particle (日本語を勉強) from
+  okurigana (落ち着いて) without a dictionary; the translation is the Latin/Cyrillic tail. Word
+  candidates for the prompt are re-derived from the saved sentence plus Parse's words, so edits
+  after Parse are safe. Conjugated forms stay as written; meanings are never prefilled (owner, P13).
 - **Kanji library**: 2,099 kanji, example words with frequency rank < 11,000, KanjiVG strokes
   slimmed and recoloured to `currentColor` — 12 files, ~6.7 MB on disk, ~1.7 MB gzipped, in their
   own cache named after a content hash, downloaded on the first Kanji-tab visit (N5 first). A 207 KB
@@ -61,6 +69,6 @@ and downloads again on the next Kanji-tab visit.
 
 ## Verification
 
-- `uv run tools/check.py` — selftest (117 checks) + UI smoke (71 checks), must end `ALL CHECKS PASSED`
+- `uv run tools/check.py` — selftest (151 checks) + UI smoke (95 checks), must end `ALL CHECKS PASSED`
 - `uv run tools/check.py shots OUT` — screenshots at 390×844 and 1280×800 for visual review
 - `uv run tools/check.py serve` — local server with correct MIME types

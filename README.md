@@ -1,6 +1,6 @@
 # Hino Lite
 
-An offline study app for a phone or a tablet: kana drills, your own word list, and a kanji
+An offline study app for a phone or a tablet: kana drills, your own word and sentence lists, and a kanji
 library whose kanji join your list by themselves. Static files, no server, no build step —
 installed from GitHub Pages, everything stays on the device.
 
@@ -19,6 +19,23 @@ each with its own progress:
 
 "Show all" reveals everything at once; tapping the card works like the main button. Then rate
 yourself: **Didn't know**, **Guessed**, **Knew it** or **Easy!** ("Which one do I press?" explains).
+
+**Sentences** — your sentences: the sentence, its reading (optional, kana), a translation and
+notes. Paste a sentence with readings in brackets and its translation at the end, and **Parse**
+sorts it into the fields:
+
+```
+質問（しつもん）を聞いて（きいて）もいいですか。 — May I ask a question?
+```
+
+A bracket — `()`, `[]` or their full-width forms — is the reading of the kanji word right before
+it (a particle in front is left out, お/ご are kept). The Latin or Cyrillic text at the end becomes
+the translation, with or without a `—`, `-` or `:` before it. **Undo** puts the pasted text back.
+After you save a new sentence, its kanji words are offered as word cards: bracketed words come
+with their reading, other kanji with an empty one. Type a meaning (for a conjugated word, add its
+dictionary form: "listen — て-form of 聞く") and tap **Add**; the card gets the sentence and its
+translation as its example, and its kanji join your kanji list. Words already in your list are
+marked. Deleting a sentence keeps its word cards.
 
 **Kanji** — all 2,099 library kanji by JLPT level (N5…N1, no level), downloaded once on the first
 visit (~6.7 MB on the device). Kanji in your words' writing join *your* list automatically; you can

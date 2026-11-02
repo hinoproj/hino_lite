@@ -9,34 +9,37 @@ boundaries and `group:` values: on any conflict with an `AGENTS.md`, this file w
 | --- | --- | --- | --- | --- | --- | --- |
 | kana-data | js/kana/kana-data.js | data | — | kana-srs, kana-ui, main, selftest | data | — |
 | kanji-index | js/kanji/kanji-index.js | data | — | kanji, library, selftest | data | — |
-| romaji | js/core/romaji.js | domain | — | words, words-ui, kanji, selftest | domain | — |
+| romaji | js/core/romaji.js | domain | — | words, words-ui, sentences, sentences-ui, kanji, selftest | domain | — |
 | kana-srs | js/kana/kana-srs.js | domain | kana-data | kana-ui, selftest | domain | — |
 | review | js/review/review.js | domain | — | review-ui, words-ui, kanji-ui, kanji-card, selftest | domain | — |
-| words | js/words/words.js | domain | romaji | words-ui, kanji-card, kanji-ui, selftest | domain | — |
-| kanji | js/kanji/kanji.js | domain | kanji-index, romaji | kanji-ui, kanji-card, words-ui, library, selftest | domain | — |
-| storage | js/core/storage.js | infrastructure | — | main, theme, backup, shell, kana-ui, words-ui, review-ui, kanji-ui, kanji-card, settings-ui, selftest | infrastructure | browser localStorage, StorageManager |
+| words | js/words/words.js | domain | romaji | words-ui, sentences-ui, kanji-card, kanji-ui, selftest | domain | — |
+| sentences | js/sentences/sentences.js | domain | romaji | sentences-ui, selftest | domain | — |
+| kanji | js/kanji/kanji.js | domain | kanji-index, romaji | kanji-ui, kanji-card, words-ui, sentences-ui, library, selftest | domain | — |
+| storage | js/core/storage.js | infrastructure | — | main, theme, backup, shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui, selftest | infrastructure | browser localStorage, StorageManager |
 | library | js/kanji/library.js | infrastructure | kanji-index, kanji | kanji-ui, kanji-card, main | infrastructure | network:data/library, Cache Storage API |
 | sw | sw.js | infrastructure | — | main | infrastructure | Cache Storage API |
-| dom | js/core/dom.js | presentation | — | shell, kana-ui, words-ui, review-ui, kanji-ui, kanji-card, settings-ui | presentation | browser DOM |
+| dom | js/core/dom.js | presentation | — | shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui | presentation | browser DOM |
 | theme | js/core/theme.js | presentation | storage | main, kana-ui, review-ui, settings-ui | presentation | browser DOM |
 | backup | js/core/backup.js | presentation | storage | shell, settings-ui | presentation | browser downloads, FileReader |
-| shell | js/core/shell.js | presentation | dom, storage, backup | main, kana-ui, words-ui, review-ui, kanji-ui, kanji-card, settings-ui | presentation | browser DOM, History API |
+| shell | js/core/shell.js | presentation | dom, storage, backup | main, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui | presentation | browser DOM, History API |
 | kana-ui | js/kana/kana-ui.js | presentation | kana-data, kana-srs, storage, theme, shell, dom | main | presentation | browser DOM |
 | review-ui | js/review/review-ui.js | presentation | review, storage, theme, shell, dom | words-ui, kanji-ui | presentation | browser DOM |
 | words-ui | js/words/words-ui.js | presentation | words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card | main, kanji-card | presentation | browser DOM |
+| sentences-ui | js/sentences/sentences-ui.js | presentation | sentences, words, kanji, romaji, storage, shell, dom | main | presentation | browser DOM |
 | kanji-card | js/kanji/kanji-card.js | presentation | kanji, library, words, review, storage, shell, dom, words-ui | kanji-ui, words-ui | presentation | browser DOM |
 | kanji-ui | js/kanji/kanji-ui.js | presentation | kanji, library, review, review-ui, words, storage, shell, dom, kanji-card | main | presentation | browser DOM |
 | settings-ui | js/settings/settings-ui.js | presentation | storage, theme, backup, shell, dom | main | presentation | browser DOM |
-| main | js/main.js | presentation | storage, theme, shell, kana-ui, words-ui, kanji-ui, settings-ui, kana-data, library, sw | index | presentation | browser DOM, service worker |
+| main | js/main.js | presentation | storage, theme, shell, kana-ui, words-ui, sentences-ui, kanji-ui, settings-ui, kana-data, library, sw | index | presentation | browser DOM, service worker |
 | app-css | css/app.css | presentation | — | index | presentation | — |
 | review-css | css/review.css | presentation | — | index | presentation | — |
 | words-css | css/words.css | presentation | — | index | presentation | — |
+| sentences-css | css/sentences.css | presentation | — | index | presentation | — |
 | kanji-css | css/kanji.css | presentation | — | index | presentation | — |
-| index | index.html | presentation | app-css, review-css, words-css, kanji-css, main | browser-smoke, scene | presentation | browser DOM |
+| index | index.html | presentation | app-css, review-css, words-css, sentences-css, kanji-css, main | browser-smoke, scene | presentation | browser DOM |
 | build-library | tools/build_library.py | tooling | — | — | tooling | filesystem |
 | check | tools/check.py | tooling | selftest-page, browser-smoke-page, scene | — | tooling | filesystem, local HTTP server, Chrome process |
 | selftest-page | tools/selftest.html | tooling | selftest | check | tooling | browser DOM |
-| selftest | tools/selftest.js | tooling | kana-data, kana-srs, romaji, review, words, kanji, kanji-index, storage | selftest-page | tooling | browser DOM, local HTTP server |
+| selftest | tools/selftest.js | tooling | kana-data, kana-srs, romaji, review, words, sentences, kanji, kanji-index, storage | selftest-page | tooling | browser DOM, local HTTP server |
 | browser-smoke-page | tools/browser-smoke.html | tooling | browser-smoke | check | tooling | browser DOM |
 | browser-smoke | tools/browser-smoke.js | tooling | index | browser-smoke-page | tooling | browser DOM, localStorage, Cache Storage API, local HTTP server |
 | scene | tools/scene.html | tooling | index | check | tooling | browser DOM, localStorage |
@@ -50,11 +53,11 @@ imported, so the edge is recorded here and in the Cross-cutting table of `AGENTS
 
 | Boundary | Modules | Direction | Notes |
 | --- | --- | --- | --- |
-| browser localStorage | storage, browser-smoke | read/write | Only `storage` reads/writes app data (key `hino_lite_v2`); every access guarded. The smoke test clears the key first. |
+| browser localStorage | storage, browser-smoke | read/write | Only `storage` reads/writes app data (key `hino_lite_v2`); every access guarded; other tabs' saves arrive as `storage` events and replace the in-memory copy. The smoke test clears the key first and writes it once as "another tab". |
 | StorageManager | storage | write | `navigator.storage.persist()` at boot asks the browser not to evict the data. |
 | network:data/library | library | in | The 12 level files (data + strokes per level), fetched once with `cache: 'no-store'`. |
 | Cache Storage API | sw, library, browser-smoke | read/write | `sw` owns `hino-lite-app-v*`; `library` owns `hino-lite-library-<version>`. `sw` never deletes library buckets. |
-| browser DOM | dom, theme, shell, kana-ui, review-ui, words-ui, kanji-card, kanji-ui, settings-ui, main, index, selftest-page, selftest, browser-smoke-page, browser-smoke, scene | read/write | Learner text only through `textContent`; `html:` only for generated SVG. |
+| browser DOM | dom, theme, shell, kana-ui, review-ui, words-ui, sentences-ui, kanji-card, kanji-ui, settings-ui, main, index, selftest-page, selftest, browser-smoke-page, browser-smoke, scene | read/write | Learner text only through `textContent`; `html:` only for generated SVG. |
 | History API | shell | read/write | One history entry per focus screen or open sheet, so Android's back button walks back. |
 | browser downloads, FileReader | backup | out / in | Backup export (a `.json` download) and import. |
 | service worker | main | out | Registration only. |
@@ -67,9 +70,9 @@ imported, so the edge is recorded here and in the Cross-cutting table of `AGENTS
 | Group | Meaning | Members |
 | --- | --- | --- |
 | data | Static tables with no behaviour (one generated) | kana-data, kanji-index |
-| domain | Pure rules: no DOM, no storage, no network | romaji, kana-srs, review, words, kanji |
+| domain | Pure rules: no DOM, no storage, no network | romaji, kana-srs, review, words, sentences, kanji |
 | infrastructure | Owns a browser/platform storage or network API | storage, library, sw |
-| presentation | Screens, markup, styling, event handling | dom, theme, backup, shell, kana-ui, review-ui, words-ui, kanji-card, kanji-ui, settings-ui, main, app-css, review-css, words-css, kanji-css, index |
+| presentation | Screens, markup, styling, event handling | dom, theme, backup, shell, kana-ui, review-ui, words-ui, sentences-ui, kanji-card, kanji-ui, settings-ui, main, app-css, review-css, words-css, sentences-css, kanji-css, index |
 | tooling | Developer-only builds and checks, never in the app's load path | build-library, check, selftest-page, selftest, browser-smoke-page, browser-smoke, scene |
 
 ---
@@ -153,6 +156,25 @@ empty extras dropped. `matchesQuery` searches every field, and rōmaji/katakana 
 **Exposes**: `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`, `FIELDS`, `FIELD_LABELS`,
 `normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `matchesQuery`, `sortForList`
 
+## sentences
+
+**File**: `js/sentences/sentences.js` · **Layer**: domain
+
+Sentence rules (P13). `splitTranslation`: the Latin/Cyrillic tail after the last Japanese letter
+(closing `。）` etc. stay Japanese; a leading `— - : |` delimiter and wrapping brackets dropped).
+`readAnnotations`: `()`, `（）`, `[]`, `［］` holding kana are readings; the token since the previous
+bracket loses its leading non-kanji except お/ご, and when it holds several kanji runs the earliest
+start whose kana align with the reading wins (日本語を勉強（べんきょう） → 勉強; 落ち着いて stays whole);
+a bracket after a kana-only token is dropped, one without kana stays as text; the sentence reading
+is filled only when no kanji or Latin is left. `parse` = both; `canParse` = Parse would change
+something. `candidates(sentence, known)`: known/bracketed words where they occur, then every other
+kanji run (with a preceding お/ご) with an empty reading, in order, each once; kana-only words never.
+`exampleFor` = sentence + newline + translation. Reading optional, rōmaji → hiragana, no kanji or
+Latin. Conjugated forms stay as written; their dictionary form goes in the meaning, by hand.
+
+**Exposes**: `FIELDS`, `FIELD_LABELS`, `splitTranslation`, `readAnnotations`, `parse`, `canParse`,
+`candidates`, `exampleFor`, `normalizeDraft`, `validate`, `matchesQuery`, `sortForList`
+
 ## kanji
 
 **File**: `js/kanji/kanji.js` · **Layer**: domain
@@ -171,7 +193,12 @@ kanji = meaning | glyph | readings, strokes, your words.
 
 The only `localStorage` user; key `hino_lite_v2`, which is also the backup format
 `{app: 'hino_lite', version: 2, updatedAt, unsavedSince, settings{runSize, theme, lastBackupAt},
-kana, words, kanji{addedAt, removed}, reviews{track: {id: {score, seen, lastSeen}}}}`. A missing
+kana, words, sentences, kanji{addedAt, removed}, reviews{track: {id: {score, seen, lastSeen}}}}`.
+`sentences` (`{id, sentence, reading, translation, notes, createdAt, updatedAt}`) is additive under
+v2: `normalize` defaults it to `{}`, so older v2 data and backups load unchanged. Deleting a sentence
+leaves the words made from it. Older copies never destroy newer data: `normalize` keeps unknown keys
+(top level, settings, each word and sentence) as they are, and `load` starts listening for the
+`storage` event, so another tab's save replaces this tab's copy instead of being overwritten by it. A missing
 review entry means unseen (−1). Removing a kanji keeps its review entries; deleting a word drops
 its own. `normalize` rebuilds any untrusted JSON; `importText` refuses files without
 `app: 'hino_lite'`, v2 (old Kana SRS backups). `backupStatus().due` after 7 days of unsaved changes.
@@ -179,7 +206,8 @@ Stores values computed by the rule modules and applies no rule itself.
 
 **Exposes**: `STORAGE_KEY`, `APP_ID`, `VERSION`, `THEMES`, `BACKUP_NUDGE_MS`, `normalize`, `load`,
 `save`, `isAvailable`, `requestPersistence`, `isPersisted`, `getSettings`, `setRunSize`, `setTheme`,
-`kanaStats`, `recordKana`, `listWords`, `getWord`, `saveWord`, `deleteWord`, `kanjiEntry`,
+`kanaStats`, `recordKana`, `listWords`, `getWord`, `saveWord`, `deleteWord`, `listSentences`,
+`getSentence`, `saveSentence`, `deleteSentence`, `kanjiEntry`,
 `isEnrolled`, `listKanji`, `enrollKanji`, `removeKanji`, `reviewStats`, `recordReview`,
 `setReviewScore`, `exportText`, `markBackedUp`, `backupStatus`, `importText`, `reset`, `raw`
 
@@ -199,7 +227,7 @@ band, words: [[word, reading, gloss, rank, pitch[], senses[]]]}`.
 
 **File**: `sw.js` · **Layer**: infrastructure
 
-Cache-first precache of `ASSETS` into `CACHE_NAME` (`hino-lite-app-v1`), fetched with
+Cache-first precache of `ASSETS` into `CACHE_NAME` (`hino-lite-app-v3`), fetched with
 `cache: 'reload'`; activation deletes every other bucket except `hino-lite-library-*`. Serves
 library files from their cache too. Bump `CACHE_NAME` on every release.
 
@@ -274,6 +302,20 @@ duplicate refusal with "Open it"), save → `storage.saveWord` + `enrollKanji`; 
 
 **Exposes**: `renderWords`, `openWordView`, `openWordForm`
 
+## sentences-ui
+
+**File**: `js/sentences/sentences-ui.js` · **Layer**: presentation
+
+Sentences tab (search, list newest first), sentence sheet (reading, translation, notes, Edit,
+Delete — words made from it stay), add/edit form (Parse button while `canParse`, Undo restores
+the pasted text, rōmaji reading preview). Saving a **new** sentence with kanji opens the word-card
+prompt (replaces the form's back entry): one row per candidate with editable kanji and reading and
+an empty meaning; Add is enabled once meaning and reading are filled, saves the word with the
+sentence as its example and enrolls its kanji; a word already in the list (writing|reading) is only
+marked. Edits never prompt.
+
+**Exposes**: `renderSentences`
+
 ## kanji-card
 
 **File**: `js/kanji/kanji-card.js` · **Layer**: presentation
@@ -308,23 +350,25 @@ confirmations; theme and run length kept).
 
 **File**: `js/main.js` · **Layer**: presentation
 
-Boot: load storage, theme, shell, tabs; route `#kana`, `#words`, `#kanji`, `#kanji/<kanji>`,
+Boot: load storage, theme, shell, the five tabs; route `#kana`, `#words`, `#sentences`, `#kanji`, `#kanji/<kanji>`,
 `#settings`; request persistent storage; register `sw.js`; expose `window.HinoLite` {store,
 KANA_DATA, library} for tests and debugging.
 
-## app-css, review-css, words-css, kanji-css
+## app-css, review-css, words-css, sentences-css, kanji-css
 
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
 controls; kana screens), `css/review.css` (track panel, review card, ratings, help, summary),
-`css/words.css` (list, form, word sheet), `css/kanji.css` (library, tiles, card zones, strokes,
+`css/words.css` (list, form, word sheet; its `.field*` classes serve the sentence form too),
+`css/sentences.css` (sentence list, form and Parse bar, sheet, word-card prompt rows), `css/kanji.css` (library, tiles, card zones, strokes,
 readings, pitch). Themes are explicit (`data-theme`), never OS-derived.
 
 ## index
 
 **File**: `index.html` · **Layer**: presentation
 
-Static kana screens and Settings, empty containers for the words/kanji/review screens, the sheet
-layer, the backup banner and the tab bar; loads the four stylesheets and `js/main.js` as a module.
+Static kana screens and Settings, empty containers for the words/sentences/kanji/review screens,
+the sheet layer, the backup banner and the five-button tab bar; loads the five stylesheets and
+`js/main.js` as a module.
 
 ## build-library
 
@@ -348,7 +392,8 @@ server; `shots` screenshots `scene.html` scenes at 390×844 and 1280×800.
 **Files**: `tools/selftest.html`, `tools/selftest.js` · **Layer**: tooling
 
 Imports the shipped rule modules as they are and asserts kana tables/rules, rōmaji conversion,
-review scoring and run composition, word and kanji rules, storage normalisation.
+review scoring and run composition, word, sentence (Parse, candidates) and kanji rules, storage
+normalisation.
 
 ## browser-smoke-page, browser-smoke
 
@@ -357,7 +402,9 @@ review scoring and run composition, word and kanji rules, storage normalisation.
 Drives the real app in an iframe: kana runs and themes, word add/validate/duplicate/edit/search,
 both word reviews and the rating help, library download, Mine/All/levels/search, kanji card
 (components, example words, add to my words), remove / add / mark as known, kanji review, backup
-round trip and reminder, Android back, service worker install.
+round trip and reminder, sentences (Parse/Undo, word-card prompt with readings, already-in-list,
+plain sentence with a rōmaji reading, search, edit without prompt, backup, delete keeps words),
+another tab's save taken over and newer-version keys kept, Android back, service worker install.
 
 ## scene
 

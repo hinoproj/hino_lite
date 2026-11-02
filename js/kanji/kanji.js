@@ -1,6 +1,6 @@
 // [MODULE] kanji | Pure kanji rules: library membership and levels, search, reveal plan per mode, words that use a kanji
 // [IFACE] layer: domain | in: kanji characters, query strings, word lists -> out: index entries, booleans, card plans | crosses: []
-// [GRAPH] needs: [kanji-index, romaji] | feeds: [kanji-ui, kanji-card, words-ui, library, selftest] | group: domain
+// [GRAPH] needs: [kanji-index, romaji] | feeds: [kanji-ui, kanji-card, words-ui, sentences-ui, library, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
 
 import { LIBRARY, KANJI_INDEX } from './kanji-index.js';

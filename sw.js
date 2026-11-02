@@ -18,7 +18,7 @@
  * BUMP CACHE_NAME whenever a file in ASSETS changes, otherwise installed
  * copies keep serving the old bundle forever: cache-first never revalidates.
  */
-var CACHE_NAME = 'hino-lite-app-v2';
+var CACHE_NAME = 'hino-lite-app-v3';
 var LIBRARY_PREFIX = 'hino-lite-library-';
 
 var ASSETS = [
@@ -29,6 +29,7 @@ var ASSETS = [
   'css/app.css',
   'css/review.css',
   'css/words.css',
+  'css/sentences.css',
   'css/kanji.css',
   'js/main.js',
   'js/core/backup.js',
@@ -44,6 +45,8 @@ var ASSETS = [
   'js/review/review-ui.js',
   'js/words/words.js',
   'js/words/words-ui.js',
+  'js/sentences/sentences.js',
+  'js/sentences/sentences-ui.js',
   'js/kanji/kanji-index.js',
   'js/kanji/kanji.js',
   'js/kanji/library.js',

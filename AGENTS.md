@@ -24,7 +24,7 @@ add one and register it in the Child Index below.
    the Cache API and a service worker). Locally, serve with `uv run tools/check.py serve` — it sets
    JavaScript MIME types that a Windows registry may get wrong for `python -m http.server`.
 3. **Layer split is hard**: data (`kana-data`, `kanji-index`) → rules (`romaji`, `kana-srs`,
-   `review`, `words`, `kanji`) → UI (`*-ui`, `kanji-card`, `shell`, `dom`, `theme`, `backup`).
+   `review`, `words`, `sentences`, `kanji`) → UI (`*-ui`, `kanji-card`, `shell`, `dom`, `theme`, `backup`).
    Rule modules never touch the DOM, storage or network; UI modules contain no scoring, run,
    reveal-order or validation rule. A new rule gets a `tools/selftest.js` assertion in the same change.
 4. **One owner per storage**: `js/core/storage.js` is the only module that touches `localStorage`
@@ -32,8 +32,11 @@ add one and register it in the Child Index below.
    the only page code that touches the library cache; `sw.js` owns the app cache and never deletes
    a `hino-lite-library-*` bucket.
 5. **Never break the backup format silently.** `hino_lite` v2 (`STORAGE_KEY` `hino_lite_v2`) is the
-   learner's only durable copy of hand-typed words. A shape change needs a new version and a migration
-   in `normalize()`; a purely additive field that `normalize()` defaults may stay under v2. Review
+   learner's only durable copy of hand-typed words and sentences. A shape change needs a new version and a migration
+   in `normalize()`; a purely additive field that `normalize()` defaults may stay under v2.
+   `normalize()` keeps keys it does not know (top level, settings, each word and sentence) and a
+   save from another tab replaces the in-memory copy: an older copy of the app must never strip
+   or overwrite what a newer one saved — keep both when editing `storage.js`. Review
    track ids (`words.read`, `words.recall`, `kanji.read`, `kanji.recall`) and kana mode ids are
    storage keys — renaming one orphans its scores.
 6. **Bump `CACHE_NAME` in `sw.js`** in any change that touches a file in its `ASSETS` list, and add
@@ -62,8 +65,9 @@ add one and register it in the Child Index below.
 | Review constants in `js/review/review.js` (ratings, thresholds, `MAX_NEW_PER_RUN`, maintenance) | `index.html` Settings "Words and kanji reviews", `README.md`, `tools/selftest.js` | The run rule is described to the learner (points are not). |
 | Reveal order (`words.cardPlan`, `kanji.cardPlan`) or field names | `js/words/words-ui.js` / `js/kanji/kanji-ui.js` part renderers, `README.md` | Adapters render the keys the plans name. |
 | `THEMES` in `js/core/storage.js` | `css/app.css` `:root[data-theme=…]`, `js/core/theme.js` `THEME_BAR_COLOR`, `js/settings/settings-ui.js` labels | A theme id is the palette key, the status-bar colour key and a button label. |
-| Element ids in `index.html` | `js/kana/kana-ui.js` `cacheDom()`/`initKana()`, `js/settings/settings-ui.js`, `js/core/shell.js` | Modules bind static nodes by id. |
-| Ids and classes the smoke test drives (`#btn-*`, `.mode-row[data-track]`, `.rating.*`, `.kanji-tile[data-kanji]`) | `tools/browser-smoke.js`, `tools/scene.html` | The UI check finds the app through them. |
+| Element ids in `index.html` | `js/kana/kana-ui.js` `cacheDom()`/`initKana()`, `js/settings/settings-ui.js`, `js/core/shell.js`, the `screen-*` ids the `*-ui.js` modules fill | Modules bind static nodes by id. |
+| Tabs (`TABS` in `js/core/shell.js`) | `index.html` tab-bar buttons (`data-tab`) and `screen-<tab>` sections, `js/main.js` `registerTab`, `css/app.css` `.tabbar` column count, the tab count in `tools/browser-smoke.js` | A tab is a route, a button, a screen and a grid column; one missing piece leaves a dead button or a misaligned bar. |
+| Ids and classes the smoke test drives (`#btn-*`, `.mode-row[data-track]`, `.rating.*`, `.kanji-tile[data-kanji]`, `#sentence-*`, `.prompt-row[data-status]` `.pw-*`) | `tools/browser-smoke.js`, `tools/scene.html` | The UI check finds the app through them. |
 
 ## Verification
 

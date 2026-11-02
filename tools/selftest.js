@@ -1,6 +1,6 @@
-// [MODULE] selftest | Browser-run assertions over the pure modules: kana tables and rules, rōmaji, review, words, kanji, storage normalize
+// [MODULE] selftest | Browser-run assertions over the pure modules: kana tables and rules, rōmaji, review, words, sentences, kanji, storage normalize
 // [IFACE] layer: tooling | in: nothing -> out: report in #out and POSTed to /__report, ending SELFTEST PASSED/FAILED | crosses: [browser DOM, local HTTP server]
-// [GRAPH] needs: [kana-data, kana-srs, romaji, review, words, kanji, kanji-index, storage] | feeds: [selftest-page] | group: tooling
+// [GRAPH] needs: [kana-data, kana-srs, romaji, review, words, sentences, kanji, kanji-index, storage] | feeds: [selftest-page] | group: tooling
 // [STATE] stateless | persists: nothing | raises: nothing
 
 /**
@@ -14,6 +14,7 @@ import { KanaSRS as SRS } from '../js/kana/kana-srs.js';
 import * as RJ from '../js/core/romaji.js';
 import * as R from '../js/review/review.js';
 import * as W from '../js/words/words.js';
+import * as S from '../js/sentences/sentences.js';
 import * as K from '../js/kanji/kanji.js';
 import { LIBRARY, KANJI_INDEX } from '../js/kanji/kanji-index.js';
 import { normalize } from '../js/core/storage.js';
@@ -263,6 +264,60 @@ check('search by meaning, rōmaji and katakana',
 check('search misses what is not there', !W.matchesQuery(full, 'xyz') && !W.matchesQuery(bare, 'gakkou'));
 check('duplicate key is writing + reading', W.duplicateKey({ writing: ' 勉強', reading: 'べんきょう ' }) === W.duplicateKey(full));
 
+// --- Sentences --------------------------------------------------------------
+
+section('Sentences');
+
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const wordList = (words) => words.map((x) => x.writing + '/' + x.reading).join(' ');
+
+const listen = S.parse('もう一度（いちど）聞いて（きいて）ください。 — Please listen once more.');
+check('Parse: sentence without brackets', listen.sentence === 'もう一度聞いてください。', listen.sentence);
+check('Parse: reading when every kanji has one', listen.reading === 'もういちどきいてください。', listen.reading);
+check('Parse: translation after " — "', listen.translation === 'Please listen once more.', listen.translation);
+check('Parse: words, conjugated forms kept', wordList(listen.words) === '一度/いちど 聞いて/きいて', wordList(listen.words));
+
+const ask = S.parse('質問（しつもん）を聞いて（きいて）もいいですか。 — May I ask a question?');
+check('Parse: a particle before a word is stripped (を聞いて -> 聞いて)', wordList(ask.words) === '質問/しつもん 聞いて/きいて', wordList(ask.words));
+check('Parse: お stays with its word', wordList(S.parse('お茶（おちゃ）を飲みます（のみます）。').words) === 'お茶/おちゃ 飲みます/のみます');
+check('Parse: kana between kanji stays (落ち着いて)', wordList(S.parse('落ち着いて（おちついて）').words) === '落ち着いて/おちついて');
+const study = S.parse('日本語を勉強（べんきょう）します');
+check('Parse: the reading decides where the word starts (日本語を勉強 -> 勉強)', wordList(study.words) === '勉強/べんきょう', wordList(study.words));
+check('Parse: no reading while a kanji has none', study.reading === '' && study.sentence === '日本語を勉強します', JSON.stringify(study));
+check('Parse: ASCII and square brackets, tab before the translation',
+  same(S.parse('聞く(きく)\tto listen; to ask'), { sentence: '聞く', reading: 'きく', translation: 'to listen; to ask', words: [{ writing: '聞く', reading: 'きく' }] }) &&
+  S.parse('言う［いう］: to say').translation === 'to say' && S.parse('言う[いう] - to say').sentence === '言う');
+const ru = S.parse('もう一度言って（いって）ください。Скажите ещё раз.');
+check('Parse: Cyrillic translation without a delimiter', ru.translation === 'Скажите ещё раз.' && ru.sentence === 'もう一度言ってください。', JSON.stringify(ru));
+check('Parse: Latin inside the Japanese is not a translation', S.parse('CDを買った（かった）。').translation === '' && S.parse('CDを買った（かった）。').sentence === 'CDを買った。');
+check('Parse: a bracket after a kana-only word is dropped, no word', same(S.parse('ありがとう（ありがとう）').words, []) && S.parse('ありがとう（ありがとう）').sentence === 'ありがとう');
+check('Parse: a bracket without kana is not a reading', S.parse('聞いて（polite）ください').sentence === '聞いて（polite）ください');
+check('canParse: brackets or a translation, not a plain sentence',
+  S.canParse('聞いて（きいて）') && S.canParse('ありがとう — thanks') && !S.canParse('もう一度聞いてください。'));
+
+check('candidates: known readings where they occur',
+  same(S.candidates('もう一度聞いてください。', listen.words), [{ writing: '一度', reading: 'いちど' }, { writing: '聞いて', reading: 'きいて' }]));
+check('candidates: other kanji runs with an empty reading, in order',
+  wordList(S.candidates('日本語を勉強します', study.words)) === '日本語/ 勉強/べんきょう', wordList(S.candidates('日本語を勉強します', study.words)));
+check('candidates: plain text gives every kanji run, ご included',
+  wordList(S.candidates('ご飯を食べる。')) === 'ご飯/ 食/', wordList(S.candidates('ご飯を食べる。')));
+check('candidates: brackets left in the sentence still give readings', wordList(S.candidates('聞いて（きいて）ください')) === '聞いて/きいて');
+check('candidates: each word once; kana-only sentence gives none',
+  S.candidates('一度（いちど）、もう一度（いちど）').length === 1 && S.candidates('ありがとう').length === 0);
+
+check('sentence is required, reading and translation are not',
+  same(Object.keys(S.validate(S.normalizeDraft({ sentence: ' ' }))), ['sentence']) &&
+  !Object.keys(S.validate(S.normalizeDraft({ sentence: '聞いて' }))).length);
+check('reading: rōmaji becomes kana; kanji or stray letters are refused',
+  S.normalizeDraft({ reading: 'mou ichido' }).reading === 'もう いちど' &&
+  Boolean(S.validate(S.normalizeDraft({ sentence: 'x', reading: '一度' })).reading) &&
+  Boolean(S.validate(S.normalizeDraft({ sentence: 'x', reading: 'qq' })).reading));
+check('example = sentence, then translation on its own line',
+  S.exampleFor({ sentence: '聞いて。', translation: 'Listen.' }) === '聞いて。\nListen.' &&S.exampleFor({ sentence: '聞いて。', translation: '' }) === '聞いて。');
+const saved = { sentence: 'もう一度聞いてください。', reading: 'もういちどきいてください。', translation: 'Please listen once more.', notes: '' };
+check('sentence search: text, translation, rōmaji reading', S.matchesQuery(saved, '聞いて') && S.matchesQuery(saved, 'listen') &&
+  S.matchesQuery(saved, 'kiite') && !S.matchesQuery(saved, 'xyz'));
+
 // --- Kanji ------------------------------------------------------------------
 
 section('Kanji');
@@ -292,7 +347,8 @@ const restored = normalize({
   words: { a: { id: 'a', reading: 'あ', meaning: 'a', writing: 3 }, b: { reading: 'no id' } },
   kanji: { 学: { addedAt: 5, removed: 'yes' } },
   reviews: { 'words.read': { a: { score: 4, seen: 2 }, z: { score: -1 } } },
-  kana: { mcq_k2r: { か: { score: -3 } } }
+  kana: { mcq_k2r: { か: { score: -3 } } },
+  sentences: { s1: { id: 's1', sentence: '聞いて。', translation: 7 }, s2: { sentence: 'no id' } }
 });
 check('unknown theme and run size fall back', restored.settings.theme === 'dark' && restored.settings.runSize === 15);
 check('words without an id are dropped; bad fields become empty',
@@ -300,6 +356,17 @@ check('words without an id are dropped; bad fields become empty',
 check('removed is strictly boolean', restored.kanji['学'].removed === false);
 check('never-answered review entries are absent (D56)', !restored.reviews['words.read'].z && restored.reviews['words.read'].a.score === 4);
 check('kana scores floor at 0', restored.kana.mcq_k2r['か'].score === 0);
+check('sentences without an id are dropped; bad fields become empty',
+  Object.keys(restored.sentences).join() === 's1' && restored.sentences.s1.sentence === '聞いて。' && restored.sentences.s1.translation === '');
+check('data saved before sentences existed loads with none', JSON.stringify(normalize({ app: 'hino_lite', version: 2 }).sentences) === '{}');
+const newer = normalize(JSON.parse('{"app": "hino_lite", "version": 2, "tags": {"t1": "verbs"}, "settings": {"theme": "light", "fontSize": 3},' +
+  ' "words": {"a": {"id": "a", "reading": "あ", "meaning": "a", "sentenceId": "s1"}},' +
+  ' "sentences": {"s1": {"id": "s1", "sentence": "あ。", "audio": "x"}}, "__proto__": {"polluted": true}}'));
+check('keys from a newer version are kept: top level, settings, words, sentences',
+  newer.tags.t1 === 'verbs' && newer.settings.fontSize === 3 && newer.settings.theme === 'light' &&
+  newer.words.a.sentenceId === 's1' && newer.sentences.s1.audio === 'x', JSON.stringify(newer));
+check('a kept key never replaces a known one, and __proto__ is not copied',
+  newer.words.a.reading === 'あ' && newer.version === 2 && Object.getPrototypeOf(newer) === Object.prototype && newer.polluted === undefined);
 
 // --- Report -------------------------------------------------------------------
 

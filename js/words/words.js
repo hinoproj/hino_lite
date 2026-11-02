@@ -1,6 +1,6 @@
 // [MODULE] words | Pure word rules: input cleanup and validation, kanji extraction, duplicate key, reveal plan per mode, search
 // [IFACE] layer: domain | in: word drafts, query strings, a library-membership test -> out: clean words, errors, kanji lists, card plans | crosses: []
-// [GRAPH] needs: [romaji] | feeds: [words-ui, kanji-card, kanji-ui, selftest] | group: domain
+// [GRAPH] needs: [romaji] | feeds: [words-ui, sentences-ui, kanji-card, kanji-ui, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
 
 import { toHiragana, katakanaToHiragana, hasLatin, isKana } from '../core/romaji.js';

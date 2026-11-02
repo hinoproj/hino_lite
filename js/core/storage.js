@@ -1,6 +1,6 @@
-// [MODULE] storage | The learner's data: settings, kana scores, words, kanji list, review scores; backup export/import
-// [IFACE] layer: infrastructure | in: records computed by the rule modules, backup JSON -> out: reads, export text | crosses: [browser localStorage, StorageManager]
-// [GRAPH] needs: [] | feeds: [main, theme, backup, shell, kana-ui, words-ui, review-ui, kanji-ui, kanji-card, settings-ui, selftest] | group: infrastructure
+// [MODULE] storage | The learner's data: settings, kana scores, words, sentences, kanji list, review scores; backup export/import
+// [IFACE] layer: infrastructure | in: records computed by the rule modules, backup JSON, other tabs' saves -> out: reads, export text | crosses: [browser localStorage, StorageManager]
+// [GRAPH] needs: [] | feeds: [main, theme, backup, shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui, selftest] | group: infrastructure
 // [STATE] stateful | persists: localStorage key hino_lite_v2 | raises: nothing (every storage access is guarded)
 
 /**
@@ -11,6 +11,7 @@
  *     settings: { runSize, theme, lastBackupAt },
  *     kana:    { <kana mode>: { <kana>: {score, seen, right, lastSeen, misses} } },
  *     words:   { <id>: {id, writing, reading, meaning, example, notes, createdAt, updatedAt} },
+ *     sentences: { <id>: {id, sentence, reading, translation, notes, createdAt, updatedAt} },
  *     kanji:   { <kanji>: {addedAt, removed} },
  *     reviews: { <track>: { <word id | kanji>: {score, seen, lastSeen} } } }
  *
@@ -18,7 +19,18 @@
  * A missing review entry means never answered (score -1, D56). A removed kanji
  * keeps its review entries, so adding it back restores its progress.
  *
- * Every value arrives already computed by a rule module (srs, review, words);
+ * `sentences` was added under v2 (normalize() defaults it to {}), so earlier
+ * v2 data and backups load unchanged.
+ *
+ * Older copies of the app must not destroy what a newer one saved:
+ *   - normalize() keeps keys it does not know (top level, settings, each word
+ *     and sentence) as they are, so a field a later version adds survives a
+ *     load and save by this one;
+ *   - a save by another tab replaces this tab's copy (the `storage` event), so
+ *     a tab left open never writes its stale copy back over newer data.
+ *
+
+ * Every value arrives already computed by a rule module (srs, review, words, sentences);
  * this module stores it and applies no rule of its own. A shape change needs a
  * new version and a migration in normalize(); a purely additive field that
  * normalize() defaults may stay under the same version.
@@ -36,6 +48,8 @@ const DEFAULT_RUN_SIZE = 15;
 export const BACKUP_NUDGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 const WORD_FIELDS = ['writing', 'reading', 'meaning', 'example', 'notes'];
+const SENTENCE_FIELDS = ['sentence', 'reading', 'translation', 'notes'];
+const RECORD_KEYS = ['id', 'createdAt', 'updatedAt'];
 const EMPTY_KANA = Object.freeze({ score: 0, seen: 0, right: 0, lastSeen: 0, misses: Object.freeze([]) });
 const UNSEEN_REVIEW = Object.freeze({ score: -1, seen: 0, lastSeen: 0 });
 
@@ -51,6 +65,7 @@ function blankState() {
     settings: { runSize: DEFAULT_RUN_SIZE, theme: DEFAULT_THEME, lastBackupAt: 0 },
     kana: {},
     words: {},
+    sentences: {},
     kanji: {},
     reviews: {}
   };
@@ -60,11 +75,22 @@ const num = (v, fallback = 0) => (typeof v === 'number' && Number.isFinite(v) ? 
 const str = (v) => (typeof v === 'string' ? v : '');
 const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 
+/** The keys of `src` that `known` does not list, as they are: data a newer version added. */
+function extras(src, known) {
+  const out = {};
+  Object.keys(src).forEach((key) => {
+    if (!known.includes(key) && key !== '__proto__') out[key] = src[key];
+  });
+  return out;
+}
+
 /** Rebuild a state from untrusted JSON (saved data or an imported file). */
 export function normalize(raw) {
   const next = blankState();
   const src = obj(raw);
+  Object.assign(next, extras(src, Object.keys(next)));
   const settings = obj(src.settings);
+  Object.assign(next.settings, extras(settings, Object.keys(next.settings)));
   if (RUN_SIZES.includes(settings.runSize)) next.settings.runSize = settings.runSize;
   if (THEMES.includes(settings.theme)) next.settings.theme = settings.theme;
   next.settings.lastBackupAt = num(settings.lastBackupAt);
@@ -88,9 +114,17 @@ export function normalize(raw) {
   Object.values(obj(src.words)).forEach((w) => {
     const word = obj(w);
     if (!str(word.id)) return;
-    const clean = { id: word.id, createdAt: num(word.createdAt), updatedAt: num(word.updatedAt) };
+    const clean = { ...extras(word, RECORD_KEYS.concat(WORD_FIELDS)), id: word.id, createdAt: num(word.createdAt), updatedAt: num(word.updatedAt) };
     WORD_FIELDS.forEach((f) => { clean[f] = str(word[f]); });
     next.words[word.id] = clean;
+  });
+
+  Object.values(obj(src.sentences)).forEach((s) => {
+    const sentence = obj(s);
+    if (!str(sentence.id)) return;
+    const clean = { ...extras(sentence, RECORD_KEYS.concat(SENTENCE_FIELDS)), id: sentence.id, createdAt: num(sentence.createdAt), updatedAt: num(sentence.updatedAt) };
+    SENTENCE_FIELDS.forEach((f) => { clean[f] = str(sentence[f]); });
+    next.sentences[sentence.id] = clean;
   });
 
   Object.entries(obj(src.kanji)).forEach(([ch, e]) => {
@@ -135,7 +169,23 @@ export function load() {
     console.error('[storage.js][load] could not read saved data, starting fresh: ' + err.message);
     state = blankState();
   }
+  globalThis.removeEventListener('storage', adoptOtherTab);
+  globalThis.addEventListener('storage', adoptOtherTab);
   return state;
+}
+
+/**
+ * Another tab of this app saved: take its data as ours, so our next save
+ * builds on it instead of overwriting it. Screens show the change on their
+ * next render.
+ */
+function adoptOtherTab(event) {
+  if (event.key !== STORAGE_KEY || !available || event.newValue == null) return;
+  try {
+    state = normalize(JSON.parse(event.newValue));
+  } catch (err) {
+    console.error('[storage.js][adoptOtherTab] could not read the other tab\'s data, keeping ours: ' + err.message);
+  }
 }
 
 export function save() {
@@ -260,6 +310,35 @@ export function deleteWord(id) {
   touch();
 }
 
+// --- Sentences ----------------------------------------------------------
+
+export function listSentences() {
+  return Object.values(state.sentences);
+}
+
+export function getSentence(id) {
+  return state.sentences[id] || null;
+}
+
+/** Insert or update a sentence (already cleaned and validated by `sentences`). Returns the stored copy. */
+export function saveSentence(fields, id) {
+  const now = Date.now();
+  const existing = id ? state.sentences[id] : null;
+  const sentence = existing ? { ...existing } : { id: newId(), createdAt: now };
+  SENTENCE_FIELDS.forEach((f) => { sentence[f] = str(fields[f]); });
+  sentence.updatedAt = now;
+  state.sentences[sentence.id] = sentence;
+  touch();
+  return sentence;
+}
+
+/** Delete a sentence; word cards made from it stay. The caller has the learner's confirmation. */
+export function deleteSentence(id) {
+  if (!state.sentences[id]) return;
+  delete state.sentences[id];
+  touch();
+}
+
 // --- Kanji list ---------------------------------------------------------
 
 export function kanjiEntry(ch) {
@@ -372,7 +451,7 @@ export function importText(text) {
   return { ok: true };
 }
 
-/** Erase all learner data; theme and run length stay. The caller has the learner's confirmation. */
+/** Erase all learner data (sentences included); theme and run length stay. The caller has the learner's confirmation. */
 export function reset() {
   const { runSize, theme } = state.settings;
   state = blankState();

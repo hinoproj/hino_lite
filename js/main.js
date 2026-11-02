@@ -1,6 +1,6 @@
-// [MODULE] main | Boot: load data, apply theme, wire the shell and the four tabs, route the address, register the service worker
+// [MODULE] main | Boot: load data, apply theme, wire the shell and the five tabs, route the address, register the service worker
 // [IFACE] layer: presentation | in: page load, location.hash -> out: the first rendered tab, a registered service worker | crosses: [browser DOM, service worker]
-// [GRAPH] needs: [storage, theme, shell, kana-ui, words-ui, kanji-ui, settings-ui, kana-data, library, sw] | feeds: [index] | group: presentation
+// [GRAPH] needs: [storage, theme, shell, kana-ui, words-ui, sentences-ui, kanji-ui, settings-ui, kana-data, library, sw] | feeds: [index] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
 
 import * as store from './core/storage.js';
@@ -8,13 +8,14 @@ import { applyTheme } from './core/theme.js';
 import * as shell from './core/shell.js';
 import { initKana, renderKanaHome } from './kana/kana-ui.js';
 import { renderWords } from './words/words-ui.js';
+import { renderSentences } from './sentences/sentences-ui.js';
 import { renderKanji } from './kanji/kanji-ui.js';
 import { initSettings, renderSettings } from './settings/settings-ui.js';
 import { KANA_DATA } from './kana/kana-data.js';
 import * as library from './kanji/library.js';
 
 /**
- * Addresses: #kana (default), #words, #kanji, #kanji/<kanji> (opens its card),
+ * Addresses: #kana (default), #words, #sentences, #kanji, #kanji/<kanji> (opens its card),
  * #settings. Tabs replace the address rather than adding history entries; the
  * back stack in shell.js owns history.
  */
@@ -42,6 +43,7 @@ function init() {
   initSettings();
   shell.registerTab('kana', renderKanaHome);
   shell.registerTab('words', renderWords);
+  shell.registerTab('sentences', renderSentences);
   shell.registerTab('kanji', () => renderKanji());
   shell.registerTab('settings', renderSettings);
   route();

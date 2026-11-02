@@ -1,6 +1,6 @@
 // [MODULE] romaji | Pure rōmaji -> kana conversion (wāpuro / Hepburn / Nihon-shiki), hiragana <-> katakana, kana checks
 // [IFACE] layer: domain | in: free text -> out: hiragana / katakana strings, booleans | crosses: []
-// [GRAPH] needs: [] | feeds: [words, words-ui, kanji, selftest] | group: domain
+// [GRAPH] needs: [] | feeds: [words, words-ui, sentences, sentences-ui, kanji, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
 
 /**
