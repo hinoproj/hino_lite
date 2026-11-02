@@ -1,5 +1,12 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-02] Readings may hold punctuation (phrases like "Jaa, mata")
+
+First device report: the reading じゃあ、また was refused. `toHiragana` now turns `, . ! ? ~` into
+`、 。 ！ ？ 〜` and drops the spaces around them; `isKana` accepts Japanese punctuation
+(、。！？「」『』…) as long as there is at least one kana. Selftest cases added; `sw.js` cache
+→ `hino-lite-app-v2`. Folder renamed and first push to Pages done by the owner the same day.
+
 ## [2026-11-01] Hino Lite: words, word review, kanji library, kanji list and review
 
 Renamed Kana SRS to **Hino Lite** and extended it; owner's decisions P1–P12 in

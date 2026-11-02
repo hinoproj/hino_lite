@@ -14,6 +14,8 @@
  *   - "n" is ん before a consonant or at the end; "nn" is ん; "n'" is ん;
  *     "nn" + vowel reads as ん + な-row ("konnichiha" -> こんにちは)
  *   - "-" is the long-vowel mark ー
+ *   - , . ! ? ~ become 、 。 ！ ？ 〜, and spaces next to that punctuation go
+ *     ("jaa, mata" -> じゃあ、また)
  * Letters that match nothing stay Latin, so callers can tell the conversion
  * was incomplete (hasLatin).
  */
@@ -48,6 +50,8 @@ const TABLE = {
   va: 'ゔぁ', vi: 'ゔぃ', vu: 'ゔ', ve: 'ゔぇ', vo: 'ゔぉ',
   '-': 'ー'
 };
+
+const PUNCTUATION = { ',': '、', '.': '。', '!': '！', '?': '？', '~': '〜' };
 
 const MAX_KEY = 4;
 const VOWELS = 'aiueo';
@@ -92,6 +96,12 @@ export function toHiragana(text) {
       continue;
     }
 
+    if (PUNCTUATION[ch]) {
+      out += PUNCTUATION[ch];
+      i += 1;
+      continue;
+    }
+
     let matched = false;
     for (let len = MAX_KEY; len > 0; len--) {
       const piece = src.slice(i, i + len);
@@ -107,7 +117,8 @@ export function toHiragana(text) {
       i += 1;
     }
   }
-  return out;
+  // Japanese text puts no space around 、。！？ — "jaa, mata" -> じゃあ、また.
+  return out.replace(/ *([、。！？]) */g, '$1');
 }
 
 /** Hiragana -> katakana, codepoint by codepoint; everything else unchanged. */
@@ -135,8 +146,8 @@ export function hasLatin(text) {
   return /[a-z]/i.test(String(text || ''));
 }
 
-/** Kana-only: hiragana, katakana, ー, ・, 〜 and single spaces between them. */
+/** Kana-only: hiragana, katakana, ー, ・, 〜, Japanese punctuation and spaces — at least one kana. */
 export function isKana(text) {
   const value = String(text || '');
-  return value.length > 0 && /^[ぁ-ゖゝゞァ-ヺー-ヾ・〜 ]+$/.test(value);
+  return /^[ぁ-ゖゝゞァ-ヺー-ヾ・〜、。！？「」『』… ]+$/.test(value) && /[ぁ-ゖァ-ヺ]/.test(value);
 }

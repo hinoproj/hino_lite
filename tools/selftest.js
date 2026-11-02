@@ -164,7 +164,8 @@ const hira = {
   shinbun: 'しんぶん', "kan'i": 'かんい', tennou: 'てんのう', onna: 'おんな', gakkou: 'がっこう',
   'ra-men': 'らーめん', jyuu: 'じゅう', tsukue: 'つくえ', hon: 'ほん', sanpo: 'さんぽ',
   konnyaku: 'こんにゃく', "kin'youbi": 'きんようび', Tokyo: 'ときょ', fujisan: 'ふじさん', shi: 'し', si: 'し',
-  tanin: 'たにん'
+  tanin: 'たにん', 'Jaa, mata': 'じゃあ、また', 'hai!': 'はい！', 'nan desu ka?': 'なん です か？',
+  'sou desu ne.': 'そう です ね。'
 };
 Object.entries(hira).forEach(([input, want]) => {
   check(input + ' -> ' + want, RJ.toHiragana(input) === want, 'got ' + RJ.toHiragana(input));
@@ -175,6 +176,7 @@ check('ko-hi- -> コーヒー', RJ.toKatakana('ko-hi-') === 'コーヒー', RJ.t
 check('unconvertible letters stay Latin', RJ.hasLatin(RJ.toHiragana('qq')) && RJ.hasLatin(RJ.toHiragana('abc')));
 check('isKana: hiragana, katakana, long mark', RJ.isKana('べんきょう') && RJ.isKana('テレビ') && RJ.isKana('コーヒー'));
 check('isKana rejects rōmaji, kanji and empty', !RJ.isKana('benkyou') && !RJ.isKana('勉強') && !RJ.isKana(''));
+check('isKana: Japanese punctuation, but not punctuation alone', RJ.isKana('じゃあ、また') && RJ.isKana('「はい」！') && !RJ.isKana('、。'));
 check('katakana -> hiragana', RJ.katakanaToHiragana('テレビ') === 'てれび');
 
 // --- Review rules -------------------------------------------------------
@@ -244,6 +246,7 @@ check('reading and meaning are required',
   Object.keys(W.validate(W.normalizeDraft({ writing: '勉強' }))).sort().join() === 'meaning,reading');
 check('a reading that is not kana is refused', Boolean(W.validate(W.normalizeDraft({ reading: 'abc', meaning: 'x' })).reading));
 check('a valid kana-only word passes', !Object.keys(W.validate(W.normalizeDraft({ reading: 'terebi', meaning: 'TV' }))).length);
+check('a phrase with punctuation passes (Jaa, mata)', !Object.keys(W.validate(W.normalizeDraft({ reading: 'Jaa, mata', meaning: 'See you' }))).length);
 check('extractKanji: library kanji in order, once', W.extractKanji('勉強する勉', isLib).join('') === '勉強');
 check('extractKanji skips 々', W.extractKanji('日々', isLib).join('') === '日');
 check('extractKanji skips kanji outside the library', W.extractKanji('𠀋学', isLib).join('') === '学');

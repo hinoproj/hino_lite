@@ -1,8 +1,8 @@
 # Current task — Hino Lite: words, kanji library, kanji list (2026-11-01)
 
 **Status:** built and verified 2026-11-01 (`uv run tools/check.py`: selftest 117/117, smoke 71/71;
-screenshots at phone and tablet sizes reviewed). Open: the owner's local folder rename
-`kana_srs/` → `hino_lite/`, the first push to Pages, and a session on the real devices.
+screenshots at phone and tablet sizes reviewed). Folder renamed and pushed to Pages
+2026-11-02 (`https://hinoproj.github.io/hino_lite/`). Open: a session on the real devices.
 
 Extends the kana drill into **Hino Lite**: kana + the learner's own words + a kanji library whose
 kanji join a personal list automatically. Learner: the owner's son, on a phone (portrait) and a

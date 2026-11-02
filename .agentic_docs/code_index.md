@@ -104,7 +104,7 @@ the kanji list before the library is downloaded.
 **File**: `js/core/romaji.js` · **Layer**: domain
 
 IME-style rōmaji → kana: longest match, doubled consonant / `tch` → っ, `n` before a consonant or at
-the end → ん, `n'` → ん, `nn` + vowel/y → ん + な/にゃ-row (Hepburn: konnichiha, konnyaku), `-` → ー.
+the end → ん, `n'` → ん, `nn` + vowel/y → ん + な/にゃ-row (Hepburn: konnichiha, konnyaku), `-` → ー, `, . ! ? ~` → `、 。 ！ ？ 〜` with the spaces around them dropped.
 Unmatched letters stay Latin so `hasLatin` can flag an impossible reading.
 
 **Exposes**: `toHiragana`, `toKatakana`, `hiraganaToKatakana`, `katakanaToHiragana`, `hasLatin`, `isKana`
