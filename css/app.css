@@ -1,11 +1,13 @@
-/* [MODULE] app-css | Visual layer: tablet-first dark/light/kids themes, screen layout, timer ring, option grid
-   [IFACE] layer: presentation | in: class names and data-state attributes set by app.js -> out: rendered styling | crosses: []
+/* [MODULE] app-css | Visual layer: dark/light/kids themes, shell (tabs, sheet, banner, toast), shared controls, kana screens
+   [IFACE] layer: presentation | in: class names and data-* attributes set by the UI modules -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
 
-/* Sized for a tablet held in two hands: option buttons are thumb-reachable and
-   never smaller than 64px tall, and kana are set large enough that the shape
-   differences the SRS is testing are actually visible. */
+/* Sized for a phone in portrait and a tablet in landscape: buttons are
+   thumb-reachable and never smaller than 44px tall, and kana are set large
+   enough that the shape differences the drill is testing are actually visible.
+   Words, kanji and the review run have their own sheets: words.css, kanji.css,
+   review.css. */
 
 :root,
 :root[data-theme="dark"] {
@@ -19,6 +21,7 @@
   --good: #49c17f;
   --warn: #e0a33a;
   --bad: #e4645c;
+  --overlay: rgba(4, 6, 12, .62);
   --radius: 16px;
   color-scheme: dark;
 }
@@ -37,6 +40,7 @@
   --good: #1f9e5f;
   --warn: #b57a15;
   --bad: #cf4239;
+  --overlay: rgba(20, 24, 36, .42);
   color-scheme: light;
 }
 
@@ -51,8 +55,16 @@
   --good: #22b7a0;
   --warn: #ffb300;
   --bad: #ff5c7a;
+  --overlay: rgba(59, 42, 26, .38);
   color-scheme: light;
 }
+
+/* Knowledge labels (review.js stateOf), shared by meters, dots and chips. */
+[data-state="unseen"]    { --state: var(--line); }
+[data-state="unknown"]   { --state: var(--bad); }
+[data-state="learning"]  { --state: var(--warn); }
+[data-state="learned"]   { --state: var(--accent); }
+[data-state="confident"] { --state: var(--good); }
 
 * { box-sizing: border-box; }
 
@@ -77,12 +89,23 @@ body {
 }
 
 .app {
-  max-width: 880px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 20px 18px 48px;
+  padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
 }
 
+.screen { max-width: 880px; margin: 0 auto; }
+.screen.wide { max-width: none; }
 .screen[hidden] { display: none !important; }
+
+/* Japanese text: system Japanese faces first, so kanji take their Japanese shapes. */
+:lang(ja) {
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Noto Sans CJK JP",
+    "Yu Gothic UI", "Yu Gothic", Meiryo, system-ui, sans-serif;
+}
+
+.muted { color: var(--muted); }
+.sub { color: var(--muted); font-size: 14px; font-weight: 400; }
 
 /* --- Header ---------------------------------------------------------- */
 
@@ -186,6 +209,8 @@ button.danger { color: var(--bad); border-color: var(--bad); background: transpa
 
 .meter-label {
   display: flex;
+  flex-wrap: wrap;
+  column-gap: 12px;
   justify-content: space-between;
   font-size: 13px;
   color: var(--muted);
@@ -481,4 +506,197 @@ button.danger { color: var(--bad); border-color: var(--bad); background: transpa
   0%, 100% { transform: translateX(0); }
   25%      { transform: translateX(-6px); }
   75%      { transform: translateX(6px); }
+}
+
+/* --- Shared controls -------------------------------------------------- */
+
+button.small { min-height: 40px; padding: 8px 14px; font-size: 15px; }
+button.big { min-height: 64px; font-size: 19px; }
+button[disabled] { opacity: .55; cursor: default; }
+button[disabled]:active { transform: none; }
+
+.link-btn {
+  border: none;
+  background: none;
+  min-height: 40px;
+  padding: 6px 4px;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface-2);
+  font-size: 17px;
+}
+
+.chip[aria-pressed="true"] { background: var(--accent); border-color: transparent; color: #fff; font-weight: 600; }
+.glyph-chip { font-size: 24px; min-width: 52px; justify-content: center; }
+
+.search,
+.field input,
+.field textarea {
+  width: 100%;
+  font: inherit;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.field textarea { resize: vertical; min-height: 52px; }
+.search:focus, .field input:focus, .field textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.search { margin: 4px 0 14px; }
+
+.empty {
+  text-align: center;
+  padding: 28px 12px;
+  background: var(--surface);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+}
+
+.empty p { margin: 0 0 6px; }
+
+.actions { align-items: center; }
+.stat-grid.four { grid-template-columns: repeat(4, 1fr); }
+
+/* Two small bars, one per review direction, coloured by knowledge label. */
+.state-dots { display: inline-flex; gap: 3px; }
+.state-dots i { width: 6px; height: 18px; border-radius: 3px; background: var(--state); }
+
+.states { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.state-chip {
+  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border-left: 4px solid var(--state);
+}
+
+.part { margin-top: 14px; }
+
+.part-label {
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* --- Shell: backup banner, tab bar, sheet, toast ---------------------- */
+
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 10px 16px;
+  background: var(--surface-2);
+  border-bottom: 2px solid var(--warn);
+  font-size: 15px;
+}
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tabbar button {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  min-height: 62px;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.tabbar .tab-icon { font-size: 22px; line-height: 1.1; }
+.tabbar button[aria-current="page"] { color: var(--accent); font-weight: 650; }
+
+.sheet-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: var(--overlay);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.sheet {
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--bg);
+  border-radius: 20px 20px 0 0;
+  padding: 10px 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+body.sheet-open { overflow: hidden; }
+
+.sheet-head {
+  position: sticky;
+  top: -10px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  background: var(--bg);
+}
+
+.sheet-head h2 { margin: 0; font-size: 18px; }
+
+@media (min-width: 720px) {
+  .sheet-layer { align-items: center; padding: 24px; }
+  .sheet { max-width: 760px; max-height: 90vh; border-radius: 20px; padding: 12px 24px 24px; }
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 40;
+  max-width: calc(100% - 32px);
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 15px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .25);
+}
+
+@media (max-width: 420px) {
+  .stat-grid.four { grid-template-columns: 1fr 1fr; }
+  .topbar h1 { font-size: 18px; }
 }

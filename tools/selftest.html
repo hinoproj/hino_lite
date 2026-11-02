@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<!-- [MODULE] selftest-page | Host page for the rule selftest: runs tools/selftest.js and shows its report
+     [IFACE] layer: tooling | in: nothing -> out: report text in #out, ending SELFTEST PASSED/FAILED | crosses: [browser DOM]
+     [GRAPH] needs: [selftest] | feeds: [check] | group: tooling
+     [STATE] stateless | persists: nothing | raises: nothing
+
+     Run with: uv run tools/check.py selftest   (or open it from `uv run tools/check.py serve`) -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Hino Lite selftest</title>
+  <script type="module" src="selftest.js"></script>
+</head>
+<body>
+<pre id="out">running…</pre>
+</body>
+</html>

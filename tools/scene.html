@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!-- [MODULE] scene | Screenshot helper: seeds sample data and drives the app (full-window iframe) to one named screen
+     [IFACE] layer: tooling | in: ?scene=words|word-form|review|kanji|card|kana[&theme=dark|light|kids] -> out: the app showing that screen | crosses: [browser DOM, localStorage]
+     [GRAPH] needs: [index] | feeds: [check] | group: tooling
+     [STATE] stateful | persists: overwrites hino_lite_v2 in this browser profile | raises: nothing
+
+     Used by `uv run tools/check.py shots OUT` (a throwaway profile per shot). Never open it in a
+     browser that holds real progress: it replaces the saved data. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Hino Lite scene</title>
+  <style>html, body { margin: 0; height: 100%; overflow: hidden; } iframe { width: 100vw; height: 100vh; border: 0; display: block; }</style>
+</head>
+<body>
+<iframe id="frame" title="Hino Lite"></iframe>
+<script>
+  // Hold the page's load event (when headless Chrome takes the screenshot) while the scene plays out.
+  (function () {
+    var scene = new URLSearchParams(location.search).get('scene');
+    var ms = scene === 'kanji' || scene === 'card' ? 9000 : 3500;
+    document.write('<img alt="" style="display:none" src="/__delay?ms=' + ms + '">');
+  })();
+</script>
+<script type="module">
+const params = new URLSearchParams(location.search);
+const scene = params.get('scene') || 'words';
+const day = 86400000;
+const now = Date.now();
+const word = (id, writing, reading, meaning, example, notes, age) =>
+  ({ id, writing, reading, meaning, example, notes, createdAt: now - age * day, updatedAt: now - age * day });
+const words = [
+  word('w1', '勉強', 'べんきょう', 'study', '毎日日本語を勉強します。\nI study Japanese every day.', '', 9),
+  word('w2', '', 'テレビ', 'TV, television', '', 'loanword', 7),
+  word('w3', '学校', 'がっこう', 'school', '学校に行きます。', '', 5),
+  word('w4', '先生', 'せんせい', 'teacher', '', 'also used for doctors', 3),
+  word('w5', '食べる', 'たべる', 'to eat', 'りんごを食べる。', '', 1)
+];
+const kanji = {};
+['勉', '強', '学', '校', '先', '生', '食'].forEach((ch, i) => { kanji[ch] = { addedAt: now - (9 - i) * day, removed: false }; });
+const reviews = {
+  'words.read': { w1: { score: 7, seen: 3, lastSeen: now - 2 * day }, w2: { score: 2, seen: 2, lastSeen: now - day }, w3: { score: 16, seen: 6, lastSeen: now - 4 * day } },
+  'words.recall': { w1: { score: 1, seen: 2, lastSeen: now - 2 * day } },
+  'kanji.read': { 学: { score: 6, seen: 2, lastSeen: now - day }, 生: { score: 2, seen: 1, lastSeen: now - day } },
+  'kanji.recall': {}
+};
+localStorage.setItem('hino_lite_v2', JSON.stringify({
+  app: 'hino_lite', version: 2, updatedAt: now, unsavedSince: 0,
+  settings: { runSize: 10, theme: params.get('theme') || 'dark', lastBackupAt: now - day },
+  kana: {}, words: Object.fromEntries(words.map((w) => [w.id, w])), kanji, reviews
+}));
+
+const frame = document.getElementById('frame');
+// Headless Chrome will not shrink a window below ~500px, so the phone width is set on the iframe.
+if (params.get('w')) frame.style.width = params.get('w') + 'px';
+if (params.get('h')) frame.style.height = params.get('h') + 'px';
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function waitFor(fn, timeout = 20000) {
+  const end = Date.now() + timeout;
+  while (Date.now() < end) {
+    try { const v = await fn(); if (v) return v; } catch (e) { /* not yet */ }
+    await sleep(50);
+  }
+  return null;
+}
+const hash = { words: 'words', 'word-form': 'words', review: 'words', kanji: 'kanji', card: 'kanji/学', kana: 'kana' }[scene] || 'kana';
+await new Promise((resolve) => { frame.onload = resolve; frame.src = '../index.html#' + hash; });
+const w = frame.contentWindow;
+const d = frame.contentDocument;
+await waitFor(() => w.HinoLite);
+if (scene === 'word-form') {
+  d.getElementById('btn-add-word').click();
+  await sleep(100);
+  const set = (id, v) => { const el = d.getElementById(id); el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
+  set('word-writing', '食べ物');
+  set('word-reading', 'tabemono');
+} else if (scene === 'review') {
+  d.querySelector('.mode-row[data-track="words.read"] button.primary').click();
+  await sleep(150);
+  const prompt = d.querySelector('.review-prompt').textContent;
+  d.getElementById('btn-reveal').click();
+  if (prompt === 'テレビ') await sleep(10); else await sleep(50);
+} else if (scene === 'kanji' || scene === 'card') {
+  await waitFor(async () => (await w.HinoLite.library.readyLevels()).size === 6);
+  await sleep(300);
+  if (scene === 'card') {
+    d.querySelector('.kanji-tile[data-kanji="学"]').click();
+    await waitFor(() => d.querySelector('#kanji-card .strokes svg'));
+  }
+}
+await sleep(300);
+document.title = 'ready';
+</script>
+</body>
+</html>

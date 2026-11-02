@@ -1,0 +1,138 @@
+/* [MODULE] kanji-css | Kanji tab and card: download panel, filters, level sections, tile grid, card zones, strokes, readings, pitch
+   [IFACE] layer: presentation | in: classes set by kanji-ui.js and kanji-card.js -> out: rendered styling | crosses: []
+   [GRAPH] needs: [] | feeds: [index] | group: presentation
+   [STATE] stateless | persists: nothing | raises: nothing */
+
+.library-panel .run-progress { margin: 10px 0; height: 8px; }
+
+.filters { display: grid; gap: 10px; margin: 6px 0 4px; }
+.filters .segmented { justify-self: start; }
+.level-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.level-chip { min-width: 52px; justify-content: center; }
+
+.kanji-section h2 { font-size: 17px; margin: 18px 0 10px; }
+
+.kanji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.kanji-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px 6px;
+  min-height: 96px;
+  background: var(--surface);
+  position: relative;
+}
+
+.kanji-tile.mine { border-color: var(--accent); border-width: 2px; }
+.tile-glyph { font-size: 38px; line-height: 1.15; }
+
+.tile-meaning {
+  font-size: 11px;
+  color: var(--muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kanji-tile .state-dots { position: absolute; top: 6px; right: 6px; }
+.kanji-tile .state-dots i { width: 4px; height: 12px; }
+
+/* Card */
+.hero-glyph { font-size: 104px; line-height: 1.1; }
+.hero-meta { font-size: 19px; font-weight: 600; margin-top: 4px; }
+.level-badge {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  vertical-align: 2px;
+}
+
+.card-status { margin: 14px 0 4px; display: grid; gap: 10px; justify-items: center; text-align: center; }
+.card-status .actions,
+.card-status .states { justify-content: center; }
+.card-status p { margin: 0; }
+
+.card-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+.card-row > .zone { flex: 1 1 200px; margin-top: 0; }
+.card-row > .strokes-zone { flex: 1 1 160px; max-width: 260px; }
+.card-row > .readings-zone { flex: 1.5 1 220px; }
+
+.zone {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.zone-label {
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.strokes { aspect-ratio: 1 / 1; width: 100%; color: var(--text); }
+.strokes svg { width: 100%; height: 100%; display: block; }
+.strokes.small { max-width: 180px; }
+
+.readings { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.reading-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border-top: 3px solid var(--accent);
+}
+
+.reading-pill.kun { border-top-color: var(--good); }
+.reading-pill .rt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.reading-pill .rv { font-size: 20px; }
+
+.rad-viz { display: flex; flex-wrap: wrap; gap: 10px; }
+.rad-group { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 64px; }
+.rad-group .rl { font-size: 12px; color: var(--muted); text-align: center; }
+.rad-group .rc { font-size: 30px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+.rad-group .rc-link { padding: 4px 12px; border-color: var(--accent); }
+
+.example-words { display: grid; gap: 6px; }
+
+.example-row {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, auto) minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  text-align: left;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-color: transparent;
+}
+
+.example-row .w { font-size: 20px; }
+.example-row .r { color: var(--muted); }
+.example-row .m { color: var(--muted); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pitch { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--accent); }
+.senses { margin: 0; padding-left: 1.3rem; line-height: 1.6; }
+
+@media (max-width: 420px) {
+  .kanji-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
+  .tile-glyph { font-size: 34px; }
+  .hero-glyph { font-size: 88px; }
+}

@@ -1,0 +1,54 @@
+/* [MODULE] words-css | Words tab: word list rows, add/edit form with suggestions, word sheet
+   [IFACE] layer: presentation | in: classes set by words-ui.js -> out: rendered styling | crosses: []
+   [GRAPH] needs: [] | feeds: [index] | group: presentation
+   [STATE] stateless | persists: nothing | raises: nothing */
+
+.word-list { display: grid; gap: 8px; }
+
+.word-row {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  padding: 10px 14px;
+}
+
+.word-main { display: flex; flex-direction: column; min-width: 0; }
+.word-head { font-size: 24px; line-height: 1.25; overflow-wrap: anywhere; }
+.word-reading { font-size: 14px; color: var(--muted); }
+
+.word-meaning {
+  color: var(--muted);
+  font-size: 15px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Form */
+.word-form .form-grid { display: grid; gap: 4px 20px; }
+.field { display: block; margin-bottom: 14px; }
+.field-label { display: block; font-weight: 600; margin-bottom: 6px; }
+.field-label em { font-style: normal; font-weight: 400; color: var(--muted); font-size: 13px; }
+.field input[lang="ja"] { font-size: 22px; }
+.field-error { color: var(--bad); font-size: 14px; margin-top: 4px; }
+.field-error:empty { display: none; }
+.field-note { color: var(--muted); font-size: 14px; margin-top: 6px; min-height: 1px; }
+.preview-kanji { font-size: 20px; color: var(--text); letter-spacing: 4px; }
+.suggestions { margin-top: 8px; }
+.suggestions .chip { font-size: 22px; background: var(--surface); border-color: var(--accent); }
+
+@media (min-width: 900px) {
+  .word-form .form-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* Word sheet */
+.hero { text-align: center; padding: 6px 0 4px; }
+.hero-word { font-size: 52px; line-height: 1.2; overflow-wrap: anywhere; }
+.hero-reading { display: block; font-size: 22px; color: var(--muted); }
+.word-view .part-text { font-size: 18px; }
+.word-view .actions { margin-top: 20px; }

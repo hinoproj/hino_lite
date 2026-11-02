@@ -1,163 +1,367 @@
-# Code Index — kana_srs
+# Code Index — Hino Lite
 
 Project-wide module graph. Authoritative for module slugs, dependency edges, `crosses:`
 boundaries and `group:` values: on any conflict with an `AGENTS.md`, this file wins.
 
 ## Dependency Graph
 
-| Module | File | Layer | needs | feeds | crosses |
-| --- | --- | --- | --- | --- | --- |
-| kana-data | js/kana-data.js | data | — | srs, app, index, selftest | — |
-| srs | js/srs.js | domain | kana-data | app, index, selftest | — |
-| storage | js/storage.js | infrastructure | — | app, index | browser localStorage |
-| app | js/app.js | presentation | kana-data, srs, storage, sw | index | browser DOM, service worker |
-| app-css | css/app.css | presentation | — | index | — |
-| index | index.html | presentation | app-css, kana-data, srs, storage, app | browser-smoke | browser DOM |
-| sw | sw.js | infrastructure | — | app | Cache Storage API |
-| selftest | tools/selftest.js | tooling | kana-data, srs | — | node:fs, node:vm |
-| browser-smoke | tools/browser-smoke.html | tooling | index | — | browser DOM, localStorage |
+| Module | File | Layer | needs | feeds | group | crosses |
+| --- | --- | --- | --- | --- | --- | --- |
+| kana-data | js/kana/kana-data.js | data | — | kana-srs, kana-ui, main, selftest | data | — |
+| kanji-index | js/kanji/kanji-index.js | data | — | kanji, library, selftest | data | — |
+| romaji | js/core/romaji.js | domain | — | words, words-ui, kanji, selftest | domain | — |
+| kana-srs | js/kana/kana-srs.js | domain | kana-data | kana-ui, selftest | domain | — |
+| review | js/review/review.js | domain | — | review-ui, words-ui, kanji-ui, kanji-card, selftest | domain | — |
+| words | js/words/words.js | domain | romaji | words-ui, kanji-card, kanji-ui, selftest | domain | — |
+| kanji | js/kanji/kanji.js | domain | kanji-index, romaji | kanji-ui, kanji-card, words-ui, library, selftest | domain | — |
+| storage | js/core/storage.js | infrastructure | — | main, theme, backup, shell, kana-ui, words-ui, review-ui, kanji-ui, kanji-card, settings-ui, selftest | infrastructure | browser localStorage, StorageManager |
+| library | js/kanji/library.js | infrastructure | kanji-index, kanji | kanji-ui, kanji-card, main | infrastructure | network:data/library, Cache Storage API |
+| sw | sw.js | infrastructure | — | main | infrastructure | Cache Storage API |
+| dom | js/core/dom.js | presentation | — | shell, kana-ui, words-ui, review-ui, kanji-ui, kanji-card, settings-ui | presentation | browser DOM |
+| theme | js/core/theme.js | presentation | storage | main, kana-ui, review-ui, settings-ui | presentation | browser DOM |
+| backup | js/core/backup.js | presentation | storage | shell, settings-ui | presentation | browser downloads, FileReader |
+| shell | js/core/shell.js | presentation | dom, storage, backup | main, kana-ui, words-ui, review-ui, kanji-ui, kanji-card, settings-ui | presentation | browser DOM, History API |
+| kana-ui | js/kana/kana-ui.js | presentation | kana-data, kana-srs, storage, theme, shell, dom | main | presentation | browser DOM |
+| review-ui | js/review/review-ui.js | presentation | review, storage, theme, shell, dom | words-ui, kanji-ui | presentation | browser DOM |
+| words-ui | js/words/words-ui.js | presentation | words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card | main, kanji-card | presentation | browser DOM |
+| kanji-card | js/kanji/kanji-card.js | presentation | kanji, library, words, review, storage, shell, dom, words-ui | kanji-ui, words-ui | presentation | browser DOM |
+| kanji-ui | js/kanji/kanji-ui.js | presentation | kanji, library, review, review-ui, words, storage, shell, dom, kanji-card | main | presentation | browser DOM |
+| settings-ui | js/settings/settings-ui.js | presentation | storage, theme, backup, shell, dom | main | presentation | browser DOM |
+| main | js/main.js | presentation | storage, theme, shell, kana-ui, words-ui, kanji-ui, settings-ui, kana-data, library, sw | index | presentation | browser DOM, service worker |
+| app-css | css/app.css | presentation | — | index | presentation | — |
+| review-css | css/review.css | presentation | — | index | presentation | — |
+| words-css | css/words.css | presentation | — | index | presentation | — |
+| kanji-css | css/kanji.css | presentation | — | index | presentation | — |
+| index | index.html | presentation | app-css, review-css, words-css, kanji-css, main | browser-smoke, scene | presentation | browser DOM |
+| build-library | tools/build_library.py | tooling | — | — | tooling | filesystem |
+| check | tools/check.py | tooling | selftest-page, browser-smoke-page, scene | — | tooling | filesystem, local HTTP server, Chrome process |
+| selftest-page | tools/selftest.html | tooling | selftest | check | tooling | browser DOM |
+| selftest | tools/selftest.js | tooling | kana-data, kana-srs, romaji, review, words, kanji, kanji-index, storage | selftest-page | tooling | browser DOM, local HTTP server |
+| browser-smoke-page | tools/browser-smoke.html | tooling | browser-smoke | check | tooling | browser DOM |
+| browser-smoke | tools/browser-smoke.js | tooling | index | browser-smoke-page | tooling | browser DOM, localStorage, Cache Storage API, local HTTP server |
+| scene | tools/scene.html | tooling | index | check | tooling | browser DOM, localStorage |
+
+`words-ui` ↔ `kanji-card` is a deliberate import cycle (the word sheet opens kanji cards; a card
+opens the word form and word sheet). Both sides only call each other's functions at run time, which
+ES modules allow. `build-library` *generates* `kanji-index` and `data/library/*` rather than being
+imported, so the edge is recorded here and in the Cross-cutting table of `AGENTS.md`, not in `needs`.
 
 ## External Boundary Map
 
-| Boundary | Modules | Notes |
-| --- | --- | --- |
-| browser localStorage | storage, browser-smoke | Only `storage` reads/writes app data; every access is try/guarded because `file://` origins may refuse it. The smoke test clears the key before running. |
-| browser DOM | app, index, browser-smoke | All DOM work is confined to `app`; `index` supplies the nodes it expects by id. |
-| service worker | app | Registration only, and skipped entirely on `file://`. |
-| Cache Storage API | sw | Precaches the asset list in `sw.js`. Bump `CACHE_NAME` on release. |
-| node:fs, node:vm | selftest | Evaluates the shipped browser scripts as-is, so there is no separate test build. |
+| Boundary | Modules | Direction | Notes |
+| --- | --- | --- | --- |
+| browser localStorage | storage, browser-smoke | read/write | Only `storage` reads/writes app data (key `hino_lite_v2`); every access guarded. The smoke test clears the key first. |
+| StorageManager | storage | write | `navigator.storage.persist()` at boot asks the browser not to evict the data. |
+| network:data/library | library | in | The 12 level files (data + strokes per level), fetched once with `cache: 'no-store'`. |
+| Cache Storage API | sw, library, browser-smoke | read/write | `sw` owns `hino-lite-app-v*`; `library` owns `hino-lite-library-<version>`. `sw` never deletes library buckets. |
+| browser DOM | dom, theme, shell, kana-ui, review-ui, words-ui, kanji-card, kanji-ui, settings-ui, main, index, selftest-page, selftest, browser-smoke-page, browser-smoke, scene | read/write | Learner text only through `textContent`; `html:` only for generated SVG. |
+| History API | shell | read/write | One history entry per focus screen or open sheet, so Android's back button walks back. |
+| browser downloads, FileReader | backup | out / in | Backup export (a `.json` download) and import. |
+| service worker | main | out | Registration only. |
+| filesystem | build-library, check | read/write | `build-library` reads `../data` and writes the generated library; `check shots` writes PNGs. |
+| local HTTP server | check, selftest, browser-smoke | in / out | `check` serves the repo with correct MIME types; test pages POST their reports to `/__report`; `/__delay` holds a page's load for screenshots. |
+| Chrome process | check | out | Headless Chrome/Edge with a throwaway profile. |
 
 ## Group Registry
 
 | Group | Meaning | Members |
 | --- | --- | --- |
-| data | Static content tables with no behaviour | kana-data |
-| domain | Pure rules: no DOM, no storage, no I/O | srs |
-| infrastructure | Talks to a browser/platform API | storage, sw |
-| presentation | Screens, markup, styling, event handling | app, app-css, index |
-| tooling | Developer-only checks, never shipped in the app's load path | selftest, browser-smoke |
+| data | Static tables with no behaviour (one generated) | kana-data, kanji-index |
+| domain | Pure rules: no DOM, no storage, no network | romaji, kana-srs, review, words, kanji |
+| infrastructure | Owns a browser/platform storage or network API | storage, library, sw |
+| presentation | Screens, markup, styling, event handling | dom, theme, backup, shell, kana-ui, review-ui, words-ui, kanji-card, kanji-ui, settings-ui, main, app-css, review-css, words-css, kanji-css, index |
+| tooling | Developer-only builds and checks, never in the app's load path | build-library, check, selftest-page, selftest, browser-smoke-page, browser-smoke, scene |
 
 ---
 
 ## kana-data
 
-**File**: `js/kana-data.js` · **Layer**: data
+**File**: `js/kana/kana-data.js` · **Layer**: data
 
-Six decks: hiragana/katakana × basic (46) / dakuten+handakuten (25) / yōon (36) = 214 kana.
-Item order within a deck **is** the introduction order (gojūon rows), which is why no separate
-tier table exists. Katakana decks are generated from the hiragana tables plus a glyph string, so
-the two scripts cannot drift in rōmaji or in ordering.
+Six decks: hiragana/katakana × basic (46) / dakuten+handakuten (25) / yōon (36) = 214 kana. Item
+order within a deck **is** the introduction order (gojūon rows). Katakana decks are generated from
+the hiragana tables plus a glyph string. `pr` differs from `r` only for the ぢ/づ homophones.
+`confusionWeight(a, b)`: `SHAPE_WEIGHT` (4) for a listed look-alike (base glyphs), +2 shared
+consonant, +1 shared vowel.
 
-`pr` (prompt rōmaji) differs from `r` only for ぢ/づ/ぢゃ/ぢゅ/ぢょ, which are homophones of
-じ/ず/じゃ/じゅ/じょ — they prompt as `di`/`du`/`dya`… so a rōmaji prompt has exactly one right kana.
+**Exposes**: `KANA_DATA` {`decks`, `deckById`, `byKey`, `SHAPE_WEIGHT`, `confusionWeight`, `baseGlyph`}
 
-`confusionWeight(a, b)` scores how tempting `b` is as a wrong option for `a`: `SHAPE_WEIGHT` (4)
-for a listed look-alike pair (compared on base glyphs, so ざ inherits さ's confusions), +2 for a
-shared consonant, +1 for a shared vowel.
+## kanji-index
 
-**Exposes**: `decks`, `deckById`, `byKey`, `SHAPE_WEIGHT`, `confusionWeight`, `baseGlyph`
+**File**: `js/kanji/kanji-index.js` · **Layer**: data · **Generated** by `build-library`
 
-## srs
+`LIBRARY` = {`version` (hash of the level files; names the library cache), `levels`: [{id, label,
+count, data, strokes, bytes}] for N5, N4, N3, N2, N1, none}. `KANJI_INDEX` = kanji → [meaning,
+level, extra search terms joined by `|` (alternative meanings + glosses of the word that is the
+kanji itself), on+kun readings joined by space]; key order = level, then integral rank
+(`difficulty + frequency band + 100/n_words`). Always shipped (207 KB), so a saved word can join
+the kanji list before the library is downloaded.
 
-**File**: `js/srs.js` · **Layer**: domain
+**Exposes**: `LIBRARY`, `KANJI_INDEX`
 
-Timed point scoring (MCQ +5/+3/+1, typed +3, wrong −5, floor 0), state thresholds
-(learned 10, confident 25), run composition and question construction. Scores are held per kana
-**per mode** — the three modes never share. No dates, no intervals, no mode gating.
+## romaji
 
-`buildRun` takes the earliest not-learned kana in deck order plus ≤3 learned and ≤1 confident for
-maintenance; those caps relax only when the deck is mastered enough that the run would otherwise
-be short. `buildQuestion` draws 1–2 look-alike distractors before filling weighted at random, and
-never lets two options share a rōmaji.
+**File**: `js/core/romaji.js` · **Layer**: domain
 
-Mistake replay (MCQ modes only): `pushMiss` keeps a kana's wrong picks newest first, deduplicated,
-capped at `MISS_LIMIT` (= `OPTION_COUNT − 1`, so every remembered pick fits on screen). A pick
-leaves only when newer ones push it out. `buildQuestion` places the misses in the wrong-option
-slots first, then fills what is left with look-alikes and weighted random kana; keys outside the
-deck or homophones of an option already on screen are skipped.
+IME-style rōmaji → kana: longest match, doubled consonant / `tch` → っ, `n` before a consonant or at
+the end → ん, `n'` → ん, `nn` + vowel/y → ん + な/にゃ-row (Hepburn: konnichiha, konnyaku), `-` → ー.
+Unmatched letters stay Latin so `hasLatin` can flag an impossible reading.
 
-**Exposes**: `MODES`, `MODE_INFO`, `MODE_MCQ_K2R`, `MODE_MCQ_R2K`, `MODE_TYPE`, `FAST_MS`, `OK_MS`,
-`LEARNED_AT`, `CONFIDENT_AT`, `RUN_SIZES`, `OPTION_COUNT`, `MISS_LIMIT`, `MAX_LEARNED_PER_RUN`,
-`MAX_CONFIDENT_PER_RUN`, `STATE_*`, `modesForDeck`, `stateOf`, `pointsFor`, `applyPoints`,
-`pushMiss`, `buildRun`, `buildQuestion`, `checkTyped`, `shuffle`
+**Exposes**: `toHiragana`, `toKatakana`, `hiraganaToKatakana`, `katakanaToHiragana`, `hasLatin`, `isKana`
+
+## kana-srs
+
+**File**: `js/kana/kana-srs.js` · **Layer**: domain
+
+Timed point scoring (MCQ +5/+3/+1, typed +3, wrong −5, floor 0), states (learned 10, confident
+25), per kana **per mode**; run composition (earliest not-learned in row order, ≤3 learned + ≤1
+confident); question building with look-alike distractors, homophone guard and mistake replay
+(`pushMiss`, `MISS_LIMIT` 3). Unchanged from Kana SRS apart from the module wrapper.
+
+**Exposes**: `KanaSRS` {`MODES`, `MODE_INFO`, `MODE_*`, `FAST_MS`, `OK_MS`, `LEARNED_AT`,
+`CONFIDENT_AT`, `RUN_SIZES`, `OPTION_COUNT`, `MISS_LIMIT`, `STATE_*`, `modesForDeck`, `stateOf`,
+`pointsFor`, `applyPoints`, `pushMiss`, `buildRun`, `buildQuestion`, `checkTyped`, `shuffle`}
+
+## review
+
+**File**: `js/review/review.js` · **Layer**: domain
+
+One scheduler for every self-rated review (words and kanji), on JLPT_coach's kanji scale: ratings
+Didn't know −3 / Guessed −1 / Knew it +1 / Easy! +2; an unseen card's first answer starts from
+`INITIAL_SCORE` 3; a miss on a learned card drops it to `DEMOTION_SCORE` 4 (a guess only erodes by
+1); scores 0–30. Labels per D56: unseen −1, unknown 0, learning 1–4, learned 5–14, confident 15+.
+`buildRun`: ≤`MAX_NEW_PER_RUN` (5, hard cap) unseen newest first, ≤`MAX_MAINTENANCE_PER_RUN` (3)
+learned/confident sampled by staleness (`(1 + days, cap 30) × 0.2 if confident`), the rest in
+progress stalest first; short runs backfill with known cards only; shuffled.
+
+**Exposes**: `UNSEEN`, `SCORE_MIN`, `SCORE_MAX`, `INITIAL_SCORE`, `LEARNED_AT`, `CONFIDENT_AT`,
+`DEMOTION_SCORE`, `RATING_*`, `RATINGS`, `STATE_*`, `STATES`, `RUN_SIZES`, `MAX_NEW_PER_RUN`,
+`MAX_MAINTENANCE_PER_RUN`, `STALE_CAP_DAYS`, `CONFIDENT_FACTOR`, `stateOf`, `isRating`,
+`applyRating`, `knownScore`, `shuffle`, `maintenanceWeight`, `buildRun`, `countStates`
+
+## words
+
+**File**: `js/words/words.js` · **Layer**: domain
+
+Word rules. `normalizeDraft` trims and converts leftover rōmaji in the reading to hiragana;
+`validate` requires a kana-only reading and a meaning; `duplicateKey` = writing|reading;
+`extractKanji` = library kanji in the writing, in order, once, 々 skipped. `cardPlan(word, track)`:
+Japanese → meaning = writing | reading | meaning+example+notes (no writing: reading | meaning…);
+Meaning → Japanese = meaning | reading | writing+example+notes (no writing: meaning | reading…);
+empty extras dropped. `matchesQuery` searches every field, and rōmaji/katakana queries match the reading.
+
+**Exposes**: `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`, `FIELDS`, `FIELD_LABELS`,
+`normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `matchesQuery`, `sortForList`
+
+## kanji
+
+**File**: `js/kanji/kanji.js` · **Layer**: domain
+
+Library membership and order from `kanji-index`; search (kanji in the query → membership; kana →
+reading contains; Latin → meaning word-prefix, or the query as kana prefixes a reading);
+`cardPlan(track)`: Kanji → meaning = glyph | meaning | readings, strokes, your words; Meaning →
+kanji = meaning | glyph | readings, strokes, your words.
+
+**Exposes**: `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`, `LEVELS`, `isLibraryKanji`,
+`indexEntry`, `compareKanji`, `allKanji`, `matchesQuery`, `cardPlan`, `wordsUsing`
 
 ## storage
 
-**File**: `js/storage.js` · **Layer**: infrastructure
+**File**: `js/core/storage.js` · **Layer**: infrastructure
 
-The only module that touches `localStorage` (key `kana_srs_v1`). Every access is wrapped: a
-`file://` page may refuse storage entirely, in which case `isAvailable()` is false, the app warns,
-and everything runs in memory for the session. `importText` re-normalises any file it is given, so
-a hand-edited or truncated export cannot corrupt the in-memory shape.
+The only `localStorage` user; key `hino_lite_v2`, which is also the backup format
+`{app: 'hino_lite', version: 2, updatedAt, unsavedSince, settings{runSize, theme, lastBackupAt},
+kana, words, kanji{addedAt, removed}, reviews{track: {id: {score, seen, lastSeen}}}}`. A missing
+review entry means unseen (−1). Removing a kanji keeps its review entries; deleting a word drops
+its own. `normalize` rebuilds any untrusted JSON; `importText` refuses files without
+`app: 'hino_lite'`, v2 (old Kana SRS backups). `backupStatus().due` after 7 days of unsaved changes.
+Stores values computed by the rule modules and applies no rule itself.
 
-Settings hold `runSize` and `theme`; `THEMES` (`dark`/`light`/`kids`) is the validated list, and an
-unknown theme in an import falls back to `dark`.
+**Exposes**: `STORAGE_KEY`, `APP_ID`, `VERSION`, `THEMES`, `BACKUP_NUDGE_MS`, `normalize`, `load`,
+`save`, `isAvailable`, `requestPersistence`, `isPersisted`, `getSettings`, `setRunSize`, `setTheme`,
+`kanaStats`, `recordKana`, `listWords`, `getWord`, `saveWord`, `deleteWord`, `kanjiEntry`,
+`isEnrolled`, `listKanji`, `enrollKanji`, `removeKanji`, `reviewStats`, `recordReview`,
+`setReviewScore`, `exportText`, `markBackedUp`, `backupStatus`, `importText`, `reset`, `raw`
 
-A progress entry is `{score, seen, right, lastSeen, misses}`. `record` stores the score and miss
-list it is handed — both computed by `srs` — and applies no rule of its own. `misses` was added
-under the same key: exports without it normalise to an empty list.
+## library
 
-**Exposes**: `STORAGE_KEY`, `THEMES`, `load`, `save`, `stats`, `record`, `getSettings`, `setRunSize`,
-`setTheme`, `exportText`, `importText`, `reset`, `isAvailable`, `raw`
+**File**: `js/kanji/library.js` · **Layer**: infrastructure
 
-## app
+Downloads the 12 level files (N5 first) into `hino-lite-library-<LIBRARY.version>` on the first
+Kanji-tab visit and drops older versions; reads go straight to that cache, memoised per level, so
+a level is either fully stored or reported missing. Detail shape: `{m, alt, on, kun, rad, comp,
+band, words: [[word, reading, gloss, rank, pitch[], senses[]]]}`.
 
-**File**: `js/app.js` · **Layer**: presentation
-
-Screen routing, run lifecycle, timer ring, answer handling, settings/backup UI. Holds no rules of
-its own: it calls `srs` for every decision and `storage` for every score. Answers are persisted
-per answer rather than per run, so a sleeping tablet loses nothing.
-
-Per answer, `commitAnswer` reads the stored entry, asks `srs` for the new score (`applyPoints`)
-and, on a wrongly tapped option, the new miss list (`pushMiss`), then hands both to
-`storage.record`. Each question is built with that kana's stored misses.
-
-The verdict and the summary report the points the answer **earned** (the nominal rule value), not
-the net change to the stored score — a miss against a kana already at 0 would otherwise read
-"Wrong +0".
-
-Theme: `applyTheme()` stamps `data-theme` on `<html>` and rewrites the `theme-color` meta so the
-Android status bar follows the palette. The kids theme also swaps verdict text for a random cheer
-and adds a summary line; those strings live here, the visuals in `app-css`.
-
-## app-css
-
-**File**: `css/app.css` · **Layer**: presentation
-
-Tablet-first. Three explicit palettes keyed on `:root[data-theme]` — `dark` (default, also the
-bare `:root`), `light`, and `kids` (warm cream, coral/teal accents, a pop/shake animation on the
-answered option). The OS colour scheme is deliberately ignored. Contains a global
-`[hidden] { display: none !important; }` because the hideable blocks set `display: flex/grid`,
-which would otherwise beat the browser's `[hidden]` rule.
-
-## index
-
-**File**: `index.html` · **Layer**: presentation
-
-Five `<section class="screen">` containers, the timer ring SVG, and the script order
-(kana-data → srs → storage → app). Scripts are classic, not ES modules, so the page also runs
-from `file://`.
+**Exposes**: `CACHE_PREFIX`, `CACHE_NAME`, `LEVELS`, `TOTAL_BYTES`, `supported`, `isDownloading`,
+`readyLevels`, `download`, `detail`, `strokeSvg`, `details`
 
 ## sw
 
 **File**: `sw.js` · **Layer**: infrastructure
 
-Cache-first precache of the asset list. Never revalidates, so `CACHE_NAME` must be bumped whenever
-any precached file changes.
+Cache-first precache of `ASSETS` into `CACHE_NAME` (`hino-lite-app-v1`), fetched with
+`cache: 'reload'`; activation deletes every other bucket except `hino-lite-library-*`. Serves
+library files from their cache too. Bump `CACHE_NAME` on every release.
 
-## selftest
+## dom
 
-**File**: `tools/selftest.js` · **Layer**: tooling
+**File**: `js/core/dom.js` · **Layer**: presentation
 
-`node tools/selftest.js`. Evaluates `kana-data` and `srs` in a `vm` context and asserts deck sizes,
-katakana/hiragana parity, scoring tiers, typed-answer variants, run composition caps,
-well-formed questions for every kana in every deck, and mistake replay (`pushMiss` ordering and
-cap, misses on screen in both MCQ modes, the homophone guard with misses in play). No dependencies.
+`h()` element builder (text as text, `html:` for trusted markup), `ja()` for Japanese spans,
+`button`, `segmented`, `toast`, `formatDaysAgo`, and `confirmAction`/`notify` — the single seams the
+smoke test answers.
 
-## browser-smoke
+**Exposes**: `$`, `h`, `ja`, `button`, `segmented`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
 
-**File**: `tools/browser-smoke.html` · **Layer**: tooling
+## theme
 
-End-to-end UI check. Loads `../index.html` in a same-origin iframe, plays a full run, and asserts
-screens, scores, persistence (including the remembered wrong pick) and the export/import round
-trip, plus an old-shape import without `misses`. Must be served over http(s).
+**File**: `js/core/theme.js` · **Layer**: presentation
+
+Stamps `data-theme` on `<html>` and the Android status-bar colour; holds the Kids theme's cheers.
+
+**Exposes**: `THEME_BAR_COLOR`, `isKids`, `applyTheme`, `cheer`, `missLine`, `summaryCheer`
+
+## backup
+
+**File**: `js/core/backup.js` · **Layer**: presentation
+
+`exportBackup` downloads `hino-lite-backup-YYYY-MM-DD.json` and marks the backup time;
+`importBackupFile` reads a chosen file and hands it to `storage.importText`.
+
+**Exposes**: `exportBackup`, `importBackupFile`
+
+## shell
+
+**File**: `js/core/shell.js` · **Layer**: presentation
+
+Tab registry and `showScreen` (tab screens carry `data-tab` and show the tab bar; focus screens
+hide it); the back stack (`enterBack` pushes a history entry with a handler, `swapBack` replaces
+it, `leave` = Android back); the sheet overlay (`openSheet` replaces content, one history entry);
+the backup reminder banner.
+
+**Exposes**: `TABS`, `registerTab`, `activeTab`, `goTab`, `showScreen`, `enterBack`, `swapBack`,
+`leave`, `openSheet`, `sheetOpen`, `closeSheet`, `closeSheetNow`, `bindShell`
+
+## kana-ui
+
+**File**: `js/kana/kana-ui.js` · **Layer**: presentation
+
+The kana drill's screens (decks, modes, timed run with the timer ring, summary), unchanged in
+behaviour; navigation goes through the shell's back stack.
+
+**Exposes**: `initKana`, `renderKanaHome`, `meterHtml`
+
+## review-ui
+
+**File**: `js/review/review-ui.js` · **Layer**: presentation
+
+The self-rated run shared by words and kanji: an adapter gives the run, `plan(item)` and
+`renderPart(item, key, asPrompt)`; the main button / card tap reveals the next step, "Show all"
+reveals the rest, then four rating buttons and the "Which one do I press?" help (no points). Kids
+theme cheers a good rating. Summary: counts per rating, newly learned, per-item rows, "Run again"
+(accepts a promise). Also the `trackPanel` (run length + one row per track) and `stateDots` used
+by both tabs.
+
+**Exposes**: `startReview`, `trackPanel`, `meter`, `stateDots`
+
+## words-ui
+
+**File**: `js/words/words-ui.js` · **Layer**: presentation
+
+Words tab (review panel, search, list), word sheet (fields, kanji chips, progress, Edit/Delete),
+add/edit form (rōmaji suggestions as hiragana/katakana chips, live "Adds to your kanji" preview,
+duplicate refusal with "Open it"), save → `storage.saveWord` + `enrollKanji`; the word review adapter.
+
+**Exposes**: `renderWords`, `openWordView`, `openWordForm`
+
+## kanji-card
+
+**File**: `js/kanji/kanji-card.js` · **Layer**: presentation
+
+Kanji card in the sheet, ported from JLPT_coach's: glyph, level, meaning + also, state per track,
+Add / Remove / Mark as known, "In your words", stroke order + readings, radicals and linkable
+components, example words (8 + show all) → word sub-view with pitch-accent diagrams and "+ Add to
+my words" (opens the prefilled form) or "In your words ✓". Own view stack with ←.
+
+**Exposes**: `openKanjiCard`, `readingsNode`, `pitchSvg`
+
+## kanji-ui
+
+**File**: `js/kanji/kanji-ui.js` · **Layer**: presentation
+
+Kanji tab: starts the one-time download on first open (progress, retry, offline message), review
+panel (enabled once the enrolled kanji's levels are stored), Mine/All, level chips, search, level
+sections of tiles with state dots; the kanji review adapter (preloads details and strokes).
+
+**Exposes**: `renderKanji`
+
+## settings-ui
+
+**File**: `js/settings/settings-ui.js` · **Layer**: presentation
+
+Theme picker, backup status + export/import (confirmed), storage/persistence status, reset (two
+confirmations; theme and run length kept).
+
+**Exposes**: `initSettings`, `renderSettings`
+
+## main
+
+**File**: `js/main.js` · **Layer**: presentation
+
+Boot: load storage, theme, shell, tabs; route `#kana`, `#words`, `#kanji`, `#kanji/<kanji>`,
+`#settings`; request persistent storage; register `sw.js`; expose `window.HinoLite` {store,
+KANA_DATA, library} for tests and debugging.
+
+## app-css, review-css, words-css, kanji-css
+
+**Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
+controls; kana screens), `css/review.css` (track panel, review card, ratings, help, summary),
+`css/words.css` (list, form, word sheet), `css/kanji.css` (library, tiles, card zones, strokes,
+readings, pitch). Themes are explicit (`data-theme`), never OS-derived.
+
+## index
+
+**File**: `index.html` · **Layer**: presentation
+
+Static kana screens and Settings, empty containers for the words/kanji/review screens, the sheet
+layer, the backup banner and the tab bar; loads the four stylesheets and `js/main.js` as a module.
+
+## build-library
+
+**File**: `tools/build_library.py` · **Layer**: tooling
+
+`uv run tools/build_library.py [--data ../data]`. Reads the platform repo's `kanji_library.json`,
+the per-level vocabulary shards (words with frequency rank < 11,000) and the stroke SVGs (slimmed,
+stroke colour → `currentColor`); writes `data/library/<level>.json` + `.strokes.json` and
+`js/kanji/kanji-index.js`.
+
+## check
+
+**File**: `tools/check.py` · **Layer**: tooling
+
+`uv run tools/check.py [all|selftest|smoke|serve|shots OUT]`. Serves the repo, runs the test pages
+in headless Chrome/Edge (throwaway profile), collects their POSTed reports; `serve` is the dev
+server; `shots` screenshots `scene.html` scenes at 390×844 and 1280×800.
+
+## selftest-page, selftest
+
+**Files**: `tools/selftest.html`, `tools/selftest.js` · **Layer**: tooling
+
+Imports the shipped rule modules as they are and asserts kana tables/rules, rōmaji conversion,
+review scoring and run composition, word and kanji rules, storage normalisation.
+
+## browser-smoke-page, browser-smoke
+
+**Files**: `tools/browser-smoke.html`, `tools/browser-smoke.js` · **Layer**: tooling
+
+Drives the real app in an iframe: kana runs and themes, word add/validate/duplicate/edit/search,
+both word reviews and the rating help, library download, Mine/All/levels/search, kanji card
+(components, example words, add to my words), remove / add / mark as known, kanji review, backup
+round trip and reminder, Android back, service worker install.
+
+## scene
+
+**File**: `tools/scene.html` · **Layer**: tooling
+
+Seeds sample data and drives the app (iframe sized to the requested width) to one screen for
+`check.py shots`; holds its load event on `/__delay` so the screenshot waits for real work.

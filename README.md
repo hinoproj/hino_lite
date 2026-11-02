@@ -1,84 +1,68 @@
-# Kana SRS
+# Hino Lite
 
-A standalone, offline hiragana/katakana drill app. One static page, no server, no build step —
-open it in a browser and it runs.
+An offline study app for a phone or a tablet: kana drills, your own word list, and a kanji
+library whose kanji join your list by themselves. Static files, no server, no build step —
+installed from GitHub Pages, everything stays on the device.
 
-## Decks
+## Tabs
+
+**Kana** — the six hiragana/katakana decks with timed multiple choice and typing (below).
+
+**Words** — your words. Each has a kanji writing (optional), a reading (kana — type rōmaji and
+tap the hiragana or katakana suggestion), a meaning, an example and notes (any text). Two reviews,
+each with its own progress:
+
+| Review | Shows | Main button reveals |
+| --- | --- | --- |
+| Japanese → meaning | the kanji writing (or the reading when there is none) | reading → meaning, example, notes |
+| Meaning → Japanese | the meaning | reading → kanji writing, example, notes |
+
+"Show all" reveals everything at once; tapping the card works like the main button. Then rate
+yourself: **Didn't know**, **Guessed**, **Knew it** or **Easy!** ("Which one do I press?" explains).
+
+**Kanji** — all 2,099 library kanji by JLPT level (N5…N1, no level), downloaded once on the first
+visit (~6.7 MB on the device). Kanji in your words' writing join *your* list automatically; you can
+also add any kanji, remove one (its progress is kept), or mark it as known. The card shows stroke
+order, readings, radicals and components, example words with pitch accent (one tap adds a word to
+your list), and your own words that use it. Two reviews: **Kanji → meaning** and **Meaning → kanji**.
+
+**Settings** — theme (Dark, Light, Kids), backup export/import, reset.
+
+## Words and kanji reviews
+
+A run (10, 15 or 20 cards) holds at most 5 new cards (newest first), up to 3 you already know so
+they stay fresh (ones you haven't seen for longest come up more often), and the cards you are
+still learning. Progress labels: unseen · unknown · learning · learned · confident.
+
+## Kana drill
 
 | Deck | Kana | Modes |
 | --- | --- | --- |
-| Hiragana · basic | 46 | Read, Recall, Type |
-| Hiragana · dakuten | 25 | Read, Recall, Type |
-| Hiragana · yōon | 36 | Read, Recall, Type |
-| Katakana · basic | 46 | Read, Recall |
-| Katakana · dakuten | 25 | Read, Recall |
-| Katakana · yōon | 36 | Read, Recall |
+| Hiragana · basic / dakuten / yōon | 46 / 25 / 36 | Read, Recall, Type |
+| Katakana · basic / dakuten / yōon | 46 / 25 / 36 | Read, Recall |
 
-Modes: **Read** (kana → pick rōmaji), **Recall** (rōmaji → pick kana), **Type** (kana → type rōmaji).
-Type mode is hiragana only. Every mode keeps its own score for every kana — the three never share.
+Read (kana → pick rōmaji), Recall (rōmaji → pick kana), Type (kana → type rōmaji). Multiple
+choice: ≤3s **+5**, ≤5s **+3**, slower **+1**, wrong **−5**; typing **+3** / **−5**. Scores floor
+at 0; learned at 10, confident at 25, per mode. A wrong pick comes back as an option the next time
+that kana is asked (last 3 per kana and mode).
 
-## Scoring
+## Installing it
 
-| | Correct | Wrong |
-| --- | --- | --- |
-| Multiple choice | ≤3s **+5** · ≤5s **+3** · slower **+1** | **−5** |
-| Typing (untimed) | **+3** | **−5** |
+Open the GitHub Pages URL in Chrome on the device, then browser menu → *Add to Home screen*. The
+app works offline from then on; open the Kanji tab once while online to download the library.
 
-Scores floor at 0. `learned` at 10, `confident` at 25.
-
-A run is 10, 15 or 20 cards: at most 3 already-learned kana and 1 confident kana ride along for
-maintenance, and the rest are the earliest not-yet-learned kana in gojūon row order. That row order
-is the whole introduction schedule — there are no tiers and no locked modes.
-
-Typed answers accept Nihon-shiki and wāpuro spellings as well as Hepburn (`si`/`shi`, `tu`/`tsu`,
-`sya`/`sha`, `zi`/`ji`, `nn`/`n`).
-
-## Mistakes
-
-When you pick a wrong option in Read or Recall, the app remembers it, and the next time that kana
-is asked the wrong pick is one of the choices again. Each kana keeps its last 3 wrong picks per
-mode, newest first; picking the same wrong option twice counts once, and a fourth distinct
-mistake pushes out the oldest. Answering correctly does not clear the list. With three wrong-option
-slots per question, every remembered pick is on screen; any free slots are filled with look-alikes
-and random kana as usual.
-
-Typing mode has no options, so it records nothing here. The picks are saved with your progress
-and follow an export/import; backups made before this feature load with empty lists.
-
-## Themes
-
-Settings → Theme: **Dark** (default), **Light**, or **Kids** — a warmer palette that cheers on
-correct answers. The choice is saved with your progress and follows an export/import. The OS
-colour scheme is ignored on purpose.
-
-## Running it on a tablet
-
-**Recommended — install it as an app.** Publish this repo with GitHub Pages
-(Settings → Pages → deploy from `main`, root), open the Pages URL in Chrome on the tablet, then
-use the browser menu → *Add to Home screen*. The service worker caches everything on first load,
-so afterwards it opens and works with no network. Progress is kept in `localStorage` for that
-origin, which survives app restarts and reboots.
-
-**Also works — opening `index.html` directly** from the filesystem. Everything runs, but `file://`
-pages get an opaque origin: some browsers refuse to let them store anything, and there is no
-service worker. The app detects this, warns on the home screen, and keeps progress in memory for
-the session only. Export before closing if you go this route.
-
-Either way, **Settings → Export progress** writes a JSON file, and **Import progress** restores it —
-the only backup that survives clearing site data or switching devices.
+**Backups.** Everything lives in this browser on this device. Settings → *Export backup* writes a
+JSON file; *Import backup* restores it. The app reminds you when changes have waited a week for a
+backup. Backups from the old Kana SRS app cannot be loaded.
 
 ## Development
 
 ```
-node tools/selftest.js      # data tables + SRS rules, no dependencies
+uv run tools/check.py            # selftest of the rules + UI smoke test (headless Chrome/Edge)
+uv run tools/check.py serve      # http://127.0.0.1:8000/
+uv run tools/check.py shots OUT  # screenshots, phone and tablet sizes
+uv run tools/build_library.py    # rebuild the kanji library from ../data (the platform repo's data/)
 ```
 
-For the UI, serve the repo root with any static server and open
-`http://127.0.0.1:<port>/tools/browser-smoke.html` — it drives a real run in an iframe and prints
-`SMOKE PASSED` / `SMOKE FAILED`. It clears saved progress in that browser profile before running.
-
-No build, no bundler, no package manager. The browser loads the same files that ship — plain
-classic scripts, deliberately not ES modules, because ES module imports are blocked on `file://`.
-
-After changing any file listed in `sw.js`, bump `CACHE_NAME` there or installed copies will keep
-serving the old bundle.
+No Node, no bundler, no package manager: the browser loads the files in the repo as ES modules.
+After changing any file listed in `sw.js`, bump `CACHE_NAME` there.

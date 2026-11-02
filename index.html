@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- [MODULE] index | Page shell: screen containers, timer ring markup, script/style wiring, PWA hooks
-     [IFACE] layer: presentation | in: nothing -> out: DOM nodes consumed by app.js | crosses: [browser DOM]
-     [GRAPH] needs: [app-css, kana-data, srs, storage, app] | feeds: [browser-smoke] | group: presentation
+<!-- [MODULE] index | Page shell: tab and focus screens, kana markup with the timer ring, sheet layer, tab bar, PWA hooks
+     [IFACE] layer: presentation | in: nothing -> out: DOM nodes the UI modules fill and bind by id | crosses: [browser DOM]
+     [GRAPH] needs: [app-css, review-css, words-css, kanji-css, main] | feeds: [browser-smoke, scene] | group: presentation
      [STATE] stateless | persists: nothing | raises: nothing -->
 <html lang="en">
 <head>
@@ -9,32 +9,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" id="theme-color" content="#11131a">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>Kana SRS</title>
+  <title>Hino Lite</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/review.css">
+  <link rel="stylesheet" href="css/words.css">
+  <link rel="stylesheet" href="css/kanji.css">
+  <script type="module" src="js/main.js"></script>
 </head>
 <body>
+<div class="banner" id="backup-banner" role="status" hidden></div>
+
 <div class="app">
 
-  <!-- Home: deck picker -->
-  <section class="screen" id="screen-home">
+  <!-- Kana: deck picker -->
+  <section class="screen" id="screen-kana" data-tab="kana">
     <div class="topbar">
-      <h1>Kana SRS <span class="sub">hiragana &amp; katakana</span></h1>
-      <button class="icon-btn ghost" id="btn-settings" type="button">Settings</button>
+      <h1>Kana <span class="sub">hiragana &amp; katakana</span></h1>
     </div>
     <p class="notice" id="storage-notice" hidden>
-      This browser is not letting the page save progress (common when opening the file directly).
-      Progress will be kept for this session only — export it from Settings before closing.
+      This browser is not letting the app save anything. Progress lasts for this session only —
+      export a backup from Settings before closing.
     </p>
     <div class="deck-grid" id="deck-grid"></div>
   </section>
 
-  <!-- Deck: run length + mode picker -->
-  <section class="screen" id="screen-deck" hidden>
+  <!-- Kana: run length + mode picker -->
+  <section class="screen" id="screen-kana-deck" hidden>
     <div class="topbar">
-      <button class="icon-btn ghost" data-nav="home" type="button">← Decks</button>
+      <button class="icon-btn ghost" id="btn-kana-decks" type="button">← Decks</button>
       <h1 id="deck-title"></h1>
     </div>
     <div class="field-row">
@@ -44,8 +49,8 @@
     <div id="mode-list"></div>
   </section>
 
-  <!-- Run: one question at a time -->
-  <section class="screen" id="screen-run" hidden>
+  <!-- Kana: one question at a time -->
+  <section class="screen" id="screen-kana-run" hidden>
     <div class="topbar">
       <button class="icon-btn ghost" id="btn-quit" type="button">← Quit</button>
       <h1 id="run-title"></h1>
@@ -64,7 +69,7 @@
         </svg>
         <div class="readout"><span id="timer-value">0.0</span><small id="timer-tier">+5</small></div>
       </div>
-      <div class="prompt" id="prompt"></div>
+      <div class="prompt" id="prompt" lang="ja"></div>
       <div class="prompt-hint" id="prompt-hint"></div>
     </div>
 
@@ -79,10 +84,10 @@
     <div class="verdict" id="verdict"></div>
   </section>
 
-  <!-- Summary: what the run did to your scores -->
-  <section class="screen" id="screen-summary" hidden>
+  <!-- Kana: what the run did to your scores -->
+  <section class="screen" id="screen-kana-summary" hidden>
     <div class="topbar">
-      <button class="icon-btn ghost" data-nav="home" type="button">← Decks</button>
+      <button class="icon-btn ghost" id="btn-summary-deck" type="button">← Deck</button>
       <h1 id="summary-title">Run complete</h1>
     </div>
     <div class="summary-cheer" id="summary-cheer" hidden></div>
@@ -98,17 +103,39 @@
     </div>
   </section>
 
-  <!-- Settings: storage status, backup, reset -->
-  <section class="screen" id="screen-settings" hidden>
+  <!-- Words: filled by js/words/words-ui.js -->
+  <section class="screen" id="screen-words" data-tab="words" hidden></section>
+  <section class="screen" id="screen-word-form" hidden></section>
+
+  <!-- Self-rated review run and summary (words and kanji): js/review/review-ui.js -->
+  <section class="screen" id="screen-review" hidden></section>
+  <section class="screen" id="screen-review-summary" hidden></section>
+
+  <!-- Kanji: filled by js/kanji/kanji-ui.js -->
+  <section class="screen wide" id="screen-kanji" data-tab="kanji" hidden></section>
+
+  <!-- Settings -->
+  <section class="screen" id="screen-settings" data-tab="settings" hidden>
     <div class="topbar">
-      <button class="icon-btn ghost" data-nav="home" type="button">← Decks</button>
       <h1>Settings</h1>
     </div>
 
     <div class="panel">
       <h2>Theme</h2>
       <p>Dark and Light are the same layout in two palettes. Kids is warmer and cheers a little louder.</p>
-      <div class="segmented" id="theme-picker"></div>
+      <div id="theme-picker"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Backup</h2>
+      <p>Your words, kanji list and scores live on this device only. Export a copy now and then —
+        it is the only way back after clearing the browser or moving to a new device.</p>
+      <p id="backup-status"></p>
+      <div class="actions">
+        <button class="primary" id="btn-export" type="button">Export backup</button>
+        <button class="ghost" id="btn-import" type="button">Import backup</button>
+        <input id="import-file" type="file" accept="application/json,.json" hidden>
+      </div>
     </div>
 
     <div class="panel">
@@ -117,23 +144,21 @@
     </div>
 
     <div class="panel">
-      <h2>Backup</h2>
-      <p>Progress lives in this browser only. Export a copy before clearing site data or moving devices.</p>
-      <div class="actions">
-        <button class="primary" id="btn-export" type="button">Export progress</button>
-        <button class="ghost" id="btn-import" type="button">Import progress</button>
-        <input id="import-file" type="file" accept="application/json,.json" hidden>
-      </div>
+      <h2>Words and kanji reviews</h2>
+      <p>
+        Each card shows one side; the big button uncovers the rest step by step, and “Show all”
+        uncovers everything at once. Then you rate yourself: <strong>Didn't know</strong>,
+        <strong>Guessed</strong>, <strong>Knew it</strong> or <strong>Easy!</strong>. Honest
+        ratings decide how soon a card comes back. Each direction keeps its own progress.
+      </p>
+      <p>
+        A run holds at most 5 new cards (the newest first), a few you already know so they stay
+        fresh, and the cards you are still learning.
+      </p>
     </div>
 
     <div class="panel">
-      <h2>Reset</h2>
-      <p>Erases every score in every mode. There is no undo — export first.</p>
-      <button class="danger" id="btn-reset" type="button">Reset all progress</button>
-    </div>
-
-    <div class="panel">
-      <h2>Scoring</h2>
+      <h2>Kana scoring</h2>
       <p>
         Multiple choice: correct within 3s <strong>+5</strong>, within 5s <strong>+3</strong>,
         slower <strong>+1</strong>, wrong <strong>−5</strong>.<br>
@@ -144,20 +169,38 @@
     </div>
 
     <div class="panel">
-      <h2>Mistakes</h2>
+      <h2>Kana mistakes</h2>
       <p>
         Pick a wrong option and it comes back as one of the choices the next time that kana is
         asked. Each kana remembers its last <strong>3</strong> wrong picks, separately for Read and
         Recall; a newer mistake pushes out the oldest. Typing is not affected.
       </p>
     </div>
+
+    <div class="panel">
+      <h2>Reset</h2>
+      <p>Erases all words, your kanji list and every score. Theme and run length stay. There is no undo — export first.</p>
+      <button class="danger" id="btn-reset" type="button">Erase everything</button>
+    </div>
+
+    <div class="panel">
+      <h2>About</h2>
+      <p>Hino Lite. Stroke order from KanjiVG (CC BY-SA 3.0); kanji meanings and example words
+        from WaniKani, jpdb and JMdict.</p>
+    </div>
   </section>
 
 </div>
 
-<script src="js/kana-data.js"></script>
-<script src="js/srs.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/app.js"></script>
+<div class="sheet-layer" id="sheet-layer" hidden>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+</div>
+
+<nav class="tabbar" id="tabbar" aria-label="Sections">
+  <button type="button" data-tab="kana"><span class="tab-icon" lang="ja" aria-hidden="true">あ</span><span>Kana</span></button>
+  <button type="button" data-tab="words"><span class="tab-icon" lang="ja" aria-hidden="true">語</span><span>Words</span></button>
+  <button type="button" data-tab="kanji"><span class="tab-icon" lang="ja" aria-hidden="true">漢</span><span>Kanji</span></button>
+  <button type="button" data-tab="settings"><span class="tab-icon" aria-hidden="true">⚙</span><span>Settings</span></button>
+</nav>
 </body>
 </html>

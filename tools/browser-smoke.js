@@ -1,0 +1,437 @@
+// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji, backup and back navigation
+// [IFACE] layer: tooling | in: nothing -> out: report in #out and POSTed to /__report, ending SMOKE PASSED/FAILED | crosses: [browser DOM, localStorage, Cache Storage API, local HTTP server]
+// [GRAPH] needs: [index] | feeds: [browser-smoke-page] | group: tooling
+// [STATE] stateful | persists: clears hino_lite_v2 and the library cache before running | raises: nothing
+
+const KEY = 'hino_lite_v2';
+const lines = [];
+const alerts = [];
+const frame = document.getElementById('frame');
+let w;
+let d;
+
+function log(name, ok, detail) {
+  lines.push((ok ? 'ok   ' : 'FAIL ') + name + (detail !== undefined && !ok ? ' -- ' + detail : ''));
+  document.getElementById('out').textContent = lines.join('\n');
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function waitFor(fn, timeout = 4000) {
+  const end = Date.now() + timeout;
+  while (Date.now() < end) {
+    try {
+      const value = await fn();
+      if (value) return value;
+    } catch (err) {
+      // not there yet
+    }
+    await sleep(40);
+  }
+  return null;
+}
+
+const $ = (sel) => d.querySelector(sel);
+const $$ = (sel) => Array.from(d.querySelectorAll(sel));
+const visible = (id) => { const el = d.getElementById(id); return Boolean(el && !el.hidden); };
+const saved = () => JSON.parse(w.localStorage.getItem(KEY));
+const store = () => w.HinoLite.store;
+
+function type(el, value) {
+  el.value = value;
+  el.dispatchEvent(new w.Event('input', { bubbles: true }));
+}
+
+async function tab(name) {
+  $('#tabbar button[data-tab="' + name + '"]').click();
+  return waitFor(() => visible('screen-' + name));
+}
+
+async function boot() {
+  try { localStorage.removeItem(KEY); } catch (err) { /* storage blocked: the app reports it */ }
+  for (const name of await caches.keys()) {
+    if (name.startsWith('hino-lite-library-')) await caches.delete(name);
+  }
+  await new Promise((resolve) => { frame.onload = resolve; frame.src = '../index.html'; });
+  w = frame.contentWindow;
+  d = frame.contentDocument;
+  await waitFor(() => w.HinoLite);
+  w.confirm = () => true;
+  w.alert = (m) => alerts.push(m);
+}
+
+// --- Kana ---------------------------------------------------------------------
+
+async function kana() {
+  log('tab bar shows four tabs', $$('#tabbar button').length === 4 && !d.getElementById('tabbar').hidden);
+  log('kana is the start tab', visible('screen-kana'));
+  const cards = $$('.deck-card');
+  log('six deck cards rendered', cards.length === 6, cards.length);
+
+  cards[0].click();
+  await waitFor(() => visible('screen-kana-deck'));
+  log('deck screen shown, tab bar hidden', visible('screen-kana-deck') && d.getElementById('tabbar').hidden);
+  log('hiragana deck offers 3 modes', $$('.mode-row').length === 3);
+  $$('#run-size button')[0].click();
+  await sleep(50);
+
+  $$('.mode-row')[0].querySelector('button.primary').click();
+  await waitFor(() => visible('screen-kana-run'));
+  log('timer visible, four options', !d.getElementById('timer').hidden && $$('#options button').length === 4);
+  let answered = 0;
+  const seen = new Set();
+  for (let i = 0; i < 10; i++) {
+    const prompt = $('#prompt').textContent;
+    seen.add(prompt);
+    const right = $$('#options button').find((b) => w.HinoLite.KANA_DATA.byKey[prompt].r === b.textContent);
+    if (!right) break;
+    right.click();
+    answered += 1;
+    await sleep(750);
+  }
+  log('answered 10 distinct kana', answered === 10 && seen.size === 10, answered + '/' + seen.size);
+  log('summary says 10/10 and +50', $('#stat-correct').textContent === '10/10' && $('#stat-points').textContent === '+50',
+    $('#stat-correct').textContent + ' ' + $('#stat-points').textContent);
+  const scores = saved().kana.mcq_k2r;
+  log('each kana saved with score 5', Object.keys(scores).length === 10 && Object.values(scores).every((e) => e.score === 5));
+
+  d.getElementById('btn-again').click();
+  await waitFor(() => visible('screen-kana-run'));
+  const kanaShown = $('#prompt').textContent;
+  const wrong = $$('#options button').find((b) => w.HinoLite.KANA_DATA.byKey[kanaShown].r !== b.textContent);
+  wrong.click();
+  await sleep(100);
+  const after = saved().kana.mcq_k2r[kanaShown];
+  const wrongKey = w.HinoLite.KANA_DATA.deckById.hira_basic.items.find((i) => i.r === wrong.textContent).key;
+  log('a wrong answer floors at 0 and is remembered', after.score >= 0 && after.misses[0] === wrongKey, JSON.stringify(after));
+  await sleep(1900);
+
+  d.getElementById('btn-quit').click();
+  await waitFor(() => visible('screen-kana-deck'));
+  log('quit returns to the deck', visible('screen-kana-deck'));
+  $$('.mode-row')[2].querySelector('button.primary').click();
+  await waitFor(() => visible('screen-kana-run'));
+  log('type mode hides options and timer', d.getElementById('options').hidden && d.getElementById('timer').hidden);
+  const typed = $('#prompt').textContent;
+  $('#type-input').value = w.HinoLite.KANA_DATA.byKey[typed].r;
+  $('#type-form').dispatchEvent(new w.Event('submit', { cancelable: true, bubbles: true }));
+  await sleep(100);
+  log('typed answer scores +3', saved().kana.type_k2r[typed].score === 3);
+  await sleep(800);
+  d.getElementById('btn-quit').click();
+  await waitFor(() => visible('screen-kana-deck'));
+  d.getElementById('btn-kana-decks').click();
+  await waitFor(() => visible('screen-kana'));
+  $$('.deck-card')[3].click();
+  await waitFor(() => visible('screen-kana-deck'));
+  log('katakana deck offers 2 modes', $$('.mode-row').length === 2);
+  d.getElementById('btn-kana-decks').click();
+  await waitFor(() => visible('screen-kana'));
+}
+
+// --- Words --------------------------------------------------------------------
+
+async function addWord(fields, pick) {
+  $('#btn-add-word').click();
+  await waitFor(() => visible('screen-word-form'));
+  Object.entries(fields).forEach(([k, v]) => type($('#word-' + k), v));
+  if (pick) $$('#reading-suggestions .suggestion')[pick === 'katakana' ? 1 : 0].click();
+  $('#btn-save-word').click();
+  return waitFor(() => visible('screen-words'));
+}
+
+async function words() {
+  await tab('words');
+  log('words tab starts with an empty state', Boolean($('#screen-words .empty')));
+
+  $('#btn-add-word').click();
+  await waitFor(() => visible('screen-word-form'));
+  log('the form hides the tab bar', d.getElementById('tabbar').hidden);
+  type($('#word-writing'), '勉強');
+  log('kanji preview names the new kanji', $('#kanji-preview').textContent.includes('勉 強'), $('#kanji-preview').textContent);
+  type($('#word-reading'), 'benkyou');
+  const chips = $$('#reading-suggestions .suggestion');
+  log('rōmaji offers hiragana and katakana', chips.length === 2 && chips[0].textContent === 'べんきょう' &&
+    chips[1].textContent === 'ベンキョウ', chips.map((c) => c.textContent).join());
+  chips[0].click();
+  log('a suggestion replaces the reading', $('#word-reading').value === 'べんきょう');
+  $('#btn-save-word').click();
+  await sleep(80);
+  log('meaning is required', visible('screen-word-form') && $('#word-meaning-error').textContent.length > 0);
+  type($('#word-meaning'), 'study');
+  type($('#word-example'), '毎日勉強します。');
+  $('#btn-save-word').click();
+  await waitFor(() => visible('screen-words'));
+  log('the saved word is listed', $$('#word-list .word-row').length === 1);
+  log('its kanji joined the kanji list', store().isEnrolled('勉') && store().isEnrolled('強'));
+
+  await addWord({ reading: 'terebi', meaning: 'TV' }, 'katakana');
+  await addWord({ writing: '学校', reading: 'gakkou', meaning: 'school' });
+  const list = Object.values(saved().words);
+  log('katakana suggestion and leftover rōmaji both end up as kana',
+    list.some((x) => x.reading === 'テレビ') && list.some((x) => x.reading === 'がっこう'), list.map((x) => x.reading).join());
+  log('three words listed', $$('#word-list .word-row').length === 3);
+
+  $('#btn-add-word').click();
+  await waitFor(() => visible('screen-word-form'));
+  type($('#word-writing'), '勉強');
+  type($('#word-reading'), 'べんきょう');
+  type($('#word-meaning'), 'again');
+  $('#btn-save-word').click();
+  await sleep(80);
+  log('a duplicate word is refused', visible('screen-word-form') && /already/.test($('#word-reading-error').textContent));
+  $('#btn-cancel-word').click();
+  await waitFor(() => visible('screen-words'));
+  log('cancel returns to the list', visible('screen-words') && Object.keys(saved().words).length === 3);
+
+  type($('#words-search'), 'terebi');
+  log('search by rōmaji finds the katakana word', $$('#word-list .word-row').length === 1);
+  type($('#words-search'), '');
+
+  $$('#word-list .word-row').find((r) => r.querySelector('.word-head').textContent === '勉強').click();
+  await waitFor(() => $('#word-view'));
+  log('a word opens in the sheet', visible('sheet-layer') && Boolean($('#word-view')));
+  $('#btn-edit-word').click();
+  await waitFor(() => visible('screen-word-form'));
+  log('edit prefills the form', $('#word-writing').value === '勉強' && $('#word-meaning').value === 'study');
+  type($('#word-writing'), '勉強会');
+  log('the preview shows only the new kanji', $('#kanji-preview').textContent.includes('会') &&
+    !$('#kanji-preview').textContent.includes('勉'), $('#kanji-preview').textContent);
+  $('#btn-save-word').click();
+  await waitFor(() => visible('screen-words'));
+  log('edit saved; old kanji stay, new one joins', store().isEnrolled('会') && store().isEnrolled('勉') &&
+    Object.values(saved().words).some((x) => x.writing === '勉強会'));
+
+  $('#btn-add-word').click();
+  await waitFor(() => visible('screen-word-form'));
+  w.history.back();
+  await waitFor(() => visible('screen-words'));
+  log('the back button leaves the form', visible('screen-words') && !d.getElementById('tabbar').hidden);
+}
+
+async function wordReviews() {
+  $('.mode-row[data-track="words.read"] button.primary').click();
+  await waitFor(() => visible('screen-review'));
+  log('a word run starts with all 3 new words', $('#review-count').textContent === '1 / 3', $('#review-count').textContent);
+  let stepsOk = true;
+  for (let i = 0; i < 3; i++) {
+    const prompt = $('.review-prompt').textContent;
+    const word = Object.values(saved().words).find((x) => (x.writing || x.reading) === prompt);
+    if (!word) { stepsOk = false; break; }
+    let presses = 0;
+    if (i === 0) { $('.review-card').click(); presses += 1; await sleep(20); }   // tapping the card = main button
+    while ($('#btn-reveal') && presses < 5) { $('#btn-reveal').click(); presses += 1; await sleep(20); }
+    if (presses !== (word.writing ? 2 : 1)) stepsOk = false;
+    if (i === 0 && word.writing && !$('.review-step')) stepsOk = false;
+    $('.rating.easy').click();
+    await sleep(40);
+  }
+  log('Japanese → meaning reveals in the planned steps', stepsOk);
+  await waitFor(() => visible('screen-review-summary'));
+  log('summary counts three "Easy!"', $('.stat.easy .value').textContent === '3');
+  const reviews = saved().reviews['words.read'];
+  log('a first "Easy!" makes a word learned (5)', Object.values(reviews).length === 3 && Object.values(reviews).every((e) => e.score === 5));
+  $('#btn-review-done').click();
+  await waitFor(() => visible('screen-words'));
+  log('done returns to the words tab', visible('screen-words'));
+
+  $('.mode-row[data-track="words.recall"] button.primary').click();
+  await waitFor(() => visible('screen-review'));
+  const meanings = Object.values(saved().words).map((x) => x.meaning);
+  log('Meaning → Japanese prompts with the meaning', meanings.includes($('.review-prompt').textContent), $('.review-prompt').textContent);
+  for (let i = 0; i < 3; i++) {
+    if ($('#btn-reveal-all')) $('#btn-reveal-all').click(); else $('#btn-reveal').click();
+    await sleep(20);
+    if (i === 0) {
+      $('#btn-rating-help').click();
+      await waitFor(() => $('#rating-help'));
+      log('rating help opens without any points in it', Boolean($('#rating-help')) && !/[+−-]\d/.test($('#rating-help').textContent));
+      $('#rating-help .sheet-head button').click();
+      await waitFor(() => !visible('sheet-layer'));
+      log('closing the help keeps the run', !visible('sheet-layer') && visible('screen-review'));
+    }
+    $('.rating.missed').click();
+    await sleep(40);
+  }
+  await waitFor(() => visible('screen-review-summary'));
+  const recall = saved().reviews['words.recall'];
+  log('a first "Didn\'t know" scores 0 in its own track', Object.values(recall).length === 3 &&
+    Object.values(recall).every((e) => e.score === 0) && Object.values(saved().reviews['words.read']).every((e) => e.score === 5));
+  $('#btn-review-done').click();
+  await waitFor(() => visible('screen-words'));
+}
+
+// --- Kanji --------------------------------------------------------------------
+
+async function openTile(ch) {
+  $('.kanji-tile[data-kanji="' + ch + '"]').click();
+  return waitFor(() => $('#kanji-card[data-kanji="' + ch + '"]'));
+}
+
+async function closeCard() {
+  $('#btn-card-close').click();
+  return waitFor(() => !visible('sheet-layer'));
+}
+
+async function kanji() {
+  await tab('kanji');
+  const ready = await waitFor(async () => (await w.HinoLite.library.readyLevels()).size === 6, 60000);
+  log('the library downloads on first open (6 levels)', Boolean(ready));
+  await waitFor(() => !$('#library-status .library-panel') && $$('.kanji-tile').length);
+  log('Mine shows the 5 kanji from the words', $$('.kanji-tile').length === 5, $$('.kanji-tile').map((t) => t.dataset.kanji).join(''));
+
+  $$('.filters .segmented button')[1].click();
+  await waitFor(() => $$('.kanji-tile').length > 5);
+  log('All shows 2,099 kanji in level sections', $$('.kanji-tile').length === 2099 && $$('.kanji-section').length === 6,
+    $$('.kanji-tile').length);
+  $('.level-chip[data-level="N1"]').click();
+  await sleep(50);
+  log('a level chip hides that level', $$('.kanji-tile').length === 2099 - 1002, $$('.kanji-tile').length);
+  $('.level-chip[data-level="N1"]').click();
+  await sleep(50);
+  type($('#kanji-search'), 'gaku');
+  log('search by rōmaji reading finds 学', Boolean($('.kanji-tile[data-kanji="学"]')));
+  type($('#kanji-search'), '');
+
+  await openTile('学');
+  log('card: stroke order, readings, example words',
+    Boolean($('#kanji-card .strokes svg')) && $$('#kanji-card .reading-pill').length >= 2 &&
+    $$('#kanji-card .example-row').length > 0 && $$('#kanji-card .example-row').length <= 8);
+  log('card: "In your words" lists 学校', $$('#kanji-card [data-word-id]').some((b) => b.textContent === '学校'));
+  const link = $('#kanji-card .rc-link');
+  if (link) {
+    const target = link.textContent;
+    link.click();
+    await waitFor(() => $('#kanji-card[data-kanji="' + target + '"]'));
+    $('#btn-card-back').click();
+    await waitFor(() => $('#kanji-card[data-kanji="学"]'));
+    log('a component opens its card and ← comes back', Boolean($('#kanji-card[data-kanji="学"]')));
+  }
+  const mine = Object.values(saved().words).map((x) => x.writing);
+  const rows = $$('#kanji-card .example-row');
+  rows.find((r) => mine.includes(r.querySelector('.w').textContent)).click();
+  await waitFor(() => $('#example-word'));
+  log('an example word already saved shows "In your words"', Boolean($('#btn-open-my-word')) && !$('#btn-add-example'));
+  $('#btn-card-back').click();
+  await waitFor(() => $('#kanji-card[data-kanji="学"]'));
+  $$('#kanji-card .example-row').find((r) => !mine.includes(r.querySelector('.w').textContent)).click();
+  await waitFor(() => $('#example-word'));
+  const example = $('#example-word .hero-word').textContent;
+  log('an example word opens with its meanings', Boolean($('#example-word .senses li')));
+  $('#btn-add-example').click();
+  await waitFor(() => visible('screen-word-form'));
+  log('"+ Add to my words" opens a prefilled form', $('#word-writing').value === example && $('#word-reading').value.length > 0,
+    $('#word-writing').value);
+  $('#btn-cancel-word').click();
+  await waitFor(() => visible('screen-words'));
+
+  await tab('kanji');
+  $$('.filters .segmented button')[0].click();
+  await waitFor(() => $$('.kanji-tile').length === 5);
+  await openTile('会');
+  $('#btn-kanji-remove').click();
+  await waitFor(() => $('#btn-kanji-add'));
+  log('remove takes 会 off the list', !store().isEnrolled('会') && Boolean($('#btn-kanji-add')));
+  await closeCard();
+  log('Mine now shows 4 kanji', $$('.kanji-tile').length === 4, $$('.kanji-tile').length);
+
+  $$('.filters .segmented button')[1].click();
+  await waitFor(() => $$('.kanji-tile').length > 5);
+  await openTile('一');
+  $('#btn-kanji-add').click();
+  await waitFor(() => $('#btn-kanji-remove'));
+  $('#btn-kanji-known').click();
+  await waitFor(() => !$('#btn-kanji-known'));
+  log('add + mark as known: 一 is learned in both directions', store().isEnrolled('一') &&
+    store().reviewStats('kanji.read', '一').score === 5 && store().reviewStats('kanji.recall', '一').score === 5);
+  await closeCard();
+
+  $('.mode-row[data-track="kanji.read"] button.primary').click();
+  await waitFor(() => visible('screen-review'), 6000);
+  log('a kanji run: 4 new + 1 known', $('#review-count').textContent === '1 / 5', $('#review-count').textContent);
+  let ok = true;
+  for (let i = 0; i < 5; i++) {
+    if (!$('.review-prompt .prompt-glyph')) ok = false;
+    $('#btn-reveal').click();
+    await sleep(20);
+    $('#btn-reveal').click();
+    await sleep(20);
+    if (!$('#screen-review .reading-pill')) ok = false;
+    $('.rating.knew').click();
+    await sleep(40);
+  }
+  log('Kanji → meaning: glyph, then meaning, then readings', ok);
+  await waitFor(() => visible('screen-review-summary'));
+  log('a first "Knew it" scores 4', store().reviewStats('kanji.read', '学').score === 4);
+  $('#btn-review-done').click();
+  await waitFor(() => visible('screen-kanji'));
+}
+
+// --- Backup, reminder, theme -------------------------------------------------------
+
+async function backup() {
+  const st = store();
+  const exported = st.exportText();
+  st.reset();
+  log('reset empties words and the kanji list', st.listWords().length === 0 && st.listKanji().length === 0);
+  log('import restores them', st.importText(exported).ok && st.listWords().length === 3 && st.listKanji().length === 5);
+  log('old Kana SRS backups are refused', !st.importText(JSON.stringify({ progress: { mcq_k2r: {} } })).ok);
+  log('a removed kanji keeps its scores through a backup', !st.isEnrolled('会') && st.kanjiEntry('会').removed === true);
+
+  st.raw().unsavedSince = Date.now() - 8 * 86400000;
+  st.save();
+  await tab('words');
+  log('a week of unsaved changes shows the reminder', visible('backup-banner'));
+  $('#backup-banner button').click();
+  await sleep(100);
+  log('backing up clears it', !visible('backup-banner') && !st.backupStatus().due);
+
+  await tab('settings');
+  const themes = $$('#theme-picker button');
+  log('three themes offered', themes.length === 3);
+  themes[2].click();
+  await sleep(50);
+  log('kids theme applied and saved', d.documentElement.getAttribute('data-theme') === 'kids' &&
+    d.getElementById('theme-color').getAttribute('content') === '#fff6e5' && saved().settings.theme === 'kids');
+  await tab('words');
+  $('.mode-row[data-track="words.read"] button.primary').click();
+  await waitFor(() => visible('screen-review'));
+  if ($('#btn-reveal-all')) $('#btn-reveal-all').click(); else $('#btn-reveal').click();
+  await sleep(20);
+  $('.rating.knew').click();
+  await sleep(30);
+  log('kids theme cheers a good rating', /[✨🌟🎉🙌]/u.test($('#review-verdict').textContent), $('#review-verdict').textContent);
+  await sleep(800);
+  $('#btn-review-quit').click();
+  await waitFor(() => visible('screen-words'));
+  log('quitting a run returns to the tab', visible('screen-words'));
+  await tab('settings');
+  $$('#theme-picker button')[0].click();
+  await sleep(50);
+  log('switching back restores dark', d.documentElement.getAttribute('data-theme') === 'dark');
+}
+
+async function serviceWorker() {
+  const reg = await waitFor(() => w.navigator.serviceWorker.getRegistration().then((r) => r && r.active), 15000);
+  log('the service worker installs (every precached file exists)', Boolean(reg));
+}
+
+async function run() {
+  await boot();
+  await kana();
+  await words();
+  await wordReviews();
+  await kanji();
+  await backup();
+  await serviceWorker();
+  log('no alerts were raised', alerts.length === 0, alerts.join(' | '));
+}
+
+run().catch((err) => {
+  log('exception', false, err && err.stack ? err.stack : String(err));
+}).finally(() => {
+  lines.push(lines.some((l) => l.startsWith('FAIL')) ? 'SMOKE FAILED' : 'SMOKE PASSED');
+  const text = lines.join('\n');
+  document.getElementById('out').textContent = text;
+  fetch('/__report?name=smoke', { method: 'POST', body: text }).catch(() => {});
+});

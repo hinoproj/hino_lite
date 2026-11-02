@@ -1,4 +1,43 @@
-# Progress Context — kana_srs
+# Progress Context — Hino Lite (formerly kana_srs)
+
+## [2026-11-01] Hino Lite: words, word review, kanji library, kanji list and review
+
+Renamed Kana SRS to **Hino Lite** and extended it; owner's decisions P1–P12 in
+`.agentic_docs/current_task.md`. Git remote → `https://github.com/hinoproj/hino_lite.git`; the
+local folder rename `kana_srs/` → `hino_lite/` was blocked by a lock and is left to the owner.
+
+**Shipped**
+
+- ES modules, no `file://`, no Node. Kana files moved with `git mv` into `js/kana/` (rules
+  unchanged); `storage.js` → `js/core/storage.js` rewritten for format v2 (`hino_lite_v2`).
+- Rules: `js/core/romaji.js` (IME-style rōmaji → kana), `js/review/review.js` (four ratings on
+  JLPT_coach's scale, D56 labels, run composition), `js/words/words.js`, `js/kanji/kanji.js`.
+- Library: `tools/build_library.py` → `data/library/<level>.json` + `.strokes.json` (12 files,
+  ~6.7 MB) and `js/kanji/kanji-index.js` (207 KB, version `d15bcc98f5`); `js/kanji/library.js`
+  downloads on first Kanji-tab visit into its own cache.
+- UI: bottom tabs, sheet, back stack (`shell`), words list/form/sheet, shared review run and
+  summary with rating help, kanji tab (Mine/All, levels, search, tiles), kanji card ported from
+  JLPT_coach (strokes, readings, radicals/components, example words with pitch accent, add to my
+  words, add/remove/mark known), settings with one backup file and a weekly reminder.
+- `sw.js`: app cache `hino-lite-app-v1` (fetched with `cache: 'reload'`), never deletes library
+  buckets. Manifest and icon renamed.
+- Tools: `tools/check.py` (serve, run browser tests headless, screenshots), `tools/selftest.html/js`
+  (replaces the Node selftest), `tools/browser-smoke.html/js`, `tools/scene.html`.
+
+**Decisions made during the build**
+
+- New-card cap is hard (a fresh list gives a 5-card first run, not 10 new words); short runs
+  backfill with known cards only.
+- Rōmaji follows Hepburn: `nn` + vowel/y is ん + な/にゃ-row (konnichiha, konnyaku); 金曜日 is typed
+  `kin'youbi`.
+- Kanji review needs the library downloaded; the card works from the shipped index before that and
+  says the download is unfinished.
+- Headless Chrome will not render narrower than ~500px, so screenshots size the iframe instead.
+
+**Verified**
+
+`uv run tools/check.py`: selftest 117/117, smoke 71/71 (headless Chrome). Screenshots of words,
+form, review, kanji tab and card at 390×844 and 1280×800 reviewed. Not run on the real devices yet.
 
 ## [2026-11-01] Mistake replay: wrong MCQ picks come back as options
 

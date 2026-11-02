@@ -1,7 +1,7 @@
 {
-  "name": "Kana SRS",
-  "short_name": "Kana",
-  "description": "Timed multiple-choice and typing drills for hiragana and katakana.",
+  "name": "Hino Lite",
+  "short_name": "Hino Lite",
+  "description": "Kana drills, your own word list and a kanji library — offline.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

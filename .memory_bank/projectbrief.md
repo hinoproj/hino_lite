@@ -1,42 +1,49 @@
-# Project Brief — kana_srs
+# Project Brief — Hino Lite
 
 ## What this is
 
-A standalone, offline drill app for hiragana and katakana: multiple-choice and typing questions
-over a point-based SRS, delivered as a static page with no server and no build step. It is a
-sibling project to `JLPT_coach` (kanji/vocabulary, FastAPI) and shares none of its code.
+A standalone, offline study app for a phone or a tablet: kana drills, the learner's own word
+list with a two-way word review, and a kanji library whose kanji join the learner's kanji list
+by themselves, with a two-way kanji review. Static files, no server, no build step; everything
+the learner does stays on the device. Formerly **Kana SRS** (kana only); renamed and extended on
+2026-11-01.
 
-## Why it exists
+## Who it is for, and why it exists
 
-The owner wanted kana practice on an Android tablet, usable without a network and without running
-a Python server. Kana are a small, fixed set (~200 items) where the thing worth training is
-recognition *speed*, which the kanji track's date-free point scheme does not measure.
+The learner is the owner's son, on an Android phone (portrait) and tablet (landscape). The app
+is also the owner's **UX testbed** for the Hino Sensei platform's study-list flows on that form
+factor (platform D66): capturing a word, reviewing it step by step, and kanji arriving in a list
+on their own. It shares nothing with the platform at run time; findings move to the platform by hand.
 
 ## Scope
 
-- Six decks: hiragana and katakana × basic (46) / dakuten+handakuten (25) / yōon (36)
-- Three modes: kana→rōmaji MCQ, rōmaji→kana MCQ (both timed), kana→rōmaji typing (untimed)
-- Typing is hiragana-only — it trains the script you actually write in
-- Fixed-length runs of 10, 15 or 20 cards, selectable
-- Progress kept per kana **per mode**, in the browser, with JSON export/import as the durable backup
+- **Kana**: six decks (hiragana/katakana × basic 46 / dakuten 25 / yōon 36); Read and Recall
+  (timed multiple choice), Type (hiragana only); per-kana-per-mode scores; mistake replay.
+- **Words**: the learner types a word — kanji writing (optional), reading (kana; rōmaji is offered
+  as hiragana/katakana suggestions), meaning, example, notes (any text). One flat list. Two
+  reviews with separate scores: Japanese → meaning and Meaning → Japanese, revealed step by step.
+- **Kanji**: library of all 2,099 kanji grouped by JLPT level, downloaded once; library kanji in a
+  word's writing join the kanji list; add any kanji, remove one (progress kept), mark as known.
+  Card with stroke order, readings, radicals/components, example words with pitch accent and
+  "add to my words". Two reviews: Kanji → meaning and Meaning → kanji.
+- **Self-rating** for words and kanji: Didn't know / Guessed / Knew it / Easy!, on JLPT_coach's
+  kanji scale; runs of 10/15/20 with at most 5 new cards.
+- One JSON backup file for everything; reminder after a week of unsaved changes.
 
 ## Requirements that shaped the design
 
-1. **Runs on an Android tablet, offline.** Installed as a PWA from GitHub Pages (service worker
-   precache, `localStorage` progress); still functional, with a warning, when `index.html` is
-   opened directly over `file://`.
-2. **No build step and no dependencies** — the files in the repo are the files the browser loads.
-3. **Speed is the signal**: ≤3 s +5, ≤5 s +3, slower +1, wrong −5 (typing +3/−5); scores floor at 0;
-   learned at 10, confident at 25.
-4. **Introduction order is gojūon row order** — the earliest not-yet-learned kana are what a run
-   draws, so there is no tier machinery and no mode gating.
-5. **Distractors must be diagnostic**: MCQ options are biased toward genuine look-alikes
-   (シ/ツ, ソ/ン, ね/れ/わ …) rather than drawn uniformly, and the learner's own last 3 wrong
-   picks for a kana come back as its options.
+1. **Offline on a phone and a tablet**, installed as a PWA from GitHub Pages
+   (`hinoproj/hino_lite`, public, Pages from `main` root).
+2. **No build step, no Node**: the browser loads the repo's files as ES modules; tooling is
+   Python run with `uv`.
+3. **The learner's typed words are irreplaceable** — guarded storage, explicit backup, confirmed
+   deletes, a versioned backup format.
+4. **A child uses it**: big targets, plain words, the rating help describes feelings not points,
+   the Kids theme cheers.
 
 ## Out of scope
 
-- Vocabulary, kanji, grammar — those live in `JLPT_coach`
-- Accounts, sync, any server component
-- Handwriting/stroke-order practice
-- Typing practice for katakana
+- Sentences (Sentence Study List, Sentence SRS, Sentence Coach) — later
+- Audio, handwriting recognition, typing answers for words/kanji
+- Import of word lists, tags/sets, sync, accounts, any server
+- Old Kana SRS backups (this version starts fresh)

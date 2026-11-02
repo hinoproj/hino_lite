@@ -1,67 +1,66 @@
-# Technical Context — kana_srs
+# Technical Context — Hino Lite
 
 ## Stack
 
-Plain HTML/CSS/JavaScript (ES5-style, classic scripts). No framework, no bundler, no package
-manager, no runtime or dev dependencies. Node is used only to run `tools/selftest.js`.
+Plain HTML/CSS/JavaScript, native **ES modules** (no bundler, no framework, no dependencies).
+Tooling in Python run with `uv` (stdlib only): `tools/build_library.py` builds the kanji library,
+`tools/check.py` serves the app and runs the browser tests in headless Chrome/Edge. No Node.
 
 ## Architecture
 
-Four shipped layers, loaded in order by `index.html`:
-
 ```
-kana-data.js   static tables (214 kana, 6 decks, confusion weights)
-    ↓
-srs.js         pure rules: scoring, states, run composition, question building
-    ↓
-app.js         all DOM work: screens, timer, answers, backup UI      ← storage.js (localStorage)
+data      kana-data            kanji-index (generated)
+            ↓                     ↓
+rules     kana-srs   romaji → words, kanji        review (shared rating/run rules)
+            ↓                     ↓                   ↓
+infra     storage (localStorage)   library (Cache API, one-time download)   sw (app cache)
+            ↓
+UI        shell · dom · theme · backup
+          kana-ui · words-ui · kanji-ui · kanji-card · review-ui · settings-ui   ← main (boot)
 ```
 
-Plus `sw.js` (precache for the installed PWA) and `css/app.css`. Full graph, boundaries and
-per-module notes: `.agentic_docs/code_index.md`.
-
-The split is deliberate and enforced by `AGENTS.md`: rules stay testable in Node without a DOM,
-and the DOM layer holds no rules.
+Full graph, boundaries and per-module notes: `.agentic_docs/code_index.md`. Rule modules are pure
+(tested by `tools/selftest.js` in the browser); UI modules hold no rules.
 
 ## Key decisions
 
-- **Classic scripts, not ES modules.** `file://` blocks module imports; opening the page directly
-  is a supported path, so modules would break the fallback.
-- **Own scoring scheme, not the kanji track's.** Kana are recognition-speed items: the timer tiers
-  (3 s / 5 s) *are* the grading signal, replacing the kanji SRS's self-assessed 4-button grade.
-- **Per-kana-per-mode scores.** Recognising か instantly implies nothing about typing it, so the
-  three modes keep independent scores; the saved progress map is keyed by mode first.
-- **No introduction tiers and no mode gating.** Deck order is gojūon row order and runs draw the
-  earliest not-learned kana, which produces the drip-feed for free. With ~46 kana per deck, the
-  kanji track's tier/unlock machinery would only add state to keep in sync.
-- **Look-alike distractors.** Uniform sampling put a genuine confusable on screen only ~20 % of the
-  time in a 46-kana deck; questions now draw 1–2 options from the answer's shape-confusion set.
-- **Mistake replay.** A wrong MCQ pick is stored on that kana's entry (last 3 per mode, newest
-  first, `misses`) and takes a wrong-option slot the next time the kana is asked. Picks leave only
-  when newer ones push them out. Added as an optional field under `kana_srs_v1`, since old
-  exports load unchanged.
-- **Homophone guard.** ぢ/じ and づ/ず share rōmaji, so options are deduplicated by `r`, and the
-  rōmaji-prompt direction shows the wāpuro forms (`di`, `du`, `dya`…) to keep one right answer.
-- **Themes are an explicit setting, not OS-derived.** Dark / Light / Kids are chosen in Settings
-  and stored with progress; `prefers-color-scheme` is ignored so a tablet handed to a child does
-  not change look when the system theme flips. Kids is palette + playful feedback strings only —
-  same layout, same system font, no bundled assets.
-- **Storage is best-effort with a guaranteed manual path.** `localStorage` under `file://` is
-  unreliable (opaque origin: refused in some browsers, throws in others), so every access is
-  guarded, the UI states the situation, and JSON export/import is the durable backup.
+- **ES modules, no `file://`.** The kanji library needs the Cache API and a service worker, both
+  unavailable on `file://`, so the classic-script constraint of Kana SRS no longer bought anything.
+- **No Node.** The rule tests moved from `node tools/selftest.js` to a browser page that imports the
+  shipped modules; `check.py` runs it and the UI smoke test headless and collects POSTed reports.
+- **One self-rated scheduler for words and kanji** (`review.js`), JLPT_coach's kanji scale: first
+  answer from 3, learned 5, confident 15, a miss on a learned card → 4 (a guess only −1), cap 30.
+  Scores follow the platform's D56 (−1 = never answered; labels unseen/unknown/learning/learned/
+  confident derived in one place). Kana keeps its own timed scoring.
+- **Runs**: ≤5 new (newest first, a hard cap — a fresh list gives a 5-card first run), ≤3
+  learned/confident sampled by staleness (confident ×0.2), the rest in progress stalest first;
+  short runs backfill with known cards only.
+- **Reveal plans are rules** (`words.cardPlan`, `kanji.cardPlan`); the shared `review-ui` renders
+  any plan through an adapter's part renderers. Example/notes always come last (they contain the word).
+- **Storage**: one JSON document in `localStorage` (`hino_lite_v2`) = the backup format (`app:
+  'hino_lite'`, `version: 2`); `navigator.storage.persist()` at boot. Kanji list stored explicitly
+  (`{addedAt, removed}`) so "nothing leaves automatically" holds after edits; removing hides and
+  keeps scores. Old Kana SRS backups are refused.
+- **Kanji library**: 2,099 kanji, example words with frequency rank < 11,000, KanjiVG strokes
+  slimmed and recoloured to `currentColor` — 12 files, ~6.7 MB on disk, ~1.7 MB gzipped, in their
+  own cache named after a content hash, downloaded on the first Kanji-tab visit (N5 first). A 207 KB
+  index (meaning, level, search terms, readings) ships with the app so enrollment works before the
+  download.
+- **Back button**: `shell` pushes one history entry per focus screen or sheet with a handler, so
+  Android's back button walks back instead of closing the app.
+- **Japanese text carries `lang="ja"`** and Japanese system fonts first, or kanji render in Chinese
+  shapes on non-Japanese phones. Learner text only ever goes in as text.
+- **Themes** stay explicit (Dark/Light/Kids), never OS-derived; the Kids theme cheers good ratings.
 
 ## Deployment
 
-GitHub Pages from `main` (root) → open on the tablet → *Add to Home screen*. The service worker
-precaches everything on first load; afterwards it runs with no network. `CACHE_NAME` in `sw.js`
-must be bumped whenever a precached file changes, since the fetch handler is cache-first and never
-revalidates.
+GitHub Pages from `main` (root) of `hinoproj/hino_lite` → open on the device → *Add to Home
+screen*. Bump `CACHE_NAME` in `sw.js` whenever a precached file changes (cache-first never
+revalidates; precache fetches use `cache: 'reload'`). A rebuilt library changes `LIBRARY.version`
+and downloads again on the next Kanji-tab visit.
 
 ## Verification
 
-- `node tools/selftest.js` — deck tables, scoring tiers, typed-answer variants, run caps, question
-  well-formedness for every kana in every deck
-- `tools/browser-smoke.html` served over http(s) — drives a real run in an iframe and asserts
-  screens, persistence and the export/import round trip
-
-There is no test runner or CI; both are single files run by hand.
+- `uv run tools/check.py` — selftest (117 checks) + UI smoke (71 checks), must end `ALL CHECKS PASSED`
+- `uv run tools/check.py shots OUT` — screenshots at 390×844 and 1280×800 for visual review
+- `uv run tools/check.py serve` — local server with correct MIME types
