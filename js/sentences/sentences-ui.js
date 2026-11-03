@@ -1,6 +1,6 @@
 // [MODULE] sentences-ui | Sentences tab: searchable list, add/edit form with Parse, sentence sheet, word-card prompt after a new sentence
 // [IFACE] layer: presentation | in: DOM events -> out: rendered sentence screens, saved sentences, saved words, enrolled kanji | crosses: [browser DOM]
-// [GRAPH] needs: [sentences, words, kanji, romaji, storage, shell, dom] | feeds: [main] | group: presentation
+// [GRAPH] needs: [sentences, words, kanji, romaji, storage, shell, dom] | feeds: [main, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
 
 import * as S from './sentences.js';
@@ -50,7 +50,8 @@ function fillList(list, sentences) {
 
 // --- Sentence sheet -------------------------------------------------------
 
-function openSentenceView(id) {
+/** The sentence sheet; also opened from a kanji card's "In your sentences". */
+export function openSentenceView(id) {
   const sentence = store.getSentence(id);
   if (!sentence) return;
   const field = (key) => (sentence[key]

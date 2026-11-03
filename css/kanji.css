@@ -1,4 +1,4 @@
-/* [MODULE] kanji-css | Kanji tab and card: download panel, filters, level sections, tile grid, card zones, strokes, readings, pitch
+/* [MODULE] kanji-css | Kanji tab and card: download panel, filters, level sections, tile grid, card hero with progress panel, card zones, strokes, readings with parts, your sentences, pitch
    [IFACE] layer: presentation | in: classes set by kanji-ui.js and kanji-card.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -44,9 +44,18 @@
 .kanji-tile .state-dots { position: absolute; top: 6px; right: 6px; }
 .kanji-tile .state-dots i { width: 4px; height: 12px; }
 
-/* Card */
+/* Card hero: glyph | meaning | progress panel; the panel drops under the glyph row on a phone */
+.card-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(240px, 280px);
+  gap: 12px 20px;
+  align-items: center;
+  padding: 2px 0 4px;
+}
+
 .hero-glyph { font-size: 104px; line-height: 1.1; }
-.hero-meta { font-size: 19px; font-weight: 600; margin-top: 4px; }
+.hero-meta { font-size: 24px; font-weight: 650; }
+.hero-alt { color: var(--muted); font-size: 15px; margin-top: 4px; }
 .level-badge {
   display: inline-block;
   font-size: 13px;
@@ -58,15 +67,26 @@
   vertical-align: 2px;
 }
 
-.card-status { margin: 14px 0 4px; display: grid; gap: 10px; justify-items: center; text-align: center; }
-.card-status .actions,
-.card-status .states { justify-content: center; }
-.card-status p { margin: 0; }
+.card-hero .progress-panel { margin-top: 0; display: grid; gap: 10px; }
+.progress-panel p { margin: 0; font-size: 15px; }
+.progress-panel .actions { gap: 8px; }
+.progress-panel .actions button { flex: 1 1 auto; }
 
+.track { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; font-size: 14px; }
+.track-name { color: var(--muted); }
+.track-state { font-weight: 600; }
+.track-steps { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+/* Unlit steps are a neutral tint: --line is amber in the Kids theme and would read as "learning" */
+.track-steps i { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--muted) 22%, transparent); }
+.track-steps i.lit { background: var(--state); }
+
+/* Stroke order beside the readings panel; stacked on a phone */
+.card-main { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 12px; margin-top: 12px; }
+.card-main > .zone { margin-top: 0; }
+
+/* Your words | your sentences: side by side when both fit */
 .card-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
-.card-row > .zone { flex: 1 1 200px; margin-top: 0; }
-.card-row > .strokes-zone { flex: 1 1 160px; max-width: 260px; }
-.card-row > .readings-zone { flex: 1.5 1 220px; }
+.card-row > .zone { flex: 1 1 260px; margin-top: 0; min-width: 0; }
 
 .zone {
   background: var(--surface);
@@ -104,11 +124,53 @@
 .reading-pill .rt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .reading-pill .rv { font-size: 20px; }
 
-.rad-viz { display: flex; flex-wrap: wrap; gap: 10px; }
-.rad-group { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 64px; }
-.rad-group .rl { font-size: 12px; color: var(--muted); text-align: center; }
-.rad-group .rc { font-size: 30px; min-height: 48px; display: flex; align-items: center; justify-content: center; }
-.rad-group .rc-link { padding: 4px 12px; border-color: var(--accent); }
+/* Radicals and components, inside the readings panel */
+.sub-label {
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 14px 0 8px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
+.parts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.part-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 12px 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.part-glyph { font-size: 26px; line-height: 1; color: var(--text); }
+button.part-chip { border-color: var(--accent); background: var(--surface); }
+button.part-chip::after { content: "›"; color: var(--accent); font-size: 18px; margin-left: -2px; }
+
+/* The learner's sentences */
+.card-sentences { display: grid; gap: 6px; }
+
+.card-sentence {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-color: transparent;
+}
+
+.cs-text { font-size: 18px; line-height: 1.45; overflow-wrap: anywhere; }
+.cs-text mark { background: none; color: var(--accent); font-weight: 700; }
+.cs-translation { font-size: 14px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .example-words { display: grid; gap: 6px; }
 
@@ -130,6 +192,14 @@
 
 .pitch { display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--accent); }
 .senses { margin: 0; padding-left: 1.3rem; line-height: 1.6; }
+
+@media (max-width: 600px) {
+  .card-hero { grid-template-columns: auto minmax(0, 1fr); }
+  .card-hero .progress-panel { grid-column: 1 / -1; }
+  .hero-meta { font-size: 21px; }
+  .card-main { grid-template-columns: minmax(0, 1fr); }
+  .strokes-zone .strokes { max-width: 240px; margin: 0 auto; }
+}
 
 @media (max-width: 420px) {
   .kanji-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }

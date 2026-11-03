@@ -1,13 +1,14 @@
-// [MODULE] kanji-card | Kanji card sheet: glyph, readings, stroke order, radicals/components, example words with pitch accent, list actions
+// [MODULE] kanji-card | Kanji card sheet: glyph, progress panel with list actions, stroke order, readings with radicals/components, your words and sentences, example words with pitch accent
 // [IFACE] layer: presentation | in: a kanji character, an onChange callback -> out: the card in the sheet, enrollment/known changes | crosses: [browser DOM]
-// [GRAPH] needs: [kanji, library, words, review, storage, shell, dom, words-ui] | feeds: [kanji-ui, words-ui] | group: presentation
+// [GRAPH] needs: [kanji, library, words, review, storage, shell, dom, words-ui, sentences-ui] | feeds: [kanji-ui, words-ui] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
 
 /**
  * Ported from JLPT_coach's kanji card (not verbatim). The card keeps its own
  * small view stack: tapping a component opens that kanji, tapping an example
  * word opens the word view, and "←" walks back; the sheet itself has a single
- * back entry, so Android's back button closes the card.
+ * back entry, so Android's back button closes the card. The learner's own
+ * words and sentences open their sheets in place of the card.
  */
 
 import * as K from './kanji.js';
@@ -18,8 +19,10 @@ import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
 import { h, ja, button, confirmAction, toast } from '../core/dom.js';
 import { openWordForm, openWordView } from '../words/words-ui.js';
+import { openSentenceView } from '../sentences/sentences-ui.js';
 
 const WORDS_SHOWN = 8;
+const SENTENCES_SHOWN = 3;
 
 let stack = [];          // [{type: 'kanji', ch} | {type: 'word', ch, word}]
 let onChange = null;
@@ -68,51 +71,78 @@ function zone(label, content, extraClass) {
 
 // --- Kanji view ------------------------------------------------------------
 
+/**
+ * Layout: hero (glyph, meaning, progress panel) -> stroke order beside the
+ * readings panel (readings, radicals, components) -> the learner's own words
+ * and sentences -> example words. The progress panel sits beside the meaning
+ * on wide sheets and drops under the glyph on a phone (kanji.css).
+ */
 async function kanjiView(ch) {
   const entry = K.indexEntry(ch);
   if (!entry) return h('div', { class: 'kanji-card' }, head(), h('p', { class: 'muted' }, ch + ' is not in the kanji library.'));
   const [info, svg] = await Promise.all([library.detail(ch), library.strokeSvg(ch)]);
-  const enrolled = store.isEnrolled(ch);
-  const states = K.TRACKS.map((t) => R.stateOf(store.reviewStats(t, ch).score));
-  const known = K.TRACKS.every((t) => store.reviewStats(t, ch).score >= R.LEARNED_AT);
   const levelLabel = K.LEVELS.find((l) => l.id === entry.level).label;
   const yourWords = K.wordsUsing(ch, store.listWords());
+  const yourSentences = K.sentencesUsing(ch, store.listSentences());
   const alt = info ? info.alt : [];
 
   return h('div', { class: 'kanji-card', id: 'kanji-card', dataset: { kanji: ch } },
     head(),
-    h('div', { class: 'hero' },
+    h('div', { class: 'card-hero' },
       ja(ch, 'hero-glyph', 'div'),
-      h('div', { class: 'hero-meta' }, h('span', { class: 'level-badge' }, levelLabel), ' ', entry.meaning),
-      alt.length ? h('div', { class: 'muted' }, 'also: ' + alt.join(', ')) : null),
-
-    h('div', { class: 'card-status' },
-      enrolled
-        ? h('div', { class: 'states' }, K.TRACKS.map((t, i) =>
-          h('span', { class: 'state-chip', dataset: { state: states[i] } }, K.TRACK_INFO[t].label + ': ' + states[i])))
-        : h('p', { class: 'muted' }, 'Not in your kanji list.'),
-      h('div', { class: 'actions' },
-        enrolled
-          ? button('Remove from my kanji', () => removeKanji(ch), 'ghost', { id: 'btn-kanji-remove' })
-          : button('+ Add to my kanji', () => addKanji(ch), 'primary', { id: 'btn-kanji-add' }),
-        known ? null : button('Mark as known', () => markKnown(ch), 'ghost', { id: 'btn-kanji-known' }))),
-
-    yourWords.length
-      ? zone('In your words', h('div', { class: 'chips' }, yourWords.map((w) =>
-        button(ja(W.headline(w)), () => openWordView(w.id), 'chip', { 'data-word-id': w.id }))))
-      : null,
+      h('div', { class: 'hero-text' },
+        h('div', { class: 'hero-meta' }, h('span', { class: 'level-badge' }, levelLabel), ' ', entry.meaning),
+        alt.length ? h('div', { class: 'hero-alt' }, 'also: ' + alt.join(', ')) : null),
+      progressPanel(ch)),
 
     info ? null : h('p', { class: 'notice' }, 'The kanji library has not finished downloading yet — open the Kanji tab to finish it.'),
 
-    info ? h('div', { class: 'card-row' },
+    info ? h('div', { class: 'card-main' },
       svg ? zone('Stroke order', h('div', { class: 'strokes', html: svg, role: 'img', 'aria-label': 'Stroke order of ' + ch }), 'strokes-zone') : null,
-      zone('Readings', readingsNode(info), 'readings-zone')) : null,
+      zone('Readings', [readingsNode(info),
+        partsBlock('Radicals', info.rad, false),
+        partsBlock('Components', info.comp, true)], 'readings-zone')) : null,
 
-    info && (info.rad.length || info.comp.length) ? h('div', { class: 'card-row' },
-      info.rad.length ? zone('Radicals', partsNode(info.rad, false)) : null,
-      info.comp.length ? zone('Components', partsNode(info.comp, true)) : null) : null,
+    yourWords.length || yourSentences.length ? h('div', { class: 'card-row' },
+      yourWords.length
+        ? zone('In your words', h('div', { class: 'chips' }, yourWords.map((w) =>
+          button(ja(W.headline(w)), () => openWordView(w.id), 'chip', { 'data-word-id': w.id }))))
+        : null,
+      yourSentences.length
+        ? zone('In your sentences', expandable(yourSentences, SENTENCES_SHOWN, (s) => sentenceRow(s, ch),
+          'card-sentences', (n) => 'Show all ' + n + ' sentences', 'btn-more-sentences'))
+        : null) : null,
 
-    info && info.words.length ? zone('Example words (' + info.words.length + ')', exampleWords(ch, info.words)) : null);
+    info && info.words.length
+      ? zone('Example words (' + info.words.length + ')', expandable(info.words, WORDS_SHOWN, (word) =>
+        h('button', { type: 'button', class: 'example-row', onclick: () => push({ type: 'word', ch, word }) },
+          ja(word[0], 'w'), ja(word[1], 'r'), h('span', { class: 'm' }, word[2].split(';')[0])),
+        'example-words', (n) => 'Show all ' + n + ' words', 'btn-more-words'))
+      : null);
+}
+
+/** Both review directions with their state, and the list actions. */
+function progressPanel(ch) {
+  const enrolled = store.isEnrolled(ch);
+  const known = K.TRACKS.every((t) => store.reviewStats(t, ch).score >= R.LEARNED_AT);
+  return h('section', { class: 'zone progress-panel' },
+    enrolled ? K.TRACKS.map((t) => trackRow(t, ch)) : h('p', { class: 'muted' }, 'Not in your kanji yet.'),
+    h('div', { class: 'actions' },
+      enrolled
+        ? button('Remove', () => removeKanji(ch), 'ghost small', { id: 'btn-kanji-remove' })
+        : button('+ Add to my kanji', () => addKanji(ch), 'primary small', { id: 'btn-kanji-add' }),
+      known ? null : button('Mark as known', () => markKnown(ch), 'ghost small', { id: 'btn-kanji-known' })));
+}
+
+/** One direction: its name, its state, and four steps lit up to the state (no points shown). */
+function trackRow(track, ch) {
+  const state = R.stateOf(store.reviewStats(track, ch).score);
+  const lit = R.STATES.indexOf(state);     // unseen 0 ... confident 4
+  return h('div', { class: 'track', dataset: { state } },
+    h('span', { class: 'track-name' }, K.TRACK_INFO[track].label),
+    h('span', { class: 'track-state' }, state),
+    h('span', { class: 'track-steps', 'aria-hidden': 'true' },
+      [1, 2, 3, 4].map((step) => h('i', { class: step <= lit ? 'lit' : null }))));
 }
 
 export function readingsNode(info) {
@@ -122,28 +152,37 @@ export function readingsNode(info) {
     info.kun.map((r) => h('div', { class: 'reading-pill kun' }, h('span', { class: 'rt' }, 'Kun'), ja(r, 'rv'))));
 }
 
-function partsNode(parts, linkable) {
-  return h('div', { class: 'rad-viz' }, parts.map(([glyph, meaning]) => {
+function partsBlock(label, parts, linkable) {
+  if (!parts.length) return null;
+  return [h('div', { class: 'sub-label' }, label), h('div', { class: 'parts' }, parts.map(([glyph, meaning]) => {
     const open = linkable && glyph !== stack[stack.length - 1].ch && K.isLibraryKanji(glyph);
-    return h('div', { class: 'rad-group' },
-      h('div', { class: 'rl' }, meaning),
-      open
-        ? button(ja(glyph), () => push({ type: 'kanji', ch: glyph }), 'rc rc-link', { title: 'Open ' + glyph })
-        : ja(glyph, 'rc', 'div'));
-  }));
+    const content = [ja(glyph, 'part-glyph'), h('span', { class: 'part-meaning' }, meaning)];
+    return open
+      ? button(content, () => push({ type: 'kanji', ch: glyph }), 'part-chip rc-link', { title: 'Open ' + glyph, 'data-kanji': glyph })
+      : h('span', { class: 'part-chip' }, content);
+  }))];
 }
 
-function exampleWords(ch, words) {
-  const list = h('div', { class: 'example-words' });
-  const fill = (count) => list.replaceChildren(...words.slice(0, count).map((word) =>
-    h('button', { type: 'button', class: 'example-row', onclick: () => push({ type: 'word', ch, word }) },
-      ja(word[0], 'w'), ja(word[1], 'r'), h('span', { class: 'm' }, word[2].split(';')[0]))));
-  fill(WORDS_SHOWN);
-  if (words.length <= WORDS_SHOWN) return list;
-  const more = button('Show all ' + words.length + ' words', () => {
-    fill(words.length);
+/** A learner's sentence with this kanji picked out; the text goes in as text nodes. */
+function sentenceRow(sentence, ch) {
+  const pieces = sentence.sentence.split(ch);
+  const text = pieces.flatMap((piece, i) => (i ? [h('mark', null, ch), piece] : [piece]));
+  return h('button', { type: 'button', class: 'card-sentence', dataset: { sentenceId: sentence.id },
+    onclick: () => openSentenceView(sentence.id) },
+  h('span', { class: 'cs-text', lang: 'ja' }, text),
+  sentence.translation ? h('span', { class: 'cs-translation' }, sentence.translation) : null);
+}
+
+/** The first `shown` items, and a button that reveals the rest. */
+function expandable(items, shown, render, listClass, moreLabel, moreId) {
+  const list = h('div', { class: listClass });
+  const fill = (count) => list.replaceChildren(...items.slice(0, count).map(render));
+  fill(shown);
+  if (items.length <= shown) return list;
+  const more = button(moreLabel(items.length), () => {
+    fill(items.length);
     more.remove();
-  }, 'ghost small', { id: 'btn-more-words' });
+  }, 'ghost small', { id: moreId });
   return h('div', null, list, more);
 }
 

@@ -7,7 +7,7 @@ Binding local contract for this repository. Read this before editing anything he
 - Project context: `.memory_bank/` — `projectbrief.md`, `technical_context.md`, `progress_context.md`
 - Module graph, boundary map, group registry: `.agentic_docs/code_index.md` (**authoritative** —
   it wins over this file on any conflict about module names, edges or groups)
-- Current build step and the owner's decisions (P1–P12): `.agentic_docs/current_task.md`
+- Current build step and the owner's decisions (P1–P14): `.agentic_docs/current_task.md`
 - Per-file 4-line headers (`[MODULE]`/`[IFACE]`/`[GRAPH]`/`[STATE]`) sit at the top of every
   source file, including `index.html`, the stylesheets and the tools
 
@@ -67,7 +67,7 @@ add one and register it in the Child Index below.
 | `THEMES` in `js/core/storage.js` | `css/app.css` `:root[data-theme=…]`, `js/core/theme.js` `THEME_BAR_COLOR`, `js/settings/settings-ui.js` labels | A theme id is the palette key, the status-bar colour key and a button label. |
 | Element ids in `index.html` | `js/kana/kana-ui.js` `cacheDom()`/`initKana()`, `js/settings/settings-ui.js`, `js/core/shell.js`, the `screen-*` ids the `*-ui.js` modules fill | Modules bind static nodes by id. |
 | Tabs (`TABS` in `js/core/shell.js`) | `index.html` tab-bar buttons (`data-tab`) and `screen-<tab>` sections, `js/main.js` `registerTab`, `css/app.css` `.tabbar` column count, the tab count in `tools/browser-smoke.js` | A tab is a route, a button, a screen and a grid column; one missing piece leaves a dead button or a misaligned bar. |
-| Ids and classes the smoke test drives (`#btn-*`, `.mode-row[data-track]`, `.rating.*`, `.kanji-tile[data-kanji]`, `#sentence-*`, `.prompt-row[data-status]` `.pw-*`) | `tools/browser-smoke.js`, `tools/scene.html` | The UI check finds the app through them. |
+| Ids and classes the smoke test drives (`#btn-*`, `.mode-row[data-track]`, `.rating.*`, `.kanji-tile[data-kanji]`, `.rc-link[data-kanji]`, `.progress-panel .track`, `.card-sentence`, `#sentence-*`, `.prompt-row[data-status]` `.pw-*`) | `tools/browser-smoke.js`, `tools/scene.html` | The UI check finds the app through them. |
 
 ## Verification
 

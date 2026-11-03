@@ -1,5 +1,26 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-03] Kanji card relaid out; "In your sentences" on the card
+
+The owner found the card's state chips and buttons floating between the hero and the zones
+(tablet, Kids theme). Three static mocks were compared; the owner picked **B**, with stroke order
+and readings stacked on a phone. `js/kanji/kanji-card.js` + `css/kanji.css`: the hero is glyph |
+meaning + also | a progress panel (per review direction: name, state and four steps lit up to the
+state — no points, in the spirit of contract 9 — plus Remove / + Add to my kanji / Mark as known);
+below 600 px the panel drops under the glyph row. Then stroke order beside a readings panel that
+now also holds radicals and components (compact glyph + meaning chips; a linkable component shows
+›); stacked on a phone. Then "In your words" and the new "In your sentences" (side by side when
+both fit), then example words. Unlit steps use a tint of `--muted`, because the Kids theme's `--line`
+is amber and read as "learning".
+
+The card had no link to the Sentences list: `kanji.sentencesUsing` (pure, matches the sentence text
+only) feeds "In your sentences" (the kanji marked in the accent colour, 3 + show all); tapping one
+opens the sentence sheet (`sentences-ui.openSentenceView`, now exported) in place of the card, the
+same way "In your words" opens the word sheet. `sw.js` → `hino-lite-app-v4` (v3 is live). Selftest
++1, smoke +3 (152/152, 98/98); the smoke test reads a component link's target from `data-kanji`
+(the chip now also holds the meaning). `tools/scene.html` gained a 学 sentence for the card shots.
+Screenshots reviewed at 390×844 and 1280×800 in all three themes.
+
 ## [2026-11-02] Older copies of the app can no longer wipe newer data
 
 Fixes the known issue logged with the Sentences tab. Saves write the whole document, so (a) an older

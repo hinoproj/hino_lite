@@ -1,5 +1,5 @@
-// [MODULE] kanji | Pure kanji rules: library membership and levels, search, reveal plan per mode, words that use a kanji
-// [IFACE] layer: domain | in: kanji characters, query strings, word lists -> out: index entries, booleans, card plans | crosses: []
+// [MODULE] kanji | Pure kanji rules: library membership and levels, search, reveal plan per mode, words and sentences that use a kanji
+// [IFACE] layer: domain | in: kanji characters, query strings, word and sentence lists -> out: index entries, booleans, card plans | crosses: []
 // [GRAPH] needs: [kanji-index, romaji] | feeds: [kanji-ui, kanji-card, words-ui, sentences-ui, library, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
 
@@ -81,4 +81,9 @@ export function cardPlan(track) {
 /** The learner's words whose writing contains this kanji. */
 export function wordsUsing(ch, words) {
   return words.filter((w) => String(w.writing || '').includes(ch));
+}
+
+/** The learner's sentences that contain this kanji. */
+export function sentencesUsing(ch, sentences) {
+  return sentences.filter((s) => String(s.sentence || '').includes(ch));
 }

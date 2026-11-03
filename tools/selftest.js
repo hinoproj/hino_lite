@@ -336,6 +336,9 @@ check('Latin search is word-prefix ("on" does not match "prison")',
 check('kanji card plans', steps(K.cardPlan(K.TRACK_READ)) === 'glyph | meaning | readings,strokes,words' &&
   steps(K.cardPlan(K.TRACK_RECALL)) === 'meaning | glyph | readings,strokes,words');
 check('words using a kanji', K.wordsUsing('強', [full, bare]).length === 1);
+check('sentences using a kanji: the sentence text only, not the translation or reading',
+  K.sentencesUsing('聞', [{ sentence: 'もう一度聞いてください。' }, { sentence: 'はい。', translation: '聞', reading: '聞' }, {}])
+    .map((s) => s.sentence).join() === 'もう一度聞いてください。');
 
 // --- Storage normalize --------------------------------------------------------
 

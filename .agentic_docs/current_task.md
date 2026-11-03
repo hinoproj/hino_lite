@@ -3,7 +3,8 @@
 **Status:** built and verified 2026-11-01 (`uv run tools/check.py`: selftest 117/117, smoke 71/71;
 screenshots at phone and tablet sizes reviewed). Folder renamed and pushed to Pages
 2026-11-02 (`https://hinoproj.github.io/hino_lite/`). Sentences tab (P13) built and verified
-2026-11-02 (selftest 149/149, smoke 93/93). Open: device sessions with the learner.
+2026-11-02 (selftest 149/149, smoke 93/93). Kanji card layout (P14) 2026-11-03 (152/152, 98/98).
+Open: device sessions with the learner.
 
 Extends the kana drill into **Hino Lite**: kana + the learner's own words + a kanji library whose
 kanji join a personal list automatically. Learner: the owner's son, on a phone (portrait) and a
@@ -26,6 +27,7 @@ tablet (landscape), offline, on-device storage only. Existing progress may be dr
 | P11 | ES modules, no `file://` support, no Node: rule tests and the UI smoke run in the browser, driven by `uv run tools/check.py`. User data in `localStorage` (`hino_lite_v2`) + `navigator.storage.persist()`. |
 | P12 | Library files built by `tools/build_library.py` (uv, stdlib) from the platform repo's `data/`; output committed here. |
 | P13 | (2026-11-02) **Sentences tab**, no sentence SRS yet. Form: Sentence (required), Reading (optional, kana), Translation, Notes; one sentence per add. **Parse** shows when brackets `()` `[]` (and full-width) hold readings or a Latin/Cyrillic tail is present: bracket = reading of the kanji token before it (leading non-kanji stripped except お/ご); kana-only tokens skipped; the tail goes to Translation, delimiter dropped. After a **new** sentence with kanji, a prompt lists its kanji words (bracketed ones with readings, other kanji runs with an empty reading); Add is enabled once meaning (and reading) are filled; the example is the whole sentence (+ translation); conjugated forms stay as written, the dictionary form goes in the meaning, typed by the learner; meanings are never prefilled; a word already in the list is only marked. Kanji join the kanji list as usual. No "Make word cards" button later; editing or deleting a sentence leaves its words untouched. |
+| P14 | (2026-11-03) **Kanji card layout** (mock variant B): hero = glyph | meaning + also | progress panel (both review states as lit steps, no points; Add/Remove, Mark as known); stroke order beside a readings panel that holds radicals and components; then "In your words" and "In your sentences" (the learner's sentences containing the kanji; tap opens the sentence); then example words. On a phone the panel drops under the glyph and stroke order stacks above readings. Same layout in all three themes. |
 
 ## Tasks
 
@@ -36,3 +38,4 @@ tablet (landscape), offline, on-device storage only. Existing progress may be dr
 5. Tests: `tools/selftest.*`, `tools/browser-smoke.*`, `tools/check.py`; screenshots at phone and tablet sizes.
 6. Docs: AGENTS.md, README, memory bank, code index; platform-repo references to the old folder name.
 7. Sentences tab (P13): `js/sentences/sentences.js` rules, storage `sentences`, `sentences-ui` + `css/sentences.css`, selftest + smoke + scenes, docs. Done 2026-11-02.
+8. Kanji card layout and "In your sentences" (P14): `kanji.sentencesUsing`, `kanji-card`, `css/kanji.css`, selftest + smoke + scene, docs. Done 2026-11-03 (selftest 152/152, smoke 98/98).

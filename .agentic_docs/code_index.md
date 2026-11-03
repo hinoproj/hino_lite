@@ -25,8 +25,8 @@ boundaries and `group:` values: on any conflict with an `AGENTS.md`, this file w
 | kana-ui | js/kana/kana-ui.js | presentation | kana-data, kana-srs, storage, theme, shell, dom | main | presentation | browser DOM |
 | review-ui | js/review/review-ui.js | presentation | review, storage, theme, shell, dom | words-ui, kanji-ui | presentation | browser DOM |
 | words-ui | js/words/words-ui.js | presentation | words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card | main, kanji-card | presentation | browser DOM |
-| sentences-ui | js/sentences/sentences-ui.js | presentation | sentences, words, kanji, romaji, storage, shell, dom | main | presentation | browser DOM |
-| kanji-card | js/kanji/kanji-card.js | presentation | kanji, library, words, review, storage, shell, dom, words-ui | kanji-ui, words-ui | presentation | browser DOM |
+| sentences-ui | js/sentences/sentences-ui.js | presentation | sentences, words, kanji, romaji, storage, shell, dom | main, kanji-card | presentation | browser DOM |
+| kanji-card | js/kanji/kanji-card.js | presentation | kanji, library, words, review, storage, shell, dom, words-ui, sentences-ui | kanji-ui, words-ui | presentation | browser DOM |
 | kanji-ui | js/kanji/kanji-ui.js | presentation | kanji, library, review, review-ui, words, storage, shell, dom, kanji-card | main | presentation | browser DOM |
 | settings-ui | js/settings/settings-ui.js | presentation | storage, theme, backup, shell, dom | main | presentation | browser DOM |
 | main | js/main.js | presentation | storage, theme, shell, kana-ui, words-ui, sentences-ui, kanji-ui, settings-ui, kana-data, library, sw | index | presentation | browser DOM, service worker |
@@ -182,10 +182,11 @@ Latin. Conjugated forms stay as written; their dictionary form goes in the meani
 Library membership and order from `kanji-index`; search (kanji in the query → membership; kana →
 reading contains; Latin → meaning word-prefix, or the query as kana prefixes a reading);
 `cardPlan(track)`: Kanji → meaning = glyph | meaning | readings, strokes, your words; Meaning →
-kanji = meaning | glyph | readings, strokes, your words.
+kanji = meaning | glyph | readings, strokes, your words. `wordsUsing` / `sentencesUsing`: the
+learner's words (writing) and sentences (sentence text only) that contain a kanji.
 
 **Exposes**: `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`, `LEVELS`, `isLibraryKanji`,
-`indexEntry`, `compareKanji`, `allKanji`, `matchesQuery`, `cardPlan`, `wordsUsing`
+`indexEntry`, `compareKanji`, `allKanji`, `matchesQuery`, `cardPlan`, `wordsUsing`, `sentencesUsing`
 
 ## storage
 
@@ -312,18 +313,22 @@ the pasted text, rōmaji reading preview). Saving a **new** sentence with kanji 
 prompt (replaces the form's back entry): one row per candidate with editable kanji and reading and
 an empty meaning; Add is enabled once meaning and reading are filled, saves the word with the
 sentence as its example and enrolls its kanji; a word already in the list (writing|reading) is only
-marked. Edits never prompt.
+marked. Edits never prompt. The sentence sheet also opens from a kanji card's "In your sentences".
 
-**Exposes**: `renderSentences`
+**Exposes**: `renderSentences`, `openSentenceView`
 
 ## kanji-card
 
 **File**: `js/kanji/kanji-card.js` · **Layer**: presentation
 
-Kanji card in the sheet, ported from JLPT_coach's: glyph, level, meaning + also, state per track,
-Add / Remove / Mark as known, "In your words", stroke order + readings, radicals and linkable
-components, example words (8 + show all) → word sub-view with pitch-accent diagrams and "+ Add to
-my words" (opens the prefilled form) or "In your words ✓". Own view stack with ←.
+Kanji card in the sheet, ported from JLPT_coach's. Hero: glyph, level, meaning + also, and a
+progress panel (per track: name, state, four steps lit up to the state — never points; Add /
+Remove / Mark as known); on a phone the panel drops under the glyph. Then stroke order beside the
+readings panel (readings, radicals, linkable components; stacked on a phone), "In your words" and
+"In your sentences" (kanji marked; 3 + show all; opens the sentence sheet), example words (8 + show
+all) → word sub-view with pitch-accent diagrams and "+ Add to my words" (opens the prefilled form)
+or "In your words ✓". Own view stack with ←; the learner's words and sentences open their own
+sheets in place of the card.
 
 **Exposes**: `openKanjiCard`, `readingsNode`, `pitchSvg`
 
@@ -359,8 +364,8 @@ KANA_DATA, library} for tests and debugging.
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
 controls; kana screens), `css/review.css` (track panel, review card, ratings, help, summary),
 `css/words.css` (list, form, word sheet; its `.field*` classes serve the sentence form too),
-`css/sentences.css` (sentence list, form and Parse bar, sheet, word-card prompt rows), `css/kanji.css` (library, tiles, card zones, strokes,
-readings, pitch). Themes are explicit (`data-theme`), never OS-derived.
+`css/sentences.css` (sentence list, form and Parse bar, sheet, word-card prompt rows), `css/kanji.css` (library, tiles, card hero with progress
+panel, card zones, strokes, readings with parts, your sentences, pitch; phone layout below 600 px). Themes are explicit (`data-theme`), never OS-derived.
 
 ## index
 
@@ -401,9 +406,11 @@ normalisation.
 
 Drives the real app in an iframe: kana runs and themes, word add/validate/duplicate/edit/search,
 both word reviews and the rating help, library download, Mine/All/levels/search, kanji card
-(components, example words, add to my words), remove / add / mark as known, kanji review, backup
+(progress panel, parts in the readings panel, components, example words, add to my words),
+remove / add / mark as known, kanji review, backup
 round trip and reminder, sentences (Parse/Undo, word-card prompt with readings, already-in-list,
-plain sentence with a rōmaji reading, search, edit without prompt, backup, delete keeps words),
+plain sentence with a rōmaji reading, search, a kanji card listing and opening its sentences, edit
+without prompt, backup, delete keeps words),
 another tab's save taken over and newer-version keys kept, Android back, service worker install.
 
 ## scene

@@ -49,7 +49,8 @@ const sentence = (id, text, reading, translation, age) =>
 const sentences = [
   sentence('s1', 'もう一度聞いてください。', 'もういちどきいてください。', 'Please listen once more.', 2),
   sentence('s2', '質問を聞いてもいいですか。', 'しつもんをきいてもいいですか。', 'May I ask a question?', 1),
-  sentence('s3', '意見を言ってもいいですか。', '', 'May I give my opinion?', 0)
+  sentence('s3', '意見を言ってもいいですか。', '', 'May I give my opinion?', 0),
+  sentence('s4', '明日も学校で勉強します。', 'あしたもがっこうでべんきょうします。', 'I will study at school tomorrow too.', 3)
 ];
 localStorage.setItem('hino_lite_v2', JSON.stringify({
   app: 'hino_lite', version: 2, updatedAt: now, unsavedSince: 0,

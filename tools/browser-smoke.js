@@ -298,9 +298,11 @@ async function kanji() {
     Boolean($('#kanji-card .strokes svg')) && $$('#kanji-card .reading-pill').length >= 2 &&
     $$('#kanji-card .example-row').length > 0 && $$('#kanji-card .example-row').length <= 8);
   log('card: "In your words" lists 学校', $$('#kanji-card [data-word-id]').some((b) => b.textContent === '学校'));
+  log('card: the progress panel shows both directions, radicals sit in the readings panel',
+    $$('#kanji-card .progress-panel .track').length === 2 && Boolean($('#kanji-card .readings-zone .parts')));
   const link = $('#kanji-card .rc-link');
   if (link) {
-    const target = link.textContent;
+    const target = link.dataset.kanji;
     link.click();
     await waitFor(() => $('#kanji-card[data-kanji="' + target + '"]'));
     $('#btn-card-back').click();
@@ -500,6 +502,18 @@ async function sentences() {
   $('#btn-save-sentence').click();
   await waitFor(() => visible('screen-sentences'));
   log('editing saves without a prompt', visible('screen-sentences') && st.listSentences().some((x) => x.translation === 'I learn every day.'));
+
+  await tab('kanji');
+  await waitFor(() => $('.kanji-tile[data-kanji="聞"]'));
+  await openTile('聞');
+  const cardSentences = $$('#kanji-card .card-sentence');
+  log('a kanji card lists the sentences that use it, the kanji marked', cardSentences.length === 2 &&
+    cardSentences.every((r) => r.querySelector('mark').textContent === '聞'), cardSentences.map((r) => r.textContent).join(' | '));
+  cardSentences[0].click();
+  await waitFor(() => $('#sentence-view'));
+  log('tapping one opens the sentence', Boolean($('#sentence-view')) && $('#sentence-view').textContent.includes('聞'));
+  $('#sentence-view .sheet-head button').click();
+  await waitFor(() => !visible('sheet-layer'));
 
   const exported = st.exportText();
   st.reset();

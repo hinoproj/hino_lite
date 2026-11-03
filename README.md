@@ -39,9 +39,10 @@ marked. Deleting a sentence keeps its word cards.
 
 **Kanji** — all 2,099 library kanji by JLPT level (N5…N1, no level), downloaded once on the first
 visit (~6.7 MB on the device). Kanji in your words' writing join *your* list automatically; you can
-also add any kanji, remove one (its progress is kept), or mark it as known. The card shows stroke
-order, readings, radicals and components, example words with pitch accent (one tap adds a word to
-your list), and your own words that use it. Two reviews: **Kanji → meaning** and **Meaning → kanji**.
+also add any kanji, remove one (its progress is kept), or mark it as known. The card shows how far
+along the kanji is in each review, stroke order, readings with radicals and components, your own
+words and sentences that use it, and example words with pitch accent (one tap adds a word to your
+list). Two reviews: **Kanji → meaning** and **Meaning → kanji**.
 
 **Settings** — theme (Dark, Light, Kids), backup export/import, reset.
 
