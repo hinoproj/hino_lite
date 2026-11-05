@@ -314,7 +314,8 @@ async function kanji() {
   await openTile('学');
   log('card: stroke order, readings, example words',
     Boolean($('#kanji-card .strokes svg')) && $$('#kanji-card .reading-pill').length >= 2 &&
-    $$('#kanji-card .example-row').length > 0 && $$('#kanji-card .example-row').length <= 8);
+    $$('#kanji-card .example-row').length > 0 && $$('#kanji-card .example-row').length <= 8 &&
+    $$('#kanji-card .examples-zone .example-row').length > 0);
   log('card: "In your words" lists 学校', $$('#kanji-card [data-word-id]').some((b) => b.textContent === '学校'));
   log('card: the progress panel shows both directions, radicals sit in the readings panel',
     $$('#kanji-card .progress-panel .track').length === 2 && Boolean($('#kanji-card .readings-zone .parts')));

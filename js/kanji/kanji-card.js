@@ -118,7 +118,7 @@ async function kanjiView(ch) {
       ? zone('Example words (' + info.words.length + ')', expandable(info.words, WORDS_SHOWN, (word) =>
         h('button', { type: 'button', class: 'example-row', onclick: () => push({ type: 'word', ch, word }) },
           ja(word[0], 'w'), ja(word[1], 'r'), h('span', { class: 'm' }, word[2].split(';')[0])),
-        'example-words', (n) => 'Show all ' + n + ' words', 'btn-more-words'))
+        'example-words', (n) => 'Show all ' + n + ' words', 'btn-more-words'), 'examples-zone')
       : null);
 }
 

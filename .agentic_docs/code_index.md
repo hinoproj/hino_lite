@@ -370,7 +370,7 @@ controls; kana screens), `css/review.css` (track panel, the cards' progress pane
 review card, ratings, help, summary), `css/words.css` (list, form, word sheet with its hero row;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
 `css/sentences.css` (sentence list, form and Parse bar, sheet, word-card prompt rows), `css/kanji.css` (library, tiles, card hero with the
-progress panel's placement, card zones, strokes, readings with parts, your sentences, pitch; phone layout below 600 px). Themes are explicit (`data-theme`), never OS-derived.
+progress panel's placement, card zones (square outlines; only strokes filled; examples with a left rule only), strokes, readings with parts, your sentences, pitch; phone layout below 600 px). Themes are explicit (`data-theme`), never OS-derived.
 
 ## index
 

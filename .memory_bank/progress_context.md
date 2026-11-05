@@ -1,5 +1,22 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-05] Kanji card zones restyled (P16)
+
+Four mocks of the card's zones (strokes panel + hairline rest, all hairline, reference row boxed,
+no rules) were rendered over the real 学 card and declined; the owner specified the change instead.
+`css/kanji.css`: `.zone` lost its fill and its 14 px radius — square outlines on the sheet's paper;
+`.strokes-zone` keeps `--surface` (with the hero's progress panel, the card's only filled objects);
+new `.examples-zone` (set in `kanji-card.js`) shows only its left rule; `.reading-pill` square;
+`.part-chip` and `.example-row` without background; `.kanji-card .chip` square (chips elsewhere —
+level filters, reading suggestions, the word sheet's kanji — stay round). The reading pill is also
+square in the kanji review's Readings step, the same element. `sw.js` → `hino-lite-app-v6` (v5 is
+live). Smoke: the card check also requires the example rows inside `.examples-zone`. Screenshots
+reviewed at 390×844 and 1280×800 plus a 1500 px-tall card, dark theme.
+
+Mock tooling note: headless Chrome with a profile under a deep folder fails the library download
+("Failed to execute 'put' on 'Cache': Entry already exists") — Cache Storage paths pass Windows'
+260-character limit. `check.py` uses a short temp profile and is unaffected; ad-hoc shots need one too.
+
 ## [2026-11-05] Word sheet: progress panel and "Mark as known" (P15)
 
 The word sheet still showed its two review states as chips ("Japanese → meaning: unseen") at the
