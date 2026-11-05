@@ -298,9 +298,10 @@ points) that the word sheet and the kanji card build their progress panels from.
 
 **File**: `js/words/words-ui.js` · **Layer**: presentation
 
-Words tab (review panel, search, list), word sheet (hero: the word and its reading | a progress
-panel with both directions as lit steps and "Mark as known" until both are learned — the panel
-drops under the word below 600 px; then fields, kanji chips, Edit/Delete),
+Words tab (review panel, search, list), word sheet (hero: the word and its reading with a
+progress panel stacked under them — both directions as lit steps and "Mark as known" until both
+are learned; then meaning, example, notes and kanji chips in a grid, two columns from 720 px;
+Edit/Delete on the right),
 add/edit form (rōmaji suggestions as hiragana/katakana chips, live "Adds to your kanji" preview,
 duplicate refusal with "Open it"), save → `storage.saveWord` + `enrollKanji`; the word review adapter.
 
@@ -367,7 +368,7 @@ KANA_DATA, library} for tests and debugging.
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
 controls; kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
 review card, ratings, help, summary), `css/words.css` (list, form, word sheet with its hero row;
-its `.field*` classes serve the sentence form too),
+its `.field*` classes serve the sentence form too; the word sheet's field grid),
 `css/sentences.css` (sentence list, form and Parse bar, sheet, word-card prompt rows), `css/kanji.css` (library, tiles, card hero with the
 progress panel's placement, card zones, strokes, readings with parts, your sentences, pitch; phone layout below 600 px). Themes are explicit (`data-theme`), never OS-derived.
 

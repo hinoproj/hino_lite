@@ -1,4 +1,4 @@
-/* [MODULE] words-css | Words tab: word list rows, add/edit form with suggestions, word sheet with its hero row
+/* [MODULE] words-css | Words tab: word list rows, add/edit form with suggestions, word sheet (hero with progress panel, field grid)
    [IFACE] layer: presentation | in: classes set by words-ui.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -46,20 +46,23 @@
   .word-form .form-grid { grid-template-columns: 1fr 1fr; }
 }
 
-/* Word sheet: the word and its reading | the progress panel; the panel drops under the word on a phone */
-.word-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 280px);
-  gap: 12px 20px;
-  align-items: center;
-}
+/* Word sheet: the word and its reading, the progress panel stacked under them at every width.
+   The panel is capped and centred, so it sits inset from the sheet's edges on a phone and
+   never stretches into a banner on a tablet. */
+.word-hero { display: grid; gap: 14px; padding-bottom: 4px; }
+.word-hero .progress-panel { width: min(420px, 100% - 24px); justify-self: center; }
 
 .hero { text-align: center; padding: 6px 0 4px; min-width: 0; }
 .hero-word { font-size: 52px; line-height: 1.2; overflow-wrap: anywhere; }
 .hero-reading { display: block; font-size: 22px; color: var(--muted); }
-.word-view .part-text { font-size: 18px; }
-.word-view > .actions { margin-top: 20px; }
 
-@media (max-width: 600px) {
-  .word-hero { grid-template-columns: minmax(0, 1fr); }
+/* Meaning, example, notes, kanji: one column on a phone, two once the sheet is a dialog
+   (the 720 px breakpoint app.css gives .sheet). Grid gaps, so .part's own margin is dropped. */
+.word-fields { display: grid; gap: 14px 28px; margin-top: 18px; }
+.word-fields > .part { margin-top: 0; min-width: 0; }
+.word-view .part-text { font-size: 18px; }
+.word-view > .actions { margin-top: 24px; justify-content: flex-end; }
+
+@media (min-width: 720px) {
+  .word-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }

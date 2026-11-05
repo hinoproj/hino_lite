@@ -67,9 +67,9 @@ function wordItems() {
 // --- Word sheet ---------------------------------------------------------
 
 /**
- * Layout: hero (the word and its reading | the progress panel) -> meaning,
- * example, notes -> kanji -> Edit / Delete. The panel drops under the word on
- * a phone (words.css). Re-opening replaces the sheet's content in place.
+ * Layout: hero (the word and its reading, the progress panel under it) ->
+ * meaning, example, notes, kanji (two columns on a wide sheet, words.css) ->
+ * Edit / Delete on the right. Re-opening replaces the sheet's content in place.
  */
 export function openWordView(id) {
   const word = store.getWord(id);
@@ -85,9 +85,10 @@ export function openWordView(id) {
     h('div', { class: 'word-hero' },
       h('div', { class: 'hero' }, ja(W.headline(word), 'hero-word'), word.writing ? ja(word.reading, 'hero-reading') : null),
       progressPanel(word)),
-    field('meaning'), field('example'), field('notes'),
-    kanji.length ? h('div', { class: 'part' }, h('div', { class: 'part-label' }, 'Kanji'),
-      h('div', { class: 'chips' }, kanji.map((ch) => button(ja(ch), () => openKanjiCard(ch), 'chip glyph-chip')))) : null,
+    h('div', { class: 'word-fields' },
+      field('meaning'), field('example'), field('notes'),
+      kanji.length ? h('div', { class: 'part' }, h('div', { class: 'part-label' }, 'Kanji'),
+        h('div', { class: 'chips' }, kanji.map((ch) => button(ja(ch), () => openKanjiCard(ch), 'chip glyph-chip')))) : null),
     h('div', { class: 'actions' },
       button('Edit', () => {
         shell.closeSheetNow();

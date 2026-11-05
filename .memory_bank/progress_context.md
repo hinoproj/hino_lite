@@ -3,10 +3,13 @@
 ## [2026-11-05] Word sheet: progress panel and "Mark as known" (P15)
 
 The word sheet still showed its two review states as chips ("Japanese → meaning: unseen") at the
-bottom. It now has the kanji card's progress panel: a hero row with the word and its reading on the
-left and the panel on the right (below 600 px it drops under the word), with both directions as lit
-steps (no points) and **Mark as known** (confirmed; both directions to learned, never lowered),
-hidden once both are learned. Words have no add/remove.
+bottom. It now has the kanji card's progress panel, with both directions as lit steps (no points)
+and **Mark as known** (confirmed; both directions to learned, never lowered), hidden once both are
+learned. Words have no add/remove. Layout, after the owner reviewed a first version with the panel
+beside the word on wide sheets: the panel is **stacked under the word at every width**, capped at
+420 px and centred (inset from the sheet's edges on a phone); meaning, example, notes and kanji sit
+in a grid, **two columns once the sheet is a dialog** (≥ 720 px, app.css's sheet breakpoint);
+Edit and Delete are aligned right.
 
 The step row is now shared: `review-ui.trackRow` (moved from `kanji-card`), with its CSS moved from
 `kanji.css` to `review.css`; `.progress-panel` carries its own surface instead of borrowing
