@@ -1,6 +1,6 @@
 // [MODULE] review-ui | Self-rated review run for words and kanji: step-by-step reveal, four rating buttons, help sheet, summary; shared track panel, state dots and progress rows
 // [IFACE] layer: presentation | in: a composed run + an adapter (card plan, part renderers) -> out: rendered run/summary, recorded ratings | crosses: [browser DOM]
-// [GRAPH] needs: [review, storage, theme, shell, dom] | feeds: [words-ui, kanji-ui, kanji-card] | group: presentation
+// [GRAPH] needs: [review, storage, theme, shell, dom] | feeds: [words-ui, sentences-ui, kanji-ui, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
 
 import * as R from './review.js';

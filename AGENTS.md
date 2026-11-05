@@ -37,7 +37,8 @@ add one and register it in the Child Index below.
    `normalize()` keeps keys it does not know (top level, settings, each word and sentence) and a
    save from another tab replaces the in-memory copy: an older copy of the app must never strip
    or overwrite what a newer one saved — keep both when editing `storage.js`. Review
-   track ids (`words.read`, `words.recall`, `kanji.read`, `kanji.recall`) and kana mode ids are
+   track ids (`words.read`, `words.recall`, `kanji.read`, `kanji.recall`, `sentences.read`,
+   `sentences.recall`) and kana mode ids are
    storage keys — renaming one orphans its scores.
 6. **Bump `CACHE_NAME` in `sw.js`** in any change that touches a file in its `ASSETS` list, and add
    every new shipped file to that list. Cache-first never revalidates, so skipping either ships
@@ -62,12 +63,12 @@ add one and register it in the Child Index below.
 | `js/kana/kana-data.js` deck ids, item shape or `SHAPE_WEIGHT` | `js/kana/kana-srs.js`, `tools/selftest.js` | `kana-srs` reads `item.r`/`pr`/`consonant`/`vowel`; the selftest asserts deck sizes and parity. |
 | Kana mode ids or `MODE_INFO` in `js/kana/kana-srs.js` | `js/kana/kana-ui.js`, saved data | Mode ids are keys of `state.kana`. |
 | Kana scoring constants or `MISS_LIMIT` | `index.html` Settings (Kana scoring, Kana mistakes), `README.md` | The rules are printed to the learner. |
-| Review constants in `js/review/review.js` (ratings, thresholds, `MAX_NEW_PER_RUN`, maintenance) | `index.html` Settings "Words and kanji reviews", `README.md`, `tools/selftest.js` | The run rule is described to the learner (points are not). |
-| Reveal order (`words.cardPlan`, `kanji.cardPlan`) or field names | `js/words/words-ui.js` / `js/kanji/kanji-ui.js` part renderers, `README.md` | Adapters render the keys the plans name. |
+| Review constants in `js/review/review.js` (ratings, thresholds, `MAX_NEW_PER_RUN`, maintenance) | `index.html` Settings "Words, kanji and sentence reviews", `README.md`, `tools/selftest.js` | The run rule is described to the learner (points are not). |
+| Reveal order (`words.cardPlan`, `kanji.cardPlan`, `sentences.cardPlan`) or field names | `js/words/words-ui.js` / `js/kanji/kanji-ui.js` / `js/sentences/sentences-ui.js` part renderers, `README.md` | Adapters render the keys the plans name. |
 | `THEMES` in `js/core/storage.js` | `css/app.css` `:root[data-theme=…]`, `js/core/theme.js` `THEME_BAR_COLOR`, `js/settings/settings-ui.js` labels | A theme id is the palette key, the status-bar colour key and a button label. |
 | Element ids in `index.html` | `js/kana/kana-ui.js` `cacheDom()`/`initKana()`, `js/settings/settings-ui.js`, `js/core/shell.js`, the `screen-*` ids the `*-ui.js` modules fill | Modules bind static nodes by id. |
 | Tabs (`TABS` in `js/core/shell.js`) | `index.html` tab-bar buttons (`data-tab`) and `screen-<tab>` sections, `js/main.js` `registerTab`, `css/app.css` `.tabbar` column count, the tab count in `tools/browser-smoke.js` | A tab is a route, a button, a screen and a grid column; one missing piece leaves a dead button or a misaligned bar. |
-| Ids and classes the smoke test drives (`#btn-*`, `.mode-row[data-track]`, `.rating.*`, `.kanji-tile[data-kanji]`, `#screen-*` `.filters .filter` + `.filter-label`, `.level-chip[data-level]`, `#kanji-search`, `#words-search`, `.word-group[data-group]` + `.group-head`, `.word-grid`, `.rc-link[data-kanji]`, `.progress-panel .track`, `.word-row[data-id]`, `#word-view .word-hero`, `.word-fields`, `.card-sentence`, `#sentence-*`, `.prompt-row[data-status]` `.pw-*`) | `tools/browser-smoke.js`, `tools/scene.html` | The UI check finds the app through them. |
+| Ids and classes the smoke test drives (`#btn-*`, `.mode-row[data-track]`, `.rating.*`, `.kanji-tile[data-kanji]`, `#screen-*` `.filters .filter` + `.filter-label`, `.level-chip[data-level]`, `#kanji-search`, `#words-search`, `.word-group[data-group]` + `.group-head`, `.word-grid`, `.sentence-group[data-group]`, `.no-translation`, `#btn-sentence-known`, `#sentence-no-review`, `.rc-link[data-kanji]`, `.progress-panel .track`, `.word-row[data-id]`, `#word-view .word-hero`, `.word-fields`, `.card-sentence`, `#sentence-*`, `.prompt-row[data-status]` `.pw-*`) | `tools/browser-smoke.js`, `tools/scene.html` | The UI check finds the app through them. |
 
 ## Verification
 

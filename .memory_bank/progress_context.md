@@ -1,5 +1,46 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-05] Sentence reviews (P19)
+
+The owner asked for SRS on sentences. Three questions were put to the owner, who picked all three
+recommendations. (1) Two directions with separate progress, like words and kanji: **Japanese →
+translation** and **Translation → Japanese**. (2) A sentence without a translation stays out of
+reviews: nothing to check an answer against. (3) The grouped list stays one column on wide
+screens, because sentences are long. Defaults stated with the questions and kept: the same ratings, run rule and
+Cards per run; a progress panel with Mark as known on the sentence sheet; deleting a sentence
+drops its scores; reveal steps mirroring Words.
+
+**Shipped.**
+- Rules (`sentences.js`): `TRACK_READ`/`TRACK_RECALL` (`sentences.read`/`sentences.recall`,
+  storage keys), `TRACK_INFO`, `isReviewable` (has a translation), `cardPlan`. Read is sentence →
+  reading (only with kanji and a reading) → translation + notes. Recall is translation → sentence
+  + reading + notes.
+- `review.groupByProgress` now serves both lists.
+- Storage: `deleteSentence` drops the sentence's scores. The tracks are additive under v2: no
+  migration, and old backups load.
+- `sentences-ui.js`:
+  - The review panel shows when at least one sentence has a translation; otherwise a hint.
+  - The labelled search toolbar, and the list grouped New/Learning/Learned/Confident. An
+    untranslated row reads "No translation — not in reviews" and has no state bars.
+  - The sheet carries the word sheet's progress-panel layout with Mark as known, or "Add a
+    translation to review this sentence"; the delete confirmation names the progress.
+  - The review adapter.
+- `sentences.css`: rows with state bars; the sheet head (panel under the sentence on a phone,
+  beside it from 720 px); review text at 30/26 px.
+- `index.html`: the Settings review panel is now "Words, kanji and sentence reviews" and says a
+  sentence joins once it has a translation. README has a sentence review table.
+- `dom.part` replaces the local `part()` in `words-ui` and `kanji-ui`. That fixed a silent drop
+  in the kanji review: the local helper took two arguments, so the Meaning step's "also: …"
+  alternates (a third argument) never showed.
+- Tests: selftest +5 (tracks, reviewability, both plans, `groupByProgress`); smoke +10 (panel counts
+  only translated sentences; both runs and their steps; own track; groups; sheet panel and Mark
+  as known; untranslated sheet hint; scores dropped on delete). 159/159, 114/114.
+- Scenes: `tools/scene.html` seeds sentence scores and an untranslated sentence and gained the
+  `sentence` and `sentence-review` scenes; `check.py shots` shoots them and `sentences-tablet`.
+  Screenshots reviewed: list on a phone (dark, Kids) and a tablet, sheet and review card on a
+  phone and a tablet.
+- `sw.js` → `hino-lite-app-v8` (v7 is live); no new files.
+
 ## [2026-11-05] Words tab: list grouped by progress, two columns, labelled search (P18)
 
 The owner asked for separated sections on the Words tab and for the list in two columns on wide

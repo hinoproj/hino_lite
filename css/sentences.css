@@ -1,19 +1,23 @@
-/* [MODULE] sentences-css | Sentences tab: list rows, add/edit form with the Parse bar, sentence sheet, word-card prompt rows
+/* [MODULE] sentences-css | Sentences tab: progress-group rows with state bars, add/edit form with the Parse bar, sentence sheet with its progress panel, word-card prompt rows, sentence review text
    [IFACE] layer: presentation | in: classes set by sentences-ui.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
 
-/* List */
+/* Rows of one progress group: one column at every width (owner, P19) -- sentences are long */
 .sentence-list { display: grid; gap: 8px; }
 
 .sentence-row {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
   width: 100%;
   text-align: left;
   background: var(--surface);
   padding: 12px 14px;
 }
 
+.sentence-main { min-width: 0; }
 .sentence-text { font-size: 20px; line-height: 1.45; overflow-wrap: anywhere; }
 
 .sentence-translation {
@@ -26,6 +30,8 @@
   -webkit-box-orient: vertical;
 }
 
+.no-translation { font-style: italic; }
+
 /* Form (field, field-label, field-error, field-note come from words.css) */
 .sentence-form .form-grid { display: grid; gap: 4px 20px; }
 .sentence-form textarea[lang="ja"] { font-size: 20px; line-height: 1.45; }
@@ -37,12 +43,30 @@
   .sentence-form .form-grid { grid-template-columns: 1fr 1fr; }
 }
 
-/* Sentence sheet */
-.sentence-hero { padding: 6px 0 4px; }
+/* Sentence sheet: the word sheet's layout (words.css). The progress panel under the sentence on a
+   phone, capped and centred; beside it from 720 px (where the sheet is a dialog), 250 px wide. */
+.sentence-head { display: grid; gap: 14px; padding-bottom: 4px; }
+.sentence-head .progress-panel { width: min(420px, 100% - 24px); justify-self: center; }
+.sentence-hero { padding: 6px 0 4px; min-width: 0; }
 .sentence-big { font-size: 28px; line-height: 1.5; }
 .sentence-reading { margin-top: 4px; font-size: 18px; color: var(--muted); }
 .sentence-view .part-text { font-size: 18px; }
-.sentence-view .actions { margin-top: 20px; }
+.sentence-view > .actions { margin-top: 20px; }
+
+@media (min-width: 720px) {
+  .sentence-head { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 24px; }
+  .sentence-head .progress-panel { width: 250px; justify-self: end; }
+}
+
+/* Sentence review (sentences-ui renderSentencePart) and its summary rows */
+.review-sentence { font-size: 30px; line-height: 1.5; overflow-wrap: anywhere; }
+.review-step .review-sentence { font-size: 26px; }
+.summary-item.summary-sentence { display: block; margin: 4px 0; font-size: 17px; line-height: 1.45; }
+
+@media (max-width: 520px) {
+  .review-sentence { font-size: 26px; }
+  .review-step .review-sentence { font-size: 22px; }
+}
 
 /* Word-card prompt */
 .prompt-sentence {

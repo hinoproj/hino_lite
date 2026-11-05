@@ -39,7 +39,17 @@ After you save a new sentence, its kanji words are offered as word cards: bracke
 with their reading, other kanji with an empty one. Type a meaning (for a conjugated word, add its
 dictionary form: "listen — て-form of 聞く") and tap **Add**; the card gets the sentence and its
 translation as its example, and its kanji join your kanji list. Words already in your list are
-marked. Deleting a sentence keeps its word cards.
+marked. Deleting a sentence keeps its word cards (its progress goes with it).
+
+Two sentence reviews, each with its own progress, for every sentence that has a translation:
+
+| Review | Shows | Main button reveals |
+| --- | --- | --- |
+| Japanese → translation | the sentence | reading (when it has kanji) → translation, notes |
+| Translation → Japanese | the translation | sentence, reading, notes |
+
+The rating, the run and **Mark as known** work as for words, and the list is grouped by progress
+the same way.
 
 **Kanji** — all 2,099 library kanji by JLPT level (N5…N1, no level), downloaded once on the first
 visit (~6.7 MB on the device). Kanji in your words' writing join *your* list automatically; you can

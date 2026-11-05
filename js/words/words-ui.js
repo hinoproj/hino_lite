@@ -10,7 +10,7 @@ import * as R from '../review/review.js';
 import { startReview, trackPanel, stateDots, trackRow } from '../review/review-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, ja, button, confirmAction, toast, filterGroup, listGroup } from '../core/dom.js';
+import { $, h, ja, button, confirmAction, toast, filterGroup, listGroup, part } from '../core/dom.js';
 import { openKanjiCard } from '../kanji/kanji-card.js';
 
 let query = '';
@@ -52,10 +52,8 @@ export function renderWords() {
 
 /** The matching words in progress groups, least known first (P18); newest first inside a group. */
 function fillList(list, words) {
-  const byGroup = new Map(R.PROGRESS_GROUPS.map((g) => [g.id, []]));
-  words.filter((w) => W.matchesQuery(w, query)).forEach((w) => byGroup.get(R.progressGroup(wordScores(w))).push(w));
-  const groups = R.PROGRESS_GROUPS.filter((g) => byGroup.get(g.id).length).map((g) =>
-    listGroup(g.label, byGroup.get(g.id).length, h('div', { class: 'word-grid' }, byGroup.get(g.id).map(wordRow)),
+  const groups = R.groupByProgress(words.filter((w) => W.matchesQuery(w, query)), wordScores).map((g) =>
+    listGroup(g.label, g.items.length, h('div', { class: 'word-grid' }, g.items.map(wordRow)),
       { className: 'word-group', dataset: { group: g.id } }));
   list.replaceChildren(...groups);
   if (words.length && !groups.length) list.append(h('p', { class: 'muted' }, 'No word matches “' + query + '”.'));
@@ -249,10 +247,6 @@ function composeRun(track) {
   return R.buildRun(wordItems(), (id) => store.reviewStats(track, id), store.getSettings().runSize)
     .map((item) => store.getWord(item.id))
     .filter(Boolean);
-}
-
-function part(label, content) {
-  return h('div', { class: 'part' }, h('div', { class: 'part-label' }, label), content);
 }
 
 function renderWordPart(word, key, asPrompt) {

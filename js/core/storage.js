@@ -13,9 +13,10 @@
  *     words:   { <id>: {id, writing, reading, meaning, example, notes, createdAt, updatedAt} },
  *     sentences: { <id>: {id, sentence, reading, translation, notes, createdAt, updatedAt} },
  *     kanji:   { <kanji>: {addedAt, removed} },
- *     reviews: { <track>: { <word id | kanji>: {score, seen, lastSeen} } } }
+ *     reviews: { <track>: { <word id | sentence id | kanji>: {score, seen, lastSeen} } } }
  *
- * Review tracks are 'words.read', 'words.recall', 'kanji.read', 'kanji.recall'.
+ * Review tracks are 'words.read', 'words.recall', 'kanji.read', 'kanji.recall',
+ * 'sentences.read', 'sentences.recall' (sentences: additive under v2, no migration).
  * A missing review entry means never answered (score -1, D56). A removed kanji
  * keeps its review entries, so adding it back restores its progress.
  *
@@ -332,10 +333,13 @@ export function saveSentence(fields, id) {
   return sentence;
 }
 
-/** Delete a sentence; word cards made from it stay. The caller has the learner's confirmation. */
+/** Delete a sentence and its review scores; word cards made from it stay. The caller has the learner's confirmation. */
 export function deleteSentence(id) {
   if (!state.sentences[id]) return;
   delete state.sentences[id];
+  Object.keys(state.reviews).forEach((track) => {
+    if (track.startsWith('sentences.')) delete state.reviews[track][id];
+  });
   touch();
 }
 

@@ -1,24 +1,30 @@
-// [MODULE] sentences-ui | Sentences tab: searchable list, add/edit form with Parse, sentence sheet, word-card prompt after a new sentence
-// [IFACE] layer: presentation | in: DOM events -> out: rendered sentence screens, saved sentences, saved words, enrolled kanji | crosses: [browser DOM]
-// [GRAPH] needs: [sentences, words, kanji, romaji, storage, shell, dom] | feeds: [main, kanji-card] | group: presentation
+// [MODULE] sentences-ui | Sentences tab: review panel, labelled search toolbar, list grouped by progress, add/edit form with Parse, sentence sheet with progress panel, word-card prompt after a new sentence, sentence review adapter
+// [IFACE] layer: presentation | in: DOM events -> out: rendered sentence screens, saved sentences, saved words, enrolled kanji, started sentence reviews, sentences marked as known | crosses: [browser DOM]
+// [GRAPH] needs: [sentences, words, kanji, romaji, review, review-ui, storage, shell, dom] | feeds: [main, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
 
 import * as S from './sentences.js';
 import * as W from '../words/words.js';
 import * as K from '../kanji/kanji.js';
 import { toHiragana, hasLatin } from '../core/romaji.js';
+import * as R from '../review/review.js';
+import { startReview, trackPanel, stateDots, trackRow } from '../review/review-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, ja, button, confirmAction, toast } from '../core/dom.js';
+import { $, h, ja, button, confirmAction, toast, filterGroup, listGroup, part } from '../core/dom.js';
 
 let query = '';
+
+function sentenceScores(sentence) {
+  return S.TRACKS.map((t) => store.reviewStats(t, sentence.id).score);
+}
 
 // --- Sentences tab --------------------------------------------------------
 
 export function renderSentences() {
   const sentences = S.sortForList(store.listSentences());
   const screen = $('screen-sentences');
-  const list = h('div', { class: 'sentence-list', id: 'sentence-list' });
+  const list = h('div', { id: 'sentence-list' });
   const search = h('input', {
     type: 'search', id: 'sentences-search', class: 'search', placeholder: 'Search sentences', value: query,
     autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false',
@@ -29,28 +35,53 @@ export function renderSentences() {
     h('div', { class: 'topbar' },
       h('h1', null, 'Sentences ', h('span', { class: 'sub' }, sentences.length + (sentences.length === 1 ? ' sentence' : ' sentences'))),
       button('+ Add sentence', () => openSentenceForm(), 'primary', { id: 'btn-add-sentence' })),
-    sentences.length
-      ? search
-      : h('div', { class: 'empty' },
+    !sentences.length
+      ? h('div', { class: 'empty' },
         h('p', null, 'No sentences yet.'),
         h('p', { class: 'muted' }, 'Tap “+ Add sentence” to write or paste one. Its kanji words can become word cards right away; readings in brackets, like ',
-          ja('聞いて（きいて）'), ', are filled in for you.')),
+          ja('聞いて（きいて）'), ', are filled in for you.'))
+      : sentences.some(S.isReviewable)
+        ? trackPanel(S.TRACKS, S.TRACK_INFO, sentenceItems, startSentenceReview)
+        : h('p', { class: 'muted', id: 'sentences-no-review' }, 'Sentences with a translation can be reviewed — add one to start.'),
+    sentences.length
+      ? h('div', { class: 'filters' }, filterGroup('Search', search, { forId: 'sentences-search', className: 'filter-search' }))
+      : null,
     list);
   fillList(list, sentences);
   shell.showScreen('screen-sentences');
 }
 
+/** The matching sentences in progress groups, least known first (P19); one column, newest first inside a group. */
 function fillList(list, sentences) {
-  const shown = sentences.filter((s) => S.matchesQuery(s, query));
-  list.replaceChildren(...shown.map((s) => h('button', {
-    type: 'button', class: 'sentence-row', dataset: { id: s.id }, onclick: () => openSentenceView(s.id)
-  }, ja(s.sentence, 'sentence-text', 'div'), s.translation ? h('div', { class: 'sentence-translation' }, s.translation) : null)));
-  if (sentences.length && !shown.length) list.append(h('p', { class: 'muted' }, 'No sentence matches “' + query + '”.'));
+  const groups = R.groupByProgress(sentences.filter((s) => S.matchesQuery(s, query)), sentenceScores).map((g) =>
+    listGroup(g.label, g.items.length, h('div', { class: 'sentence-list' }, g.items.map(sentenceRow)),
+      { className: 'sentence-group', dataset: { group: g.id } }));
+  list.replaceChildren(...groups);
+  if (sentences.length && !groups.length) list.append(h('p', { class: 'muted' }, 'No sentence matches “' + query + '”.'));
+}
+
+function sentenceRow(s) {
+  const reviewable = S.isReviewable(s);
+  return h('button', { type: 'button', class: 'sentence-row', dataset: { id: s.id }, onclick: () => openSentenceView(s.id) },
+    h('div', { class: 'sentence-main' },
+      ja(s.sentence, 'sentence-text', 'div'),
+      reviewable
+        ? h('div', { class: 'sentence-translation' }, s.translation)
+        : h('div', { class: 'sentence-translation no-translation' }, 'No translation — not in reviews')),
+    reviewable ? stateDots(...sentenceScores(s).map(R.stateOf)) : null);
+}
+
+function sentenceItems() {
+  return store.listSentences().filter(S.isReviewable).map((s) => ({ id: s.id, addedAt: s.createdAt }));
 }
 
 // --- Sentence sheet -------------------------------------------------------
 
-/** The sentence sheet; also opened from a kanji card's "In your sentences". */
+/**
+ * The sentence sheet; also opened from a kanji card's "In your sentences". Laid out as the word
+ * sheet: the progress panel under the sentence on a phone, beside it on a wide sheet
+ * (sentences.css). Re-opening replaces the sheet's content in place.
+ */
 export function openSentenceView(id) {
   const sentence = store.getSentence(id);
   if (!sentence) return;
@@ -61,9 +92,11 @@ export function openSentenceView(id) {
 
   shell.openSheet(h('div', { class: 'sentence-view', id: 'sentence-view' },
     h('div', { class: 'sheet-head' }, h('span'), button('✕', shell.closeSheet, 'icon-btn ghost', { 'aria-label': 'Close' })),
-    h('div', { class: 'sentence-hero' },
-      ja(sentence.sentence, 'sentence-big pre', 'div'),
-      sentence.reading ? ja(sentence.reading, 'sentence-reading pre', 'div') : null),
+    h('div', { class: 'sentence-head' },
+      h('div', { class: 'sentence-hero' },
+        ja(sentence.sentence, 'sentence-big pre', 'div'),
+        sentence.reading ? ja(sentence.reading, 'sentence-reading pre', 'div') : null),
+      progressPanel(sentence)),
     field('translation'), field('notes'),
     h('div', { class: 'actions' },
       button('Edit', () => {
@@ -71,12 +104,33 @@ export function openSentenceView(id) {
         openSentenceForm(sentence, { id: sentence.id, swap: true });
       }, 'primary', { id: 'btn-edit-sentence' }),
       button('Delete', () => {
-        if (!confirmAction('Delete this sentence? Word cards made from it stay.')) return;
+        if (!confirmAction('Delete this sentence? Its progress goes with it. Word cards made from it stay.')) return;
         store.deleteSentence(sentence.id);
         if (shell.activeTab() === 'sentences') renderSentences();
         shell.closeSheet();
         toast('Sentence deleted');
       }, 'danger', { id: 'btn-delete-sentence' }))), { label: sentence.sentence });
+}
+
+/** Both review directions with their state and "Mark as known" -- or why the sentence is not reviewed. */
+function progressPanel(sentence) {
+  if (!S.isReviewable(sentence)) {
+    return h('section', { class: 'progress-panel', 'aria-label': 'Progress' },
+      h('p', { class: 'muted', id: 'sentence-no-review' }, 'Add a translation to review this sentence.'));
+  }
+  const scores = sentenceScores(sentence);
+  return h('section', { class: 'progress-panel', 'aria-label': 'Progress' },
+    S.TRACKS.map((t, i) => trackRow(S.TRACK_INFO[t].label, R.stateOf(scores[i]))),
+    R.isKnown(scores) ? null : h('div', { class: 'actions' },
+      button('Mark as known', () => markSentenceKnown(sentence), 'ghost small', { id: 'btn-sentence-known' })));
+}
+
+function markSentenceKnown(sentence) {
+  if (!confirmAction('Mark this sentence as known? It will come up only now and then.')) return;
+  S.TRACKS.forEach((t) => store.setReviewScore(t, sentence.id, R.knownScore(store.reviewStats(t, sentence.id).score)));
+  if (shell.activeTab() === 'sentences') renderSentences();
+  openSentenceView(sentence.id);
+  toast('Sentence marked as known');
 }
 
 // --- Add / edit form -------------------------------------------------------
@@ -276,4 +330,40 @@ function promptRow(candidate, example) {
   });
   refresh();
   return row;
+}
+
+// --- Sentence review ------------------------------------------------------------
+
+function composeRun(track) {
+  return R.buildRun(sentenceItems(), (id) => store.reviewStats(track, id), store.getSettings().runSize)
+    .map((item) => store.getSentence(item.id))
+    .filter(Boolean);
+}
+
+function renderSentencePart(sentence, key, asPrompt) {
+  const value = sentence[key];
+  if (!value) return null;
+  if (key === 'sentence') {
+    const text = ja(value, 'review-sentence pre', 'div');
+    return asPrompt ? text : part(S.FIELD_LABELS.sentence, text);
+  }
+  if (key === 'translation' && asPrompt) return h('div', { class: 'prompt-text pre' }, value);
+  if (key === 'reading') return part(S.FIELD_LABELS.reading, ja(value, 'part-text pre', 'div'));
+  return part(S.FIELD_LABELS[key], h('div', { class: 'part-text pre' }, value));
+}
+
+function startSentenceReview(track) {
+  const items = composeRun(track);
+  if (!items.length) return;
+  startReview({
+    title: 'Sentences',
+    modeLabel: S.TRACK_INFO[track].label,
+    track,
+    items,
+    plan: (sentence) => S.cardPlan(sentence, track),
+    renderPart: renderSentencePart,
+    label: (sentence) => ja(sentence.sentence, 'summary-item summary-sentence'),
+    onExit: renderSentences,
+    again: () => composeRun(track)
+  });
 }

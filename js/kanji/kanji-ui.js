@@ -10,7 +10,7 @@ import { startReview, trackPanel, stateDots } from '../review/review-ui.js';
 import * as W from '../words/words.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, ja, button, segmented, toast, filterGroup, listGroup } from '../core/dom.js';
+import { $, h, ja, button, segmented, toast, filterGroup, listGroup, part } from '../core/dom.js';
 import { openKanjiCard, readingsNode } from './kanji-card.js';
 
 const view = { scope: null, levels: new Set(K.LEVELS.map((l) => l.id)), query: '' };
@@ -193,10 +193,6 @@ async function preload(chars) {
 async function composeRun(track) {
   const run = R.buildRun(myKanji(), (id) => store.reviewStats(track, id), store.getSettings().runSize);
   return preload(run.map((item) => item.id));
-}
-
-function part(label, content) {
-  return h('div', { class: 'part' }, h('div', { class: 'part-label' }, label), content);
 }
 
 function renderKanjiPart(item, key, asPrompt) {

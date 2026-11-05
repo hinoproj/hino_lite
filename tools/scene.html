@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- [MODULE] scene | Screenshot helper: seeds sample data and drives the app (full-window iframe) to one named screen
-     [IFACE] layer: tooling | in: ?scene=words|word|word-form|review|kanji|card|kana|sentences|sentence-form|sentence-words[&theme=dark|light|kids] -> out: the app showing that screen | crosses: [browser DOM, localStorage]
+     [IFACE] layer: tooling | in: ?scene=words|word|word-form|review|kanji|card|kana|sentences|sentence|sentence-review|sentence-form|sentence-words[&theme=dark|light|kids] -> out: the app showing that screen | crosses: [browser DOM, localStorage]
      [GRAPH] needs: [index] | feeds: [check] | group: tooling
      [STATE] stateful | persists: overwrites hino_lite_v2 in this browser profile | raises: nothing
 
@@ -42,7 +42,9 @@ const reviews = {
   'words.read': { w1: { score: 7, seen: 3, lastSeen: now - 2 * day }, w2: { score: 2, seen: 2, lastSeen: now - day }, w3: { score: 16, seen: 6, lastSeen: now - 4 * day } },
   'words.recall': { w1: { score: 1, seen: 2, lastSeen: now - 2 * day }, w3: { score: 6, seen: 3, lastSeen: now - 4 * day } },
   'kanji.read': { 学: { score: 6, seen: 2, lastSeen: now - day }, 生: { score: 2, seen: 1, lastSeen: now - day } },
-  'kanji.recall': {}
+  'kanji.recall': {},
+  'sentences.read': { s1: { score: 7, seen: 3, lastSeen: now - 2 * day }, s2: { score: 2, seen: 1, lastSeen: now - day } },
+  'sentences.recall': { s1: { score: 5, seen: 2, lastSeen: now - 2 * day } }
 };
 const sentence = (id, text, reading, translation, age) =>
   ({ id, sentence: text, reading, translation, notes: '', createdAt: now - age * day, updatedAt: now - age * day });
@@ -50,7 +52,8 @@ const sentences = [
   sentence('s1', 'もう一度聞いてください。', 'もういちどきいてください。', 'Please listen once more.', 2),
   sentence('s2', '質問を聞いてもいいですか。', 'しつもんをきいてもいいですか。', 'May I ask a question?', 1),
   sentence('s3', '意見を言ってもいいですか。', '', 'May I give my opinion?', 0),
-  sentence('s4', '明日も学校で勉強します。', 'あしたもがっこうでべんきょうします。', 'I will study at school tomorrow too.', 3)
+  sentence('s4', '明日も学校で勉強します。', 'あしたもがっこうでべんきょうします。', 'I will study at school tomorrow too.', 3),
+  sentence('s5', '毎日、本を読む。', 'まいにち、ほんをよむ。', '', 4)
 ];
 localStorage.setItem('hino_lite_v2', JSON.stringify({
   app: 'hino_lite', version: 2, updatedAt: now, unsavedSince: 0,
@@ -73,7 +76,8 @@ async function waitFor(fn, timeout = 20000) {
   return null;
 }
 const hash = { words: 'words', word: 'words', 'word-form': 'words', review: 'words', kanji: 'kanji', card: 'kanji/学', kana: 'kana',
-  sentences: 'sentences', 'sentence-form': 'sentences', 'sentence-words': 'sentences' }[scene] || 'kana';
+  sentences: 'sentences', sentence: 'sentences', 'sentence-review': 'sentences', 'sentence-form': 'sentences',
+  'sentence-words': 'sentences' }[scene] || 'kana';
 await new Promise((resolve) => { frame.onload = resolve; frame.src = '../index.html#' + hash; });
 const w = frame.contentWindow;
 const d = frame.contentDocument;
@@ -107,6 +111,14 @@ if (scene === 'word-form') {
   const prompt = d.querySelector('.review-prompt').textContent;
   d.getElementById('btn-reveal').click();
   if (prompt === 'テレビ') await sleep(10); else await sleep(50);
+} else if (scene === 'sentence') {
+  d.querySelector('#sentence-list .sentence-row[data-id="s1"]').click();
+  await waitFor(() => d.getElementById('sentence-view'));
+} else if (scene === 'sentence-review') {
+  d.querySelector('.mode-row[data-track="sentences.read"] button.primary').click();
+  await sleep(150);
+  d.getElementById('btn-reveal').click();
+  await sleep(50);
 } else if (scene === 'kanji' || scene === 'card') {
   await waitFor(async () => (await w.HinoLite.library.readyLevels()).size === 6);
   await sleep(300);

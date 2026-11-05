@@ -11,7 +11,7 @@ Tooling in Python run with `uv` (stdlib only): `tools/build_library.py` builds t
 ```
 data      kana-data            kanji-index (generated)
             ↓                     ↓
-rules     kana-srs   romaji → words, sentences, kanji        review (shared rating/run rules)
+rules     kana-srs   romaji → words, sentences, kanji        review (shared rating/run/group rules)
             ↓                     ↓                              ↓
 infra     storage (localStorage)   library (Cache API, one-time download)   sw (app cache)
             ↓
@@ -35,7 +35,9 @@ Full graph, boundaries and per-module notes: `.agentic_docs/code_index.md`. Rule
 - **Runs**: ≤5 new (newest first, a hard cap — a fresh list gives a 5-card first run), ≤3
   learned/confident sampled by staleness (confident ×0.2), the rest in progress stalest first;
   short runs backfill with known cards only.
-- **List progress groups** (`review.progressGroup`, used by the word list): with two directions,
+- **Sentence reviews** use the same scheduler, tracks `sentences.read`/`sentences.recall`; only a
+  sentence with a translation is reviewed (`sentences.isReviewable`), the others stay in the list.
+- **List progress groups** (`review.progressGroup` / `groupByProgress`, used by the word and sentence lists): with two directions,
   New only if neither was ever answered, Learned/Confident only when both are, otherwise
   Learning; `isKnown`'s "both learned" bar, so the list and "Mark as known" agree.
 - **Reveal plans are rules** (`words.cardPlan`, `kanji.cardPlan`); the shared `review-ui` renders
@@ -72,6 +74,6 @@ and downloads again on the next Kanji-tab visit.
 
 ## Verification
 
-- `uv run tools/check.py` — selftest (154 checks) + UI smoke (104 checks), must end `ALL CHECKS PASSED`
+- `uv run tools/check.py` — selftest (159 checks) + UI smoke (114 checks), must end `ALL CHECKS PASSED`
 - `uv run tools/check.py shots OUT` — screenshots at 390×844 and 1280×800 for visual review
 - `uv run tools/check.py serve` — local server with correct MIME types

@@ -520,14 +520,77 @@ async function sentences() {
   $('#btn-prompt-done').click();
   await waitFor(() => visible('screen-sentences'));
 
-  type($('#sentences-search'), 'question');
-  log('search finds a sentence by its translation', $$('#sentence-list .sentence-row').length === 1);
-  type($('#sentences-search'), '');
-
+  // Sentence reviews (P19): only sentences with a translation take part.
   const open = async (text) => {
     $$('#sentence-list .sentence-row').find((r) => r.textContent.includes(text)).click();
     return waitFor(() => $('#sentence-view'));
   };
+  const readLabel = () => ($('.mode-row[data-track="sentences.read"] .meter-label') || {}).textContent || '';
+  log('the review panel counts only sentences with a translation; the other row says so',
+    $$('#screen-sentences .mode-row').length === 2 && readLabel().includes('2 new') &&
+      /not in reviews/.test(($('#sentence-list .no-translation') || {}).textContent || ''), readLabel());
+  $('.mode-row[data-track="sentences.read"] button.primary').click();
+  await waitFor(() => visible('screen-review'));
+  log('a sentence run holds the 2 translated sentences', $('#review-count').textContent === '1 / 2', $('#review-count').textContent);
+  let planOk = true;
+  for (let i = 0; i < 2; i++) {
+    const s = st.listSentences().find((x) => x.sentence === $('.review-prompt').textContent);
+    if (!s) { planOk = false; break; }
+    $('#btn-reveal').click();
+    await sleep(20);
+    if (!$('.review-step') || !$('.review-step').textContent.includes(s.reading)) planOk = false;
+    $('#btn-reveal').click();
+    await sleep(20);
+    if ($('#btn-reveal') || !$('.review-card').textContent.includes(s.translation)) planOk = false;
+    $('.rating.easy').click();
+    await sleep(40);
+  }
+  log('Japanese → translation: the sentence, its reading, then the translation', planOk);
+  await waitFor(() => visible('screen-review-summary'));
+  const sentenceRead = saved().reviews['sentences.read'] || {};
+  log('the run scores its own track', Object.keys(sentenceRead).length === 2 &&
+    Object.values(sentenceRead).every((e) => e.score === 5), JSON.stringify(sentenceRead));
+  $('#btn-review-done').click();
+  await waitFor(() => visible('screen-sentences'));
+
+  $('.mode-row[data-track="sentences.recall"] button.primary').click();
+  await waitFor(() => visible('screen-review'));
+  log('Translation → Japanese prompts with the translation, one step shows the sentence',
+    st.listSentences().some((x) => x.translation === $('.review-prompt').textContent) &&
+      $('#btn-reveal').textContent === 'Show sentence' && !$('#btn-reveal-all'), $('.review-prompt').textContent);
+  for (let i = 0; i < 2; i++) {
+    $('#btn-reveal').click();
+    await sleep(20);
+    $('.rating.missed').click();
+    await sleep(40);
+  }
+  await waitFor(() => visible('screen-review-summary'));
+  $('#btn-review-done').click();
+  await waitFor(() => visible('screen-sentences'));
+  const sentenceGroups = () => $$('#sentence-list .sentence-group').map((g) => g.dataset.group).join();
+  log('the list groups sentences by progress, least known first', sentenceGroups() === 'unseen,learning', sentenceGroups());
+
+  await open('もう一度');
+  log('the sentence sheet shows both directions and Mark as known',
+    $$('#sentence-view .track').length === 2 && Boolean($('#btn-sentence-known')));
+  $('#btn-sentence-known').click();
+  await waitFor(() => !$('#btn-sentence-known'));
+  const listen = st.listSentences().find((x) => x.sentence.startsWith('もう一度'));
+  log('mark as known: both directions learned, the sentence moves to Learned',
+    st.reviewStats('sentences.read', listen.id).score === 5 && st.reviewStats('sentences.recall', listen.id).score === 5 &&
+      sentenceGroups() === 'unseen,learning,learned', sentenceGroups());
+  $('#sentence-view .sheet-head button').click();
+  await waitFor(() => !visible('sheet-layer'));
+  await open('毎日');
+  log('an untranslated sentence\'s sheet says why it is not reviewed',
+    Boolean($('#sentence-no-review')) && !$('#sentence-view .track') && !$('#btn-sentence-known'));
+  $('#sentence-view .sheet-head button').click();
+  await waitFor(() => !visible('sheet-layer'));
+
+  type($('#sentences-search'), 'question');
+  log('search finds a sentence by its translation', $$('#sentence-list .sentence-row').length === 1);
+  type($('#sentences-search'), '');
+
   await open('毎日');
   $('#btn-edit-sentence').click();
   await waitFor(() => visible('screen-sentence-form'));
@@ -558,6 +621,12 @@ async function sentences() {
   $('#btn-delete-sentence').click();
   await waitFor(() => !visible('sheet-layer'));
   log('deleting a sentence keeps its word cards', st.listSentences().length === 2 && st.listWords().some((x) => x.writing === '毎日'));
+  const listenId = st.listSentences().find((x) => x.sentence.startsWith('もう一度')).id;
+  await open('もう一度');
+  $('#btn-delete-sentence').click();
+  await waitFor(() => !visible('sheet-layer'));
+  log('deleting a reviewed sentence drops its progress', !st.getSentence(listenId) &&
+    !(saved().reviews['sentences.read'] || {})[listenId] && !(saved().reviews['sentences.recall'] || {})[listenId]);
 }
 
 // --- Another tab, a newer version ------------------------------------------------

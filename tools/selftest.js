@@ -201,6 +201,10 @@ check('progress group: new only if never answered, learned/confident only if eve
   R.progressGroup([-1, -1]) === 'unseen' && R.progressGroup([5, -1]) === 'learning' && R.progressGroup([0, 0]) === 'learning' &&
   R.progressGroup([5, 4]) === 'learning' && R.progressGroup([5, 20]) === 'learned' && R.progressGroup([15, 30]) === 'confident' &&
   R.PROGRESS_GROUPS.map((g) => g.id).join() === 'unseen,learning,learned,confident');
+const grouped = R.groupByProgress(['a', 'b', 'c', 'd'], (id) => ({ a: [5, 5], b: [-1, -1], c: [5, 5], d: [2, -1] })[id]);
+check('groupByProgress: least known first, empty groups left out, order kept inside a group',
+  grouped.map((g) => g.id + ':' + g.items.join('')).join() === 'unseen:b,learning:d,learned:ac',
+  grouped.map((g) => g.id + ':' + g.items.join('')).join());
 check('ratings are four, lowest first', R.RATINGS.map((r) => r.value).join() === '-3,-1,1,2');
 
 const items = (n, offset = 0) => Array.from({ length: n }, (_, i) => ({ id: 'w' + (i + offset), addedAt: i + offset }));
@@ -322,6 +326,18 @@ check('example = sentence, then translation on its own line',
 const saved = { sentence: 'もう一度聞いてください。', reading: 'もういちどきいてください。', translation: 'Please listen once more.', notes: '' };
 check('sentence search: text, translation, rōmaji reading', S.matchesQuery(saved, '聞いて') && S.matchesQuery(saved, 'listen') &&
   S.matchesQuery(saved, 'kiite') && !S.matchesQuery(saved, 'xyz'));
+check('sentence review tracks are storage keys', S.TRACKS.join() === 'sentences.read,sentences.recall');
+check('only a sentence with a translation is reviewed', S.isReviewable(saved) &&
+  !S.isReviewable({ ...saved, translation: '  ' }) && !S.isReviewable({ sentence: '', translation: 'x' }));
+const noted = { ...saved, notes: 'polite request' };
+const kanaOnly = { sentence: 'はい、そうです。', reading: 'はい、そうです。', translation: 'Yes, it is.', notes: '' };
+check('Japanese → translation: reading first when there are kanji, notes last',
+  steps(S.cardPlan(noted, S.TRACK_READ)) === 'sentence | reading | translation,notes' &&
+  steps(S.cardPlan({ ...saved, reading: '' }, S.TRACK_READ)) === 'sentence | translation' &&
+  steps(S.cardPlan(kanaOnly, S.TRACK_READ)) === 'sentence | translation', steps(S.cardPlan(noted, S.TRACK_READ)));
+check('Translation → Japanese: one step, the sentence with its reading and notes',
+  steps(S.cardPlan(noted, S.TRACK_RECALL)) === 'translation | sentence,reading,notes' &&
+  steps(S.cardPlan(kanaOnly, S.TRACK_RECALL)) === 'translation | sentence', steps(S.cardPlan(noted, S.TRACK_RECALL)));
 
 // --- Kanji ------------------------------------------------------------------
 

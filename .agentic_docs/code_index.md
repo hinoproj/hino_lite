@@ -11,7 +11,7 @@ boundaries and `group:` values: on any conflict with an `AGENTS.md`, this file w
 | kanji-index | js/kanji/kanji-index.js | data | — | kanji, library, selftest | data | — |
 | romaji | js/core/romaji.js | domain | — | words, words-ui, sentences, sentences-ui, kanji, selftest | domain | — |
 | kana-srs | js/kana/kana-srs.js | domain | kana-data | kana-ui, selftest | domain | — |
-| review | js/review/review.js | domain | — | review-ui, words-ui, kanji-ui, kanji-card, selftest | domain | — |
+| review | js/review/review.js | domain | — | review-ui, words-ui, sentences-ui, kanji-ui, kanji-card, selftest | domain | — |
 | words | js/words/words.js | domain | romaji | words-ui, sentences-ui, kanji-card, kanji-ui, selftest | domain | — |
 | sentences | js/sentences/sentences.js | domain | romaji | sentences-ui, selftest | domain | — |
 | kanji | js/kanji/kanji.js | domain | kanji-index, romaji | kanji-ui, kanji-card, words-ui, sentences-ui, library, selftest | domain | — |
@@ -23,9 +23,9 @@ boundaries and `group:` values: on any conflict with an `AGENTS.md`, this file w
 | backup | js/core/backup.js | presentation | storage | shell, settings-ui | presentation | browser downloads, FileReader |
 | shell | js/core/shell.js | presentation | dom, storage, backup | main, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui | presentation | browser DOM, History API |
 | kana-ui | js/kana/kana-ui.js | presentation | kana-data, kana-srs, storage, theme, shell, dom | main | presentation | browser DOM |
-| review-ui | js/review/review-ui.js | presentation | review, storage, theme, shell, dom | words-ui, kanji-ui, kanji-card | presentation | browser DOM |
+| review-ui | js/review/review-ui.js | presentation | review, storage, theme, shell, dom | words-ui, sentences-ui, kanji-ui, kanji-card | presentation | browser DOM |
 | words-ui | js/words/words-ui.js | presentation | words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card | main, kanji-card | presentation | browser DOM |
-| sentences-ui | js/sentences/sentences-ui.js | presentation | sentences, words, kanji, romaji, storage, shell, dom | main, kanji-card | presentation | browser DOM |
+| sentences-ui | js/sentences/sentences-ui.js | presentation | sentences, words, kanji, romaji, review, review-ui, storage, shell, dom | main, kanji-card | presentation | browser DOM |
 | kanji-card | js/kanji/kanji-card.js | presentation | kanji, library, words, review, review-ui, storage, shell, dom, words-ui, sentences-ui | kanji-ui, words-ui | presentation | browser DOM |
 | kanji-ui | js/kanji/kanji-ui.js | presentation | kanji, library, review, review-ui, words, storage, shell, dom, kanji-card | main | presentation | browser DOM |
 | settings-ui | js/settings/settings-ui.js | presentation | storage, theme, backup, shell, dom | main | presentation | browser DOM |
@@ -129,7 +129,7 @@ confident); question building with look-alike distractors, homophone guard and m
 
 **File**: `js/review/review.js` · **Layer**: domain
 
-One scheduler for every self-rated review (words and kanji), on JLPT_coach's kanji scale: ratings
+One scheduler for every self-rated review (words, kanji, sentences), on JLPT_coach's kanji scale: ratings
 Didn't know −3 / Guessed −1 / Knew it +1 / Easy! +2; an unseen card's first answer starts from
 `INITIAL_SCORE` 3; a miss on a learned card drops it to `DEMOTION_SCORE` 4 (a guess only erodes by
 1); scores 0–30. Labels per D56: unseen −1, unknown 0, learning 1–4, learned 5–14, confident 15+.
@@ -138,12 +138,12 @@ learned/confident sampled by staleness (`(1 + days, cap 30) × 0.2 if confident`
 progress stalest first; short runs backfill with known cards only; shuffled. `progressGroup`
 (P18): an item reviewed in several directions is New only if never answered in any, Learned /
 Confident only when every direction is, otherwise Learning; `PROGRESS_GROUPS` lists them least
-known first.
+known first; `groupByProgress(items, scoresOf)` splits a list into them, empty groups left out.
 
 **Exposes**: `UNSEEN`, `SCORE_MIN`, `SCORE_MAX`, `INITIAL_SCORE`, `LEARNED_AT`, `CONFIDENT_AT`,
 `DEMOTION_SCORE`, `RATING_*`, `RATINGS`, `STATE_*`, `STATES`, `RUN_SIZES`, `MAX_NEW_PER_RUN`,
 `MAX_MAINTENANCE_PER_RUN`, `STALE_CAP_DAYS`, `CONFIDENT_FACTOR`, `stateOf`, `isRating`,
-`applyRating`, `knownScore`, `isKnown`, `PROGRESS_GROUPS`, `progressGroup`, `shuffle`, `maintenanceWeight`, `buildRun`, `countStates`
+`applyRating`, `knownScore`, `isKnown`, `PROGRESS_GROUPS`, `progressGroup`, `groupByProgress`, `shuffle`, `maintenanceWeight`, `buildRun`, `countStates`
 
 ## words
 
@@ -174,8 +174,12 @@ something. `candidates(sentence, known)`: known/bracketed words where they occur
 kanji run (with a preceding お/ご) with an empty reading, in order, each once; kana-only words never.
 `exampleFor` = sentence + newline + translation. Reading optional, rōmaji → hiragana, no kanji or
 Latin. Conjugated forms stay as written; their dictionary form goes in the meaning, by hand.
+Reviews (P19): tracks `sentences.read` (Japanese → translation) and `sentences.recall` (Translation
+→ Japanese); `isReviewable` = it has a translation; `cardPlan`: read = sentence | reading (only with
+kanji and a reading) | translation + notes; recall = translation | sentence + reading + notes.
 
-**Exposes**: `FIELDS`, `FIELD_LABELS`, `splitTranslation`, `readAnnotations`, `parse`, `canParse`,
+**Exposes**: `FIELDS`, `FIELD_LABELS`, `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`,
+`isReviewable`, `cardPlan`, `splitTranslation`, `readAnnotations`, `parse`, `canParse`,
 `candidates`, `exampleFor`, `normalizeDraft`, `validate`, `matchesQuery`, `sortForList`
 
 ## kanji
@@ -200,7 +204,7 @@ The only `localStorage` user; key `hino_lite_v2`, which is also the backup forma
 kana, words, sentences, kanji{addedAt, removed}, reviews{track: {id: {score, seen, lastSeen}}}}`.
 `sentences` (`{id, sentence, reading, translation, notes, createdAt, updatedAt}`) is additive under
 v2: `normalize` defaults it to `{}`, so older v2 data and backups load unchanged. Deleting a sentence
-leaves the words made from it. Older copies never destroy newer data: `normalize` keeps unknown keys
+drops its `sentences.*` review scores and leaves the words made from it. Older copies never destroy newer data: `normalize` keeps unknown keys
 (top level, settings, each word and sentence) as they are, and `load` starts listening for the
 `storage` event, so another tab's save replaces this tab's copy instead of being overwritten by it. A missing
 review entry means unseen (−1). Removing a kanji keeps its review entries; deleting a word drops
@@ -240,11 +244,11 @@ library files from their cache too. Bump `CACHE_NAME` on every release.
 **File**: `js/core/dom.js` · **Layer**: presentation
 
 `h()` element builder (text as text, `html:` for trusted markup), `ja()` for Japanese spans,
-`button`, `segmented`, `filterGroup` (a labelled group of a list toolbar), `listGroup` (a titled
+`button`, `segmented`, `part` (a labelled block of a card or review step), `filterGroup` (a labelled group of a list toolbar), `listGroup` (a titled
 list section with a hairline heading), `toast`, `formatDaysAgo`, and `confirmAction`/`notify` — the single seams the
 smoke test answers.
 
-**Exposes**: `$`, `h`, `ja`, `button`, `segmented`, `filterGroup`, `listGroup`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
+**Exposes**: `$`, `h`, `ja`, `button`, `segmented`, `part`, `filterGroup`, `listGroup`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
 
 ## theme
 
@@ -288,13 +292,13 @@ behaviour; navigation goes through the shell's back stack.
 
 **File**: `js/review/review-ui.js` · **Layer**: presentation
 
-The self-rated run shared by words and kanji: an adapter gives the run, `plan(item)` and
+The self-rated run shared by words, kanji and sentences: an adapter gives the run, `plan(item)` and
 `renderPart(item, key, asPrompt)`; the main button / card tap reveals the next step, "Show all"
 reveals the rest, then four rating buttons and the "Which one do I press?" help (no points). Kids
 theme cheers a good rating. Summary: counts per rating, newly learned, per-item rows, "Run again"
 (accepts a promise). Also the `trackPanel` (run length + one row per track) and `stateDots` used
-by both tabs, and `trackRow` (a direction's name, state and four steps lit up to the state, no
-points) that the word sheet and the kanji card build their progress panels from.
+by the three tabs, and `trackRow` (a direction's name, state and four steps lit up to the state, no
+points) that the word sheet, the sentence sheet and the kanji card build their progress panels from.
 
 **Exposes**: `startReview`, `trackPanel`, `meter`, `stateDots`, `trackRow`
 
@@ -317,13 +321,18 @@ duplicate refusal with "Open it"), save → `storage.saveWord` + `enrollKanji`; 
 
 **File**: `js/sentences/sentences-ui.js` · **Layer**: presentation
 
-Sentences tab (search, list newest first), sentence sheet (reading, translation, notes, Edit,
-Delete — words made from it stay), add/edit form (Parse button while `canParse`, Undo restores
+Sentences tab (review panel for the sentences with a translation, or a hint when none has one; the
+labelled search toolbar; the list in progress groups via `review.groupByProgress`, one column,
+newest first inside a group; an untranslated row reads "No translation — not in reviews" and has no
+state bars), sentence sheet (reading, a progress panel laid out as the word sheet's — both directions
+and Mark as known, or "Add a translation to review this sentence" — translation, notes, Edit,
+Delete — its scores go, words made from it stay), add/edit form (Parse button while `canParse`, Undo restores
 the pasted text, rōmaji reading preview). Saving a **new** sentence with kanji opens the word-card
 prompt (replaces the form's back entry): one row per candidate with editable kanji and reading and
 an empty meaning; Add is enabled once meaning and reading are filled, saves the word with the
 sentence as its example and enrolls its kanji; a word already in the list (writing|reading) is only
 marked. Edits never prompt. The sentence sheet also opens from a kanji card's "In your sentences".
+The sentence review adapter: runs over the reviewable sentences, renders `S.cardPlan`'s parts.
 
 **Exposes**: `renderSentences`, `openSentenceView`
 
@@ -378,7 +387,9 @@ KANA_DATA, library} for tests and debugging.
 controls, among them the list toolbar `.filters` and the titled list sections `.list-group`; kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
 review card, ratings, help, summary), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form, word sheet with its hero row;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
-`css/sentences.css` (sentence list, form and Parse bar, sheet, word-card prompt rows), `css/kanji.css` (the JLPT level control's padding, tiles, card hero with the
+`css/sentences.css` (progress-group rows with state bars, one column; form and Parse bar; sheet with
+the progress panel under the sentence on a phone, beside it from 720 px; word-card prompt rows;
+the sentence review's text and summary rows), `css/kanji.css` (the JLPT level control's padding, tiles, card hero with the
 progress panel's placement, card zones (square outlines; only strokes filled; examples with a left rule only), strokes, readings with parts, your sentences, pitch; phone layout below 600 px). Themes are explicit (`data-theme`), never OS-derived.
 
 ## index
@@ -411,7 +422,8 @@ server; `shots` screenshots `scene.html` scenes (including the word sheet) at 39
 **Files**: `tools/selftest.html`, `tools/selftest.js` · **Layer**: tooling
 
 Imports the shipped rule modules as they are and asserts kana tables/rules, rōmaji conversion,
-review scoring, progress groups and run composition, word, sentence (Parse, candidates) and kanji rules, storage
+review scoring, progress groups and run composition, word, sentence (Parse, candidates, tracks,
+reviewability, reveal plans) and kanji rules, storage
 normalisation.
 
 ## browser-smoke-page, browser-smoke
@@ -419,7 +431,9 @@ normalisation.
 **Files**: `tools/browser-smoke.html`, `tools/browser-smoke.js` · **Layer**: tooling
 
 Drives the real app in an iframe: kana runs and themes, word add/validate/duplicate/edit/search,
-both word reviews and the rating help, the word list's progress groups (New, then Learning /
+both word reviews and the rating help, both sentence reviews (only translated sentences, the reveal
+steps, own tracks), the sentence list's groups, the sentence sheet's panel and Mark as known, an
+untranslated sentence's hint, scores dropped with a deleted sentence, the word list's progress groups (New, then Learning /
 Learned after reviews and Mark as known; two columns at tablet width), library download, Mine/All/levels/search and the labelled
 toolbar in one row at tablet width, kanji card
 (progress panel, parts in the readings panel, components, example words, add to my words),

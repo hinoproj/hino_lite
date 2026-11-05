@@ -1,4 +1,4 @@
-// [MODULE] sentences | Pure sentence rules: Parse (bracketed readings, trailing translation), word candidates, validation, search
+// [MODULE] sentences | Pure sentence rules: Parse (bracketed readings, trailing translation), word candidates, validation, search, review tracks, reviewability, reveal plans
 // [IFACE] layer: domain | in: typed or pasted sentence text, drafts, queries -> out: parsed fields, candidate words, errors, filtered lists | crosses: []
 // [GRAPH] needs: [romaji] | feeds: [sentences-ui, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
@@ -27,6 +27,15 @@ import { toHiragana, katakanaToHiragana, hasLatin, isKana } from '../core/romaji
 export const FIELDS = ['sentence', 'reading', 'translation', 'notes'];
 export const FIELD_LABELS = {
   sentence: 'Sentence', reading: 'Reading', translation: 'Translation', notes: 'Notes'
+};
+
+// Review tracks are storage keys (AGENTS.md contract 5): renaming one orphans its scores.
+export const TRACK_READ = 'sentences.read';
+export const TRACK_RECALL = 'sentences.recall';
+export const TRACKS = [TRACK_READ, TRACK_RECALL];
+export const TRACK_INFO = {
+  [TRACK_READ]: { label: 'Japanese → translation', description: 'See the sentence, recall how it reads and what it means.' },
+  [TRACK_RECALL]: { label: 'Translation → Japanese', description: 'See the translation, say or write the sentence.' }
 };
 
 const KANJI_RE = /[\p{Script=Han}々〆ヶ]/u;
@@ -212,6 +221,27 @@ export function matchesQuery(sentence, query) {
   const kana = katakanaToHiragana(toHiragana(q)).replace(/\s+/g, '');
   const reading = katakanaToHiragana(clean(sentence.reading)).replace(/\s+/g, '');
   return Boolean(reading) && !hasLatin(kana) && reading.includes(kana);
+}
+
+/** Reviews need a translation: without one there is nothing to check an answer against (P19). */
+export function isReviewable(sentence) {
+  return Boolean(clean(sentence.sentence)) && Boolean(clean(sentence.translation));
+}
+
+/**
+ * Reveal plan (P19). Japanese -> translation: the sentence; its reading first when the sentence
+ * has kanji and a reading, then the translation with the notes. Translation -> Japanese: the
+ * translation, then the sentence with its reading and notes. Notes come last: they may give the
+ * answer away.
+ */
+export function cardPlan(sentence, track) {
+  const reading = clean(sentence.reading) && HAN_RE.test(sentence.sentence) ? ['reading'] : [];
+  const notes = clean(sentence.notes) ? ['notes'] : [];
+  if (track === TRACK_RECALL) {
+    return { prompt: 'translation', steps: [{ button: 'Show sentence', keys: ['sentence'].concat(reading, notes) }] };
+  }
+  const answer = { button: 'Show translation', keys: ['translation'].concat(notes) };
+  return { prompt: 'sentence', steps: reading.length ? [{ button: 'Show reading', keys: reading }, answer] : [answer] };
 }
 
 /** Newest first, the order the list shows. */

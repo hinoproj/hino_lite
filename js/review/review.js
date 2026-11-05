@@ -1,6 +1,6 @@
-// [MODULE] review | Pure rules for self-rated reviews (words and kanji): ratings, scores, knowledge labels, progress groups for lists, run composition
+// [MODULE] review | Pure rules for self-rated reviews (words, kanji, sentences): ratings, scores, knowledge labels, progress groups for lists, run composition
 // [IFACE] layer: domain | in: scores, ratings, item lists with stats -> out: new scores, state labels, run item lists | crosses: []
-// [GRAPH] needs: [] | feeds: [review-ui, words-ui, kanji-ui, kanji-card, selftest] | group: domain
+// [GRAPH] needs: [] | feeds: [review-ui, words-ui, sentences-ui, kanji-ui, kanji-card, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
 
 /**
@@ -106,6 +106,13 @@ export function progressGroup(scores) {
   if (states.every((s) => s === STATE_UNSEEN)) return STATE_UNSEEN;
   if (states.every((s) => s === STATE_CONFIDENT)) return STATE_CONFIDENT;
   return isKnown(scores) ? STATE_LEARNED : STATE_LEARNING;
+}
+
+/** Items split into PROGRESS_GROUPS, least known first, empty groups left out; each keeps the items' order. */
+export function groupByProgress(items, scoresOf) {
+  const byGroup = new Map(PROGRESS_GROUPS.map((g) => [g.id, []]));
+  items.forEach((item) => byGroup.get(progressGroup(scoresOf(item))).push(item));
+  return PROGRESS_GROUPS.filter((g) => byGroup.get(g.id).length).map((g) => ({ ...g, items: byGroup.get(g.id) }));
 }
 
 export function shuffle(list, rng = Math.random) {
