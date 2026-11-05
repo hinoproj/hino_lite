@@ -193,6 +193,7 @@ async function words() {
   log('a word opens in the sheet', visible('sheet-layer') && Boolean($('#word-view')));
   log('word sheet: the hero holds a progress panel with both directions, unseen, and Mark as known; fields in their grid',
     $$('#word-view .word-hero .progress-panel .track').length === 2 && $$('#word-view .word-fields > .part').length === 3 &&
+    $$('#word-view .word-fields > .part').every((p) => w.getComputedStyle(p).borderTopStyle === 'solid') &&
     $$('#word-view .track').every((t) => t.dataset.state === 'unseen' && !t.querySelector('.lit')) &&
     Boolean($('#btn-word-known')));
   $('#btn-edit-word').click();

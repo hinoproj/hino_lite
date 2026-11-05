@@ -67,9 +67,10 @@ function wordItems() {
 // --- Word sheet ---------------------------------------------------------
 
 /**
- * Layout: hero (the word and its reading, the progress panel under it) ->
- * meaning, example, notes, kanji (two columns on a wide sheet, words.css) ->
- * Edit / Delete on the right. Re-opening replaces the sheet's content in place.
+ * Layout: hero (the word and its reading; the progress panel under it on a
+ * phone, beside it on a wide sheet) -> meaning, example, notes, kanji as
+ * hairline rows (two columns on a wide sheet) -> Edit / Delete on the right.
+ * See words.css. Re-opening replaces the sheet's content in place.
  */
 export function openWordView(id) {
   const word = store.getWord(id);

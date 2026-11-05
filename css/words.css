@@ -46,9 +46,10 @@
   .word-form .form-grid { grid-template-columns: 1fr 1fr; }
 }
 
-/* Word sheet: the word and its reading, the progress panel stacked under them at every width.
-   The panel is capped and centred, so it sits inset from the sheet's edges on a phone and
-   never stretches into a banner on a tablet. */
+/* Word sheet, owner's variant E (2026-11-05).
+   Phone: the word centred, the progress panel stacked under it, capped and centred so it sits
+   inset from the sheet's edges. Wide (>= 720 px, where app.css turns .sheet into a dialog): the
+   word left-aligned on the fields' 10 px inset, the panel at the trailing edge, 250 px wide. */
 .word-hero { display: grid; gap: 14px; padding-bottom: 4px; }
 .word-hero .progress-panel { width: min(420px, 100% - 24px); justify-self: center; }
 
@@ -56,13 +57,16 @@
 .hero-word { font-size: 52px; line-height: 1.2; overflow-wrap: anywhere; }
 .hero-reading { display: block; font-size: 22px; color: var(--muted); }
 
-/* Meaning, example, notes, kanji: one column on a phone, two once the sheet is a dialog
-   (the 720 px breakpoint app.css gives .sheet). Grid gaps, so .part's own margin is dropped. */
-.word-fields { display: grid; gap: 14px 28px; margin-top: 18px; }
-.word-fields > .part { margin-top: 0; min-width: 0; }
+/* Meaning, example, notes, kanji: hairline rows, no boxes, inset 10 px from the sheet's edge.
+   One column on a phone, two on a wide sheet. Grid gaps and padding replace .part's margin. */
+.word-fields { display: grid; gap: 0 40px; margin: 22px 10px 0; }
+.word-fields > .part { margin-top: 0; min-width: 0; padding: 14px 0 18px; border-top: 1px solid var(--line); }
 .word-view .part-text { font-size: 18px; }
 .word-view > .actions { margin-top: 24px; justify-content: flex-end; }
 
 @media (min-width: 720px) {
+  .word-hero { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 24px; }
+  .word-hero .hero { text-align: left; padding-inline-start: 10px; }
+  .word-hero .progress-panel { width: 250px; justify-self: end; }
   .word-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }

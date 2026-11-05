@@ -299,9 +299,9 @@ points) that the word sheet and the kanji card build their progress panels from.
 **File**: `js/words/words-ui.js` · **Layer**: presentation
 
 Words tab (review panel, search, list), word sheet (hero: the word and its reading with a
-progress panel stacked under them — both directions as lit steps and "Mark as known" until both
-are learned; then meaning, example, notes and kanji chips in a grid, two columns from 720 px;
-Edit/Delete on the right),
+progress panel — both directions as lit steps and "Mark as known" until both are learned —
+under them on a phone, beside them from 720 px; then meaning, example, notes and kanji chips as
+hairline rows, two columns from 720 px; Edit/Delete on the right),
 add/edit form (rōmaji suggestions as hiragana/katakana chips, live "Adds to your kanji" preview,
 duplicate refusal with "Open it"), save → `storage.saveWord` + `enrollKanji`; the word review adapter.
 

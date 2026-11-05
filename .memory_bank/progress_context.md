@@ -5,11 +5,13 @@
 The word sheet still showed its two review states as chips ("Japanese → meaning: unseen") at the
 bottom. It now has the kanji card's progress panel, with both directions as lit steps (no points)
 and **Mark as known** (confirmed; both directions to learned, never lowered), hidden once both are
-learned. Words have no add/remove. Layout, after the owner reviewed a first version with the panel
-beside the word on wide sheets: the panel is **stacked under the word at every width**, capped at
-420 px and centred (inset from the sheet's edges on a phone); meaning, example, notes and kanji sit
-in a grid, **two columns once the sheet is a dialog** (≥ 720 px, app.css's sheet breakpoint);
-Edit and Delete are aligned right.
+learned. Words have no add/remove. Layout went through two reviews with the owner and ended on mock variant **E**
+(five static mocks compared: tiles, one panel, hairline rows, balanced tiles, and E). On a phone the
+word is centred and the panel stacked under it, capped at 420 px and centred so it sits inset from
+the sheet's edges. On a wide sheet (≥ 720 px, app.css's dialog breakpoint) the word is left-aligned
+on the fields' 10 px inset and the panel sits beside it at the trailing edge, 250 px wide. Meaning,
+example, notes and kanji are **hairline rows without boxes**, inset 10 px, two columns on a wide
+sheet. Edit and Delete are aligned right.
 
 The step row is now shared: `review-ui.trackRow` (moved from `kanji-card`), with its CSS moved from
 `kanji.css` to `review.css`; `.progress-panel` carries its own surface instead of borrowing
