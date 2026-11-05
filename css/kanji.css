@@ -87,8 +87,6 @@
 .strokes-zone { background: var(--surface); }
 .examples-zone { border-width: 0 0 0 1px; }
 
-/* Chips inside the card are square, like its zones; elsewhere (filters, suggestions) .chip stays round */
-.kanji-card .chip { border-radius: 0; }
 
 .zone-label {
   font-size: 12px;
