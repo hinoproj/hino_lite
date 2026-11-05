@@ -40,7 +40,7 @@ const kanji = {};
 ['勉', '強', '学', '校', '先', '生', '食'].forEach((ch, i) => { kanji[ch] = { addedAt: now - (9 - i) * day, removed: false }; });
 const reviews = {
   'words.read': { w1: { score: 7, seen: 3, lastSeen: now - 2 * day }, w2: { score: 2, seen: 2, lastSeen: now - day }, w3: { score: 16, seen: 6, lastSeen: now - 4 * day } },
-  'words.recall': { w1: { score: 1, seen: 2, lastSeen: now - 2 * day } },
+  'words.recall': { w1: { score: 1, seen: 2, lastSeen: now - 2 * day }, w3: { score: 6, seen: 3, lastSeen: now - 4 * day } },
   'kanji.read': { 学: { score: 6, seen: 2, lastSeen: now - day }, 生: { score: 2, seen: 1, lastSeen: now - day } },
   'kanji.recall': {}
 };

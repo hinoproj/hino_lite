@@ -1,9 +1,10 @@
-/* [MODULE] words-css | Words tab: word list rows, add/edit form with suggestions, word sheet (hero with progress panel, field grid)
+/* [MODULE] words-css | Words tab: progress-group grid (two columns from 720 px) and word rows, add/edit form with suggestions, word sheet (hero with progress panel, field grid)
    [IFACE] layer: presentation | in: classes set by words-ui.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
 
-.word-list { display: grid; gap: 8px; }
+/* Rows of one progress group: one column on a phone, two from 720 px (the word sheet's breakpoint) */
+.word-grid { display: grid; gap: 8px; }
 
 .word-row {
   display: grid;
@@ -65,6 +66,7 @@
 .word-view > .actions { margin-top: 24px; justify-content: flex-end; }
 
 @media (min-width: 720px) {
+  .word-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .word-hero { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 24px; }
   .word-hero .hero { text-align: left; padding-inline-start: 10px; }
   .word-hero .progress-panel { width: 250px; justify-self: end; }

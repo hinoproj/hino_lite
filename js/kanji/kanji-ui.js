@@ -1,4 +1,4 @@
-// [MODULE] kanji-ui | Kanji tab: one-time library download, review panel, Mine/All + level + search filters, kanji grid, kanji review adapter
+// [MODULE] kanji-ui | Kanji tab: one-time library download, review panel, labelled library toolbar (Show / JLPT level / Search) in one row, level sections of tiles, kanji review adapter
 // [IFACE] layer: presentation | in: DOM events, library readiness -> out: rendered kanji screen, started kanji reviews | crosses: [browser DOM]
 // [GRAPH] needs: [kanji, library, review, review-ui, words, storage, shell, dom, kanji-card] | feeds: [main] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -10,7 +10,7 @@ import { startReview, trackPanel, stateDots } from '../review/review-ui.js';
 import * as W from '../words/words.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, ja, button, segmented, toast } from '../core/dom.js';
+import { $, h, ja, button, segmented, toast, filterGroup, listGroup } from '../core/dom.js';
 import { openKanjiCard, readingsNode } from './kanji-card.js';
 
 const view = { scope: null, levels: new Set(K.LEVELS.map((l) => l.id)), query: '' };
@@ -57,22 +57,25 @@ function buildScreen() {
     mineCount
       ? trackPanel(K.TRACKS, K.TRACK_INFO, () => myKanji(), startKanjiReview, { disabled: !enrolledLevelsReady() })
       : null,
+    // Library toolbar: three labelled controls in one row (wrapping on a phone)
     h('div', { class: 'filters' },
-      segmented([{ value: 'mine', label: 'Mine (' + mineCount + ')' }, { value: 'all', label: 'All' }], view.scope, (scope) => {
-        view.scope = scope;
-        buildScreen();
-      }, 'Which kanji'),
-      h('div', { class: 'level-chips', role: 'group', 'aria-label': 'Levels' }, K.LEVELS.map((level) =>
-        h('button', {
-          type: 'button', class: 'chip level-chip', 'aria-pressed': String(view.levels.has(level.id)),
-          dataset: { level: level.id },
-          onclick: () => {
-            if (view.levels.has(level.id)) view.levels.delete(level.id); else view.levels.add(level.id);
-            if (!view.levels.size) K.LEVELS.forEach((l) => view.levels.add(l.id));   // never an empty grid
-            buildScreen();
-          }
-        }, level.label))),
-      search),
+      filterGroup('Show',
+        segmented([{ value: 'mine', label: 'Mine (' + mineCount + ')' }, { value: 'all', label: 'All' }], view.scope, (scope) => {
+          view.scope = scope;
+          buildScreen();
+        }, 'Show')),
+      filterGroup('JLPT level',
+        h('div', { class: 'segmented level-chips', role: 'group', 'aria-label': 'JLPT level' }, K.LEVELS.map((level) =>
+          h('button', {
+            type: 'button', class: 'level-chip', 'aria-pressed': String(view.levels.has(level.id)),
+            dataset: { level: level.id },
+            onclick: () => {
+              if (view.levels.has(level.id)) view.levels.delete(level.id); else view.levels.add(level.id);
+              if (!view.levels.size) K.LEVELS.forEach((l) => view.levels.add(l.id));   // never an empty grid
+              buildScreen();
+            }
+          }, level.label)))),
+      filterGroup('Search', search, { forId: 'kanji-search', className: 'filter-search' })),
     sections);
   renderStatus();
   fillSections(sections);
@@ -86,9 +89,9 @@ function fillSections(container) {
 
   const nodes = K.LEVELS
     .filter((level) => view.levels.has(level.id) && byLevel.get(level.id).length)
-    .map((level) => h('section', { class: 'kanji-section', dataset: { level: level.id } },
-      h('h2', null, level.label + ' ', h('span', { class: 'sub' }, String(byLevel.get(level.id).length))),
-      h('div', { class: 'kanji-grid' }, byLevel.get(level.id).map(tile))));
+    .map((level) => listGroup(level.label, byLevel.get(level.id).length,
+      h('div', { class: 'kanji-grid' }, byLevel.get(level.id).map(tile)),
+      { className: 'kanji-section', dataset: { level: level.id } }));
 
   if (!nodes.length) {
     nodes.push(view.scope === 'mine' && !myKanji().length

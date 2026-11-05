@@ -3,7 +3,7 @@
 **Status:** built and verified 2026-11-01 (`uv run tools/check.py`: selftest 117/117, smoke 71/71;
 screenshots at phone and tablet sizes reviewed). Folder renamed and pushed to Pages
 2026-11-02 (`https://hinoproj.github.io/hino_lite/`). Sentences tab (P13) built and verified
-2026-11-02 (selftest 149/149, smoke 93/93). Kanji card layout (P14) 2026-11-03 (152/152, 98/98). Word sheet progress panel (P15) 2026-11-05. Kanji card zones (P16) 2026-11-05.
+2026-11-02 (selftest 149/149, smoke 93/93). Kanji card layout (P14) 2026-11-03 (152/152, 98/98). Word sheet progress panel (P15) 2026-11-05. Kanji card zones (P16) 2026-11-05. Kanji tab toolbar (P17) 2026-11-05. Words list in progress groups (P18) 2026-11-05 (154/154, 104/104).
 Open: device sessions with the learner.
 
 Extends the kana drill into **Hino Lite**: kana + the learner's own words + a kanji library whose
@@ -30,6 +30,8 @@ tablet (landscape), offline, on-device storage only. Existing progress may be dr
 | P14 | (2026-11-03) **Kanji card layout** (mock variant B): hero = glyph | meaning + also | progress panel (both review states as lit steps, no points; Add/Remove, Mark as known); stroke order beside a readings panel that holds radicals and components; then "In your words" and "In your sentences" (the learner's sentences containing the kanji; tap opens the sentence); then example words. On a phone the panel drops under the glyph and stroke order stacks above readings. Same layout in all three themes. |
 | P15 | (2026-11-05) **Word sheet progress**, as on the kanji card: a progress panel (both directions as lit steps, no points); layout is the owner's mock variant E: on a phone the word centred and the panel stacked under it, capped and centred; on a wide sheet (≥ 720 px, where the sheet is a dialog) the word left-aligned and the panel beside it at the trailing edge, 250 px wide; meaning, example, notes and kanji as hairline rows without boxes, inset 10 px, two columns on a wide sheet; Edit and Delete on the right; the panel holds **Mark as known** (both directions to learned, never lowered, confirmed), hidden once both are at least learned. Words have no add/remove. |
 | P16 | (2026-11-05) **Kanji card zones restyled** (owner's spec, after four mocks were declined): zones are square outlines with no fill — only the stroke-order zone (and the hero's progress panel) keeps `--surface`; Example words keeps only its left rule; reading pills and the card's chips are square; part chips and example rows have no background. Chips outside the card stay round. |
+| P17 | (2026-11-05) **Kanji tab layout**: the review panel stays as it is; the library controls are one toolbar panel with labelled groups in a single row (Show: Mine/All · JLPT level · Search); level sections are visibly separated. |
+| P18 | (2026-11-05) **Words list in progress groups**: New · Learning · Learned · Confident, least known first, separated by hairline headings as the Kanji levels are; a word is New only if never reviewed either way and Learned/Confident only when both directions are, otherwise Learning; two columns from 720 px; the search sits in the same labelled toolbar panel as on the Kanji tab. |
 
 ## Tasks
 

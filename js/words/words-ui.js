@@ -1,4 +1,4 @@
-// [MODULE] words-ui | Words tab: review panel, searchable list, add/edit form with rōmaji suggestions, word sheet with progress panel, word review adapter
+// [MODULE] words-ui | Words tab: review panel, labelled search toolbar, list grouped by progress (two columns when wide), add/edit form with rōmaji suggestions, word sheet with progress panel, word review adapter
 // [IFACE] layer: presentation | in: DOM events, prefilled drafts (from the kanji card) -> out: rendered words screens, saved words, enrolled kanji, words marked as known | crosses: [browser DOM]
 // [GRAPH] needs: [words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card] | feeds: [main, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -10,13 +10,17 @@ import * as R from '../review/review.js';
 import { startReview, trackPanel, stateDots, trackRow } from '../review/review-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, ja, button, confirmAction, toast } from '../core/dom.js';
+import { $, h, ja, button, confirmAction, toast, filterGroup, listGroup } from '../core/dom.js';
 import { openKanjiCard } from '../kanji/kanji-card.js';
 
 let query = '';
 
+function wordScores(word) {
+  return W.TRACKS.map((t) => store.reviewStats(t, word.id).score);
+}
+
 function wordStates(word) {
-  return W.TRACKS.map((t) => R.stateOf(store.reviewStats(t, word.id).score));
+  return wordScores(word).map(R.stateOf);
 }
 
 // --- Words tab ----------------------------------------------------------
@@ -24,7 +28,7 @@ function wordStates(word) {
 export function renderWords() {
   const words = W.sortForList(store.listWords());
   const screen = $('screen-words');
-  const list = h('div', { class: 'word-list', id: 'word-list' });
+  const list = h('div', { id: 'word-list' });
   const search = h('input', {
     type: 'search', id: 'words-search', class: 'search', placeholder: 'Search words', value: query,
     autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false',
@@ -40,24 +44,31 @@ export function renderWords() {
       : h('div', { class: 'empty' },
         h('p', null, 'No words yet.'),
         h('p', { class: 'muted' }, 'Tap “+ Add word” to write down a word you want to learn. Its kanji join your kanji list by themselves.')),
-    words.length ? search : null,
+    words.length ? h('div', { class: 'filters' }, filterGroup('Search', search, { forId: 'words-search', className: 'filter-search' })) : null,
     list);
   fillList(list, words);
   shell.showScreen('screen-words');
 }
 
+/** The matching words in progress groups, least known first (P18); newest first inside a group. */
 function fillList(list, words) {
-  const shown = words.filter((w) => W.matchesQuery(w, query));
-  list.replaceChildren(...shown.map((word) => {
-    const [s1, s2] = wordStates(word);
-    return h('button', { type: 'button', class: 'word-row', dataset: { id: word.id }, onclick: () => openWordView(word.id) },
-      h('div', { class: 'word-main' },
-        ja(W.headline(word), 'word-head'),
-        word.writing ? ja(word.reading, 'word-reading') : null),
-      h('div', { class: 'word-meaning' }, word.meaning),
-      stateDots(s1, s2));
-  }));
-  if (words.length && !shown.length) list.append(h('p', { class: 'muted' }, 'No word matches “' + query + '”.'));
+  const byGroup = new Map(R.PROGRESS_GROUPS.map((g) => [g.id, []]));
+  words.filter((w) => W.matchesQuery(w, query)).forEach((w) => byGroup.get(R.progressGroup(wordScores(w))).push(w));
+  const groups = R.PROGRESS_GROUPS.filter((g) => byGroup.get(g.id).length).map((g) =>
+    listGroup(g.label, byGroup.get(g.id).length, h('div', { class: 'word-grid' }, byGroup.get(g.id).map(wordRow)),
+      { className: 'word-group', dataset: { group: g.id } }));
+  list.replaceChildren(...groups);
+  if (words.length && !groups.length) list.append(h('p', { class: 'muted' }, 'No word matches “' + query + '”.'));
+}
+
+function wordRow(word) {
+  const [s1, s2] = wordStates(word);
+  return h('button', { type: 'button', class: 'word-row', dataset: { id: word.id }, onclick: () => openWordView(word.id) },
+    h('div', { class: 'word-main' },
+      ja(W.headline(word), 'word-head'),
+      word.writing ? ja(word.reading, 'word-reading') : null),
+    h('div', { class: 'word-meaning' }, word.meaning),
+    stateDots(s1, s2));
 }
 
 function wordItems() {
@@ -106,7 +117,7 @@ export function openWordView(id) {
 
 /** Both review directions with their state, and "Mark as known" until both are at least learned. */
 function progressPanel(word) {
-  const scores = W.TRACKS.map((t) => store.reviewStats(t, word.id).score);
+  const scores = wordScores(word);
   return h('section', { class: 'progress-panel', 'aria-label': 'Progress' },
     W.TRACKS.map((t, i) => trackRow(W.TRACK_INFO[t].label, R.stateOf(scores[i]))),
     R.isKnown(scores) ? null : h('div', { class: 'actions' },

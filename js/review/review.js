@@ -1,4 +1,4 @@
-// [MODULE] review | Pure rules for self-rated reviews (words and kanji): ratings, scores, knowledge labels, run composition
+// [MODULE] review | Pure rules for self-rated reviews (words and kanji): ratings, scores, knowledge labels, progress groups for lists, run composition
 // [IFACE] layer: domain | in: scores, ratings, item lists with stats -> out: new scores, state labels, run item lists | crosses: []
 // [GRAPH] needs: [] | feeds: [review-ui, words-ui, kanji-ui, kanji-card, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
@@ -86,6 +86,26 @@ export function knownScore(score) {
 /** True when every direction's score is at least learned: "Mark as known" has nothing left to do. */
 export function isKnown(scores) {
   return scores.length > 0 && scores.every((score) => typeof score === 'number' && score >= LEARNED_AT);
+}
+
+/** List groups by progress, least known first; ids are the D56 labels they start from. */
+export const PROGRESS_GROUPS = [
+  { id: STATE_UNSEEN, label: 'New' },
+  { id: STATE_LEARNING, label: 'Learning' },
+  { id: STATE_LEARNED, label: 'Learned' },
+  { id: STATE_CONFIDENT, label: 'Confident' }
+];
+
+/**
+ * The progress group of an item reviewed in several directions (owner, P18): new only if never
+ * answered in any direction; learned or confident only when every direction is; anything in
+ * between -- including "didn't know" -- is learning.
+ */
+export function progressGroup(scores) {
+  const states = scores.map(stateOf);
+  if (states.every((s) => s === STATE_UNSEEN)) return STATE_UNSEEN;
+  if (states.every((s) => s === STATE_CONFIDENT)) return STATE_CONFIDENT;
+  return isKnown(scores) ? STATE_LEARNED : STATE_LEARNING;
 }
 
 export function shuffle(list, rng = Math.random) {

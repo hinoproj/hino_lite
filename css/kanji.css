@@ -1,16 +1,12 @@
-/* [MODULE] kanji-css | Kanji tab and card: download panel, filters, level sections, tile grid, card hero with the progress panel's placement, card zones, strokes, readings with parts, your sentences, pitch
+/* [MODULE] kanji-css | Kanji tab and card: download panel, the JLPT level control, level sections, tile grid, card hero with the progress panel's placement, card zones, strokes, readings with parts, your sentences, pitch
    [IFACE] layer: presentation | in: classes set by kanji-ui.js and kanji-card.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
 
 .library-panel .run-progress { margin: 10px 0; height: 8px; }
 
-.filters { display: grid; gap: 10px; margin: 6px 0 4px; }
-.filters .segmented { justify-self: start; }
-.level-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.level-chip { min-width: 52px; justify-content: center; }
-
-.kanji-section h2 { font-size: 17px; margin: 18px 0 10px; }
+/* The library toolbar (.filters) and the level sections' headings (.list-group) are app.css's */
+.level-chips button { padding: 8px 11px; }
 
 .kanji-grid {
   display: grid;

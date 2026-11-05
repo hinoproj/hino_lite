@@ -197,6 +197,10 @@ check('a miss below learned subtracts 3, floor 0', R.applyRating(4, R.RATING_MIS
 check('score caps at 30', R.applyRating(29, R.RATING_EASY) === 30);
 check('mark as known lifts to 5 but never lowers', R.knownScore(-1) === 5 && R.knownScore(2) === 5 && R.knownScore(20) === 20);
 check('known means every direction at least learned', R.isKnown([5, 15]) && !R.isKnown([5, 4]) && !R.isKnown([-1, 20]) && !R.isKnown([]));
+check('progress group: new only if never answered, learned/confident only if every direction is',
+  R.progressGroup([-1, -1]) === 'unseen' && R.progressGroup([5, -1]) === 'learning' && R.progressGroup([0, 0]) === 'learning' &&
+  R.progressGroup([5, 4]) === 'learning' && R.progressGroup([5, 20]) === 'learned' && R.progressGroup([15, 30]) === 'confident' &&
+  R.PROGRESS_GROUPS.map((g) => g.id).join() === 'unseen,learning,learned,confident');
 check('ratings are four, lowest first', R.RATINGS.map((r) => r.value).join() === '-3,-1,1,2');
 
 const items = (n, offset = 0) => Array.from({ length: n }, (_, i) => ({ id: 'w' + (i + offset), addedAt: i + offset }));

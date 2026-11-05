@@ -35,6 +35,9 @@ Full graph, boundaries and per-module notes: `.agentic_docs/code_index.md`. Rule
 - **Runs**: ≤5 new (newest first, a hard cap — a fresh list gives a 5-card first run), ≤3
   learned/confident sampled by staleness (confident ×0.2), the rest in progress stalest first;
   short runs backfill with known cards only.
+- **List progress groups** (`review.progressGroup`, used by the word list): with two directions,
+  New only if neither was ever answered, Learned/Confident only when both are, otherwise
+  Learning; `isKnown`'s "both learned" bar, so the list and "Mark as known" agree.
 - **Reveal plans are rules** (`words.cardPlan`, `kanji.cardPlan`); the shared `review-ui` renders
   any plan through an adapter's part renderers. Example/notes always come last (they contain the word).
 - **Storage**: one JSON document in `localStorage` (`hino_lite_v2`) = the backup format (`app:
@@ -69,6 +72,6 @@ and downloads again on the next Kanji-tab visit.
 
 ## Verification
 
-- `uv run tools/check.py` — selftest (153 checks) + UI smoke (101 checks), must end `ALL CHECKS PASSED`
+- `uv run tools/check.py` — selftest (154 checks) + UI smoke (104 checks), must end `ALL CHECKS PASSED`
 - `uv run tools/check.py shots OUT` — screenshots at 390×844 and 1280×800 for visual review
 - `uv run tools/check.py serve` — local server with correct MIME types

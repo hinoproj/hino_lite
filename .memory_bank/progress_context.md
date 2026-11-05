@@ -1,5 +1,41 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-05] Words tab: list grouped by progress, two columns, labelled search (P18)
+
+The owner asked for separated sections on the Words tab and for the list in two columns on wide
+screens, grouped by progress from least known (unseen) to learned, separated by hairlines the way
+the Kanji tab separates its levels. Three questions were put to the owner, who picked all three
+recommendations. (1) Group rule over both directions: New only if never answered either way,
+Learned/Confident only when both are, everything else Learning. (2) Four groups, matching the
+review panel's buckets. (3) The search in the same labelled toolbar panel as Kanji.
+New rule `review.progressGroup` + `PROGRESS_GROUPS` (selftest +1). `words-ui.js`: `fillList`
+groups the matching words (empty groups hidden, newest first inside a group); `wordRow`;
+`wordScores` shared with the word sheet. The toolbar and the hairline section heading are now
+shared: `dom.filterGroup`/`dom.listGroup`, their CSS moved from `kanji.css` to `app.css` (`.filters`,
+`.filter*`, `.list-group`, `.group-head`); `kanji-ui.js` uses them too (Kanji tab renders unchanged).
+`words.css`: `.word-list` → `.word-grid`, two columns from 720 px. The smoke test's Kanji toolbar
+selectors are now scoped to `#screen-kanji` (both screens hold a `.filters`); +2 checks (New group under a
+labelled search; regrouping after reviews and Mark as known, two columns at 900 px).
+`tools/scene.html`: 学校 got a recall score, so the words shot shows New, Learning and Learned.
+README describes the groups. `sw.js` stays `hino-lite-app-v7` (unreleased). Selftest 154/154, smoke
+104/104. Screenshots reviewed: phone dark and Kids, tablet landscape dark and Light, tablet portrait.
+
+## [2026-11-05] Kanji tab: labelled library toolbar, separated level sections (P17)
+
+The owner found the Kanji tab one continuous run with no separation: Mine/All, six loose level
+pills and the search each on their own line under the review panel. The review panel is left as it
+was. The owner's direction was "one row with labels"; the layout was built directly, without mocks.
+`js/kanji/kanji-ui.js`: the filters are a toolbar of three labelled groups (`filter()` helper):
+**Show** (Mine/All), **JLPT level** (the six levels as one joined segmented control, still
+multi-select; `.level-chip` and `data-level` kept for the smoke test), **Search** (a real
+`<label for>`). `css/kanji.css`: the toolbar is its own panel, 24 px below the review panel, groups
+bottom-aligned in one row (search fills the rest, 50 px tall to match the segmented controls); at
+≤ 600 px each group takes a full row and the segmented buttons stretch. Level headings carry a
+hairline to the edge and 22 px between levels. The row holds at 1280 and 800 px wide.
+`sw.js` → `hino-lite-app-v7` (v6 is live). Smoke +1: the three labels in order and one row at the
+900 px test frame (153/153, 102/102). Screenshots reviewed: phone dark and Kids, tablet landscape dark and Light,
+tablet portrait.
+
 ## [2026-11-05] Kanji card zones restyled (P16)
 
 Four mocks of the card's zones (strokes panel + hairline rest, all hairline, reference row boxed,

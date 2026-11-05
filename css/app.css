@@ -1,4 +1,4 @@
-/* [MODULE] app-css | Visual layer: dark/light/kids themes, shell (tabs, sheet, banner, toast), shared controls, kana screens
+/* [MODULE] app-css | Visual layer: dark/light/kids themes, shell (tabs, sheet, banner, toast), shared controls (incl. the list toolbar and titled list sections), kana screens
    [IFACE] layer: presentation | in: class names and data-* attributes set by the UI modules -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -565,6 +565,38 @@ button[disabled]:active { transform: none; }
 }
 
 .empty p { margin: 0 0 6px; }
+
+/* List toolbar (dom.filterGroup) on the Words and Kanji tabs: labelled groups in one row, each
+   caption above its control; its own panel, so the list reads as a block apart from the review
+   panel. On a phone each group takes a full row and segmented controls stretch. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px 14px;
+  margin: 24px 0 8px;
+}
+
+.filter { display: grid; gap: 6px; min-width: 0; }
+.filter-label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.filter-search { flex: 1 1 180px; }
+.filters .search { margin: 0; height: 50px; }   /* the segmented controls' height */
+
+@media (max-width: 600px) {
+  .filter { flex: 1 1 100%; }
+  .filters .segmented { display: flex; }
+  .filters .segmented button { flex: 1 1 auto; padding-inline: 6px; }
+}
+
+/* Titled list sections (dom.listGroup): JLPT levels, word progress groups. A hairline runs from
+   the heading to the edge; a gap separates the sections. */
+.list-group { margin-top: 22px; }
+.group-head { display: flex; align-items: center; gap: 8px; font-size: 17px; margin: 0 0 10px; }
+.group-head::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 
 .actions { align-items: center; }
 .stat-grid.four { grid-template-columns: repeat(4, 1fr); }

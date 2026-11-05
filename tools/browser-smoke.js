@@ -171,6 +171,10 @@ async function words() {
   log('katakana suggestion and leftover rōmaji both end up as kana',
     list.some((x) => x.reading === 'テレビ') && list.some((x) => x.reading === 'がっこう'), list.map((x) => x.reading).join());
   log('three words listed', $$('#word-list .word-row').length === 3);
+  const newGroups = $$('#word-list .word-group').map((g) => g.dataset.group).join();
+  log('unreviewed words form one "New" group under a labelled search',
+    newGroups === 'unseen' && $('#word-list .group-head').firstChild.textContent === 'New' &&
+      $('#screen-words .filters label.filter-label[for="words-search"]') !== null, newGroups);
 
   $('#btn-add-word').click();
   await waitFor(() => visible('screen-word-form'));
@@ -277,6 +281,11 @@ async function wordReviews() {
     $$('#word-view .track').every((t) => t.dataset.state === 'learned') && visible('sheet-layer'));
   $('#word-view .sheet-head button').click();
   await waitFor(() => !visible('sheet-layer'));
+  await waitFor(() => $('#word-list .word-group[data-group="learned"]'));
+  const groups = $$('#word-list .word-group').map((g) => g.dataset.group).join();
+  log('the list regroups by progress, least known first, in two columns when wide',
+    groups === 'learning,learned' && Boolean($('.word-group[data-group="learned"] .word-row[data-id="' + tv.id + '"]')) &&
+      w.getComputedStyle($('#word-list .word-grid')).gridTemplateColumns.split(' ').length === 2, groups);
 }
 
 // --- Kanji --------------------------------------------------------------------
@@ -298,7 +307,7 @@ async function kanji() {
   await waitFor(() => !$('#library-status .library-panel') && $$('.kanji-tile').length);
   log('Mine shows the 5 kanji from the words', $$('.kanji-tile').length === 5, $$('.kanji-tile').map((t) => t.dataset.kanji).join(''));
 
-  $$('.filters .segmented button')[1].click();
+  $$('#screen-kanji .filters .segmented button')[1].click();
   await waitFor(() => $$('.kanji-tile').length > 5);
   log('All shows 2,099 kanji in level sections', $$('.kanji-tile').length === 2099 && $$('.kanji-section').length === 6,
     $$('.kanji-tile').length);
@@ -310,6 +319,12 @@ async function kanji() {
   type($('#kanji-search'), 'gaku');
   log('search by rōmaji reading finds 学', Boolean($('.kanji-tile[data-kanji="学"]')));
   type($('#kanji-search'), '');
+  const filterGroups = $$('#screen-kanji .filters .filter');
+  const filterBottoms = filterGroups.map((g) => Math.round(g.getBoundingClientRect().bottom));
+  log('library toolbar: Show, JLPT level and Search, labelled, in one row at tablet width',
+    filterGroups.map((g) => g.querySelector('.filter-label').textContent).join('|') === 'Show|JLPT level|Search' &&
+      new Set(filterBottoms).size === 1 && $('label.filter-label[for="kanji-search"]') !== null,
+    filterBottoms.join(','));
 
   await openTile('学');
   log('card: stroke order, readings, example words',
@@ -347,7 +362,7 @@ async function kanji() {
   await waitFor(() => visible('screen-words'));
 
   await tab('kanji');
-  $$('.filters .segmented button')[0].click();
+  $$('#screen-kanji .filters .segmented button')[0].click();
   await waitFor(() => $$('.kanji-tile').length === 5);
   await openTile('会');
   $('#btn-kanji-remove').click();
@@ -356,7 +371,7 @@ async function kanji() {
   await closeCard();
   log('Mine now shows 4 kanji', $$('.kanji-tile').length === 4, $$('.kanji-tile').length);
 
-  $$('.filters .segmented button')[1].click();
+  $$('#screen-kanji .filters .segmented button')[1].click();
   await waitFor(() => $$('.kanji-tile').length > 5);
   await openTile('一');
   $('#btn-kanji-add').click();

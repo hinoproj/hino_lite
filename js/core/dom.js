@@ -1,4 +1,4 @@
-// [MODULE] dom | Tiny DOM helpers: element builder, Japanese-text spans, toast, segmented control, confirm seam
+// [MODULE] dom | Tiny DOM helpers: element builder, Japanese-text spans, toast, segmented control, list toolbar groups, titled list sections, confirm seam
 // [IFACE] layer: presentation | in: tag names, props, children -> out: DOM nodes | crosses: [browser DOM]
 // [GRAPH] needs: [] | feeds: [shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui] | group: presentation
 // [STATE] stateless | persists: nothing | raises: nothing
@@ -60,6 +60,21 @@ export function segmented(options, current, onPick, label) {
         onclick: () => onPick(value)
       }, text);
     }));
+}
+
+/**
+ * One labelled group of a list toolbar (`.filters`, app.css): its caption above the control.
+ * With `forId` the caption is a real <label> for that input.
+ */
+export function filterGroup(caption, control, { forId, className } = {}) {
+  return h('div', { class: 'filter' + (className ? ' ' + className : '') },
+    h(forId ? 'label' : 'span', { class: 'filter-label', for: forId }, caption), control);
+}
+
+/** A titled list section (`.list-group`, app.css): heading, count and a hairline, then the content. */
+export function listGroup(title, count, content, { className, dataset } = {}) {
+  return h('section', { class: 'list-group' + (className ? ' ' + className : ''), dataset },
+    h('h2', { class: 'group-head' }, title, h('span', { class: 'sub' }, String(count))), content);
 }
 
 /** The one place the app asks for confirmation, so tests can answer it. */

@@ -135,12 +135,15 @@ Didn't know −3 / Guessed −1 / Knew it +1 / Easy! +2; an unseen card's first 
 1); scores 0–30. Labels per D56: unseen −1, unknown 0, learning 1–4, learned 5–14, confident 15+.
 `buildRun`: ≤`MAX_NEW_PER_RUN` (5, hard cap) unseen newest first, ≤`MAX_MAINTENANCE_PER_RUN` (3)
 learned/confident sampled by staleness (`(1 + days, cap 30) × 0.2 if confident`), the rest in
-progress stalest first; short runs backfill with known cards only; shuffled.
+progress stalest first; short runs backfill with known cards only; shuffled. `progressGroup`
+(P18): an item reviewed in several directions is New only if never answered in any, Learned /
+Confident only when every direction is, otherwise Learning; `PROGRESS_GROUPS` lists them least
+known first.
 
 **Exposes**: `UNSEEN`, `SCORE_MIN`, `SCORE_MAX`, `INITIAL_SCORE`, `LEARNED_AT`, `CONFIDENT_AT`,
 `DEMOTION_SCORE`, `RATING_*`, `RATINGS`, `STATE_*`, `STATES`, `RUN_SIZES`, `MAX_NEW_PER_RUN`,
 `MAX_MAINTENANCE_PER_RUN`, `STALE_CAP_DAYS`, `CONFIDENT_FACTOR`, `stateOf`, `isRating`,
-`applyRating`, `knownScore`, `isKnown`, `shuffle`, `maintenanceWeight`, `buildRun`, `countStates`
+`applyRating`, `knownScore`, `isKnown`, `PROGRESS_GROUPS`, `progressGroup`, `shuffle`, `maintenanceWeight`, `buildRun`, `countStates`
 
 ## words
 
@@ -237,10 +240,11 @@ library files from their cache too. Bump `CACHE_NAME` on every release.
 **File**: `js/core/dom.js` · **Layer**: presentation
 
 `h()` element builder (text as text, `html:` for trusted markup), `ja()` for Japanese spans,
-`button`, `segmented`, `toast`, `formatDaysAgo`, and `confirmAction`/`notify` — the single seams the
+`button`, `segmented`, `filterGroup` (a labelled group of a list toolbar), `listGroup` (a titled
+list section with a hairline heading), `toast`, `formatDaysAgo`, and `confirmAction`/`notify` — the single seams the
 smoke test answers.
 
-**Exposes**: `$`, `h`, `ja`, `button`, `segmented`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
+**Exposes**: `$`, `h`, `ja`, `button`, `segmented`, `filterGroup`, `listGroup`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
 
 ## theme
 
@@ -298,7 +302,9 @@ points) that the word sheet and the kanji card build their progress panels from.
 
 **File**: `js/words/words-ui.js` · **Layer**: presentation
 
-Words tab (review panel, search, list), word sheet (hero: the word and its reading with a
+Words tab (review panel; a toolbar panel with the labelled search; the list in progress groups
+New · Learning · Learned · Confident by `review.progressGroup`, empty groups hidden, newest first
+inside a group, two columns from 720 px), word sheet (hero: the word and its reading with a
 progress panel — both directions as lit steps and "Mark as known" until both are learned —
 under them on a phone, beside them from 720 px; then meaning, example, notes and kanji chips as
 hairline rows, two columns from 720 px; Edit/Delete on the right),
@@ -341,8 +347,11 @@ sheets in place of the card.
 **File**: `js/kanji/kanji-ui.js` · **Layer**: presentation
 
 Kanji tab: starts the one-time download on first open (progress, retry, offline message), review
-panel (enabled once the enrolled kanji's levels are stored), Mine/All, level chips, search, level
-sections of tiles with state dots; the kanji review adapter (preloads details and strokes).
+panel (enabled once the enrolled kanji's levels are stored), a library toolbar panel (`dom.filterGroup`) with three labelled
+groups in one row on a tablet (Show: Mine/All · JLPT level: the levels as one multi-select segmented
+control · Search; each takes a full row on a phone), level
+sections of tiles with state dots under hairline headings (`dom.listGroup`); the kanji review adapter (preloads details
+and strokes).
 
 **Exposes**: `renderKanji`
 
@@ -366,10 +375,10 @@ KANA_DATA, library} for tests and debugging.
 ## app-css, review-css, words-css, sentences-css, kanji-css
 
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
-controls; kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
-review card, ratings, help, summary), `css/words.css` (list, form, word sheet with its hero row;
+controls, among them the list toolbar `.filters` and the titled list sections `.list-group`; kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
+review card, ratings, help, summary), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form, word sheet with its hero row;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
-`css/sentences.css` (sentence list, form and Parse bar, sheet, word-card prompt rows), `css/kanji.css` (library, tiles, card hero with the
+`css/sentences.css` (sentence list, form and Parse bar, sheet, word-card prompt rows), `css/kanji.css` (the JLPT level control's padding, tiles, card hero with the
 progress panel's placement, card zones (square outlines; only strokes filled; examples with a left rule only), strokes, readings with parts, your sentences, pitch; phone layout below 600 px). Themes are explicit (`data-theme`), never OS-derived.
 
 ## index
@@ -402,7 +411,7 @@ server; `shots` screenshots `scene.html` scenes (including the word sheet) at 39
 **Files**: `tools/selftest.html`, `tools/selftest.js` · **Layer**: tooling
 
 Imports the shipped rule modules as they are and asserts kana tables/rules, rōmaji conversion,
-review scoring and run composition, word, sentence (Parse, candidates) and kanji rules, storage
+review scoring, progress groups and run composition, word, sentence (Parse, candidates) and kanji rules, storage
 normalisation.
 
 ## browser-smoke-page, browser-smoke
@@ -410,7 +419,9 @@ normalisation.
 **Files**: `tools/browser-smoke.html`, `tools/browser-smoke.js` · **Layer**: tooling
 
 Drives the real app in an iframe: kana runs and themes, word add/validate/duplicate/edit/search,
-both word reviews and the rating help, library download, Mine/All/levels/search, kanji card
+both word reviews and the rating help, the word list's progress groups (New, then Learning /
+Learned after reviews and Mark as known; two columns at tablet width), library download, Mine/All/levels/search and the labelled
+toolbar in one row at tablet width, kanji card
 (progress panel, parts in the readings panel, components, example words, add to my words),
 remove / add / mark as known, kanji review, backup
 round trip and reminder, sentences (Parse/Undo, word-card prompt with readings, already-in-list,
