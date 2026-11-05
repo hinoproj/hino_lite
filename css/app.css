@@ -574,16 +574,6 @@ button[disabled]:active { transform: none; }
 .state-dots { display: inline-flex; gap: 3px; }
 .state-dots i { width: 6px; height: 18px; border-radius: 3px; background: var(--state); }
 
-.states { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.state-chip {
-  font-size: 14px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: var(--surface-2);
-  border-left: 4px solid var(--state);
-}
-
 .part { margin-top: 14px; }
 
 .part-label {

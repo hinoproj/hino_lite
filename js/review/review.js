@@ -83,6 +83,11 @@ export function knownScore(score) {
   return Math.max(typeof score === 'number' ? score : UNSEEN, LEARNED_AT);
 }
 
+/** True when every direction's score is at least learned: "Mark as known" has nothing left to do. */
+export function isKnown(scores) {
+  return scores.length > 0 && scores.every((score) => typeof score === 'number' && score >= LEARNED_AT);
+}
+
 export function shuffle(list, rng = Math.random) {
   const out = list.slice();
   for (let i = out.length - 1; i > 0; i--) {

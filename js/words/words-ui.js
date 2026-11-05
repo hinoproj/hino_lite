@@ -1,5 +1,5 @@
-// [MODULE] words-ui | Words tab: review panel, searchable list, add/edit form with rōmaji suggestions, word sheet, word review adapter
-// [IFACE] layer: presentation | in: DOM events, prefilled drafts (from the kanji card) -> out: rendered words screens, saved words, enrolled kanji | crosses: [browser DOM]
+// [MODULE] words-ui | Words tab: review panel, searchable list, add/edit form with rōmaji suggestions, word sheet with progress panel, word review adapter
+// [IFACE] layer: presentation | in: DOM events, prefilled drafts (from the kanji card) -> out: rendered words screens, saved words, enrolled kanji, words marked as known | crosses: [browser DOM]
 // [GRAPH] needs: [words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card] | feeds: [main, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
 
@@ -7,7 +7,7 @@ import * as W from './words.js';
 import { toHiragana, toKatakana, hasLatin } from '../core/romaji.js';
 import * as K from '../kanji/kanji.js';
 import * as R from '../review/review.js';
-import { startReview, trackPanel, stateDots } from '../review/review-ui.js';
+import { startReview, trackPanel, stateDots, trackRow } from '../review/review-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
 import { $, h, ja, button, confirmAction, toast } from '../core/dom.js';
@@ -66,11 +66,15 @@ function wordItems() {
 
 // --- Word sheet ---------------------------------------------------------
 
+/**
+ * Layout: hero (the word and its reading | the progress panel) -> meaning,
+ * example, notes -> kanji -> Edit / Delete. The panel drops under the word on
+ * a phone (words.css). Re-opening replaces the sheet's content in place.
+ */
 export function openWordView(id) {
   const word = store.getWord(id);
   if (!word) return;
   const kanji = W.extractKanji(word.writing, K.isLibraryKanji);
-  const [s1, s2] = wordStates(word);
   const field = (key) => (word[key]
     ? h('div', { class: 'part' }, h('div', { class: 'part-label' }, W.FIELD_LABELS[key]),
       h('div', { class: 'part-text pre', lang: key === 'example' ? 'ja' : null }, word[key]))
@@ -78,14 +82,12 @@ export function openWordView(id) {
 
   shell.openSheet(h('div', { class: 'word-view', id: 'word-view' },
     h('div', { class: 'sheet-head' }, h('span'), button('✕', shell.closeSheet, 'icon-btn ghost', { 'aria-label': 'Close' })),
-    h('div', { class: 'hero' }, ja(W.headline(word), 'hero-word'), word.writing ? ja(word.reading, 'hero-reading') : null),
+    h('div', { class: 'word-hero' },
+      h('div', { class: 'hero' }, ja(W.headline(word), 'hero-word'), word.writing ? ja(word.reading, 'hero-reading') : null),
+      progressPanel(word)),
     field('meaning'), field('example'), field('notes'),
     kanji.length ? h('div', { class: 'part' }, h('div', { class: 'part-label' }, 'Kanji'),
       h('div', { class: 'chips' }, kanji.map((ch) => button(ja(ch), () => openKanjiCard(ch), 'chip glyph-chip')))) : null,
-    h('div', { class: 'part' }, h('div', { class: 'part-label' }, 'Progress'),
-      h('div', { class: 'states' },
-        h('span', { class: 'state-chip', dataset: { state: s1 } }, W.TRACK_INFO[W.TRACK_READ].label + ': ' + s1),
-        h('span', { class: 'state-chip', dataset: { state: s2 } }, W.TRACK_INFO[W.TRACK_RECALL].label + ': ' + s2))),
     h('div', { class: 'actions' },
       button('Edit', () => {
         shell.closeSheetNow();
@@ -98,6 +100,23 @@ export function openWordView(id) {
         shell.closeSheet();
         toast('Word deleted');
       }, 'danger', { id: 'btn-delete-word' }))), { label: W.headline(word) });
+}
+
+/** Both review directions with their state, and "Mark as known" until both are at least learned. */
+function progressPanel(word) {
+  const scores = W.TRACKS.map((t) => store.reviewStats(t, word.id).score);
+  return h('section', { class: 'progress-panel', 'aria-label': 'Progress' },
+    W.TRACKS.map((t, i) => trackRow(W.TRACK_INFO[t].label, R.stateOf(scores[i]))),
+    R.isKnown(scores) ? null : h('div', { class: 'actions' },
+      button('Mark as known', () => markWordKnown(word), 'ghost small', { id: 'btn-word-known' })));
+}
+
+function markWordKnown(word) {
+  if (!confirmAction('Mark “' + W.headline(word) + '” as known? It will come up only now and then.')) return;
+  W.TRACKS.forEach((t) => store.setReviewScore(t, word.id, R.knownScore(store.reviewStats(t, word.id).score)));
+  if (shell.activeTab() === 'words') renderWords();
+  openWordView(word.id);
+  toast(W.headline(word) + ' marked as known');
 }
 
 // --- Add / edit form -----------------------------------------------------

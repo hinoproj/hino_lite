@@ -1,7 +1,31 @@
-/* [MODULE] review-css | Self-rated review run: card with step-by-step reveal, reveal buttons, rating row, help sheet, summary
-   [IFACE] layer: presentation | in: classes and data-* set by review-ui.js and the words/kanji adapters -> out: rendered styling | crosses: []
+/* [MODULE] review-css | Self-rated review run: card with step-by-step reveal, reveal buttons, rating row, help sheet, summary; the progress panel on the word sheet and kanji card
+   [IFACE] layer: presentation | in: classes and data-* set by review-ui.js, the words/kanji adapters, words-ui.js and kanji-card.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
+
+/* Progress panel on the word sheet and the kanji card (review-ui.js trackRow): per direction a
+   name, a state and four steps lit up to the state, then the card's actions. Placement is the
+   card's own (words.css .word-hero, kanji.css .card-hero). */
+.progress-panel {
+  display: grid;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.progress-panel p { margin: 0; font-size: 15px; }
+.progress-panel .actions { gap: 8px; }
+.progress-panel .actions button { flex: 1 1 auto; }
+
+.track { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; font-size: 14px; }
+.track-name { color: var(--muted); }
+.track-state { font-weight: 600; }
+.track-steps { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+/* Unlit steps are a neutral tint: --line is amber in the Kids theme and would read as "learning" */
+.track-steps i { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--muted) 22%, transparent); }
+.track-steps i.lit { background: var(--state); }
 
 /* Track panel on the Words and Kanji tabs (review-ui.js trackPanel) */
 .review-panel .mode-row { margin-bottom: 10px; background: var(--surface-2); }

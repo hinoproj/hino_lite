@@ -69,6 +69,6 @@ and downloads again on the next Kanji-tab visit.
 
 ## Verification
 
-- `uv run tools/check.py` — selftest (152 checks) + UI smoke (98 checks), must end `ALL CHECKS PASSED`
+- `uv run tools/check.py` — selftest (153 checks) + UI smoke (101 checks), must end `ALL CHECKS PASSED`
 - `uv run tools/check.py shots OUT` — screenshots at 390×844 and 1280×800 for visual review
 - `uv run tools/check.py serve` — local server with correct MIME types

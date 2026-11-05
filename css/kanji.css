@@ -1,4 +1,4 @@
-/* [MODULE] kanji-css | Kanji tab and card: download panel, filters, level sections, tile grid, card hero with progress panel, card zones, strokes, readings with parts, your sentences, pitch
+/* [MODULE] kanji-css | Kanji tab and card: download panel, filters, level sections, tile grid, card hero with the progress panel's placement, card zones, strokes, readings with parts, your sentences, pitch
    [IFACE] layer: presentation | in: classes set by kanji-ui.js and kanji-card.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -66,19 +66,6 @@
   border: 1px solid var(--line);
   vertical-align: 2px;
 }
-
-.card-hero .progress-panel { margin-top: 0; display: grid; gap: 10px; }
-.progress-panel p { margin: 0; font-size: 15px; }
-.progress-panel .actions { gap: 8px; }
-.progress-panel .actions button { flex: 1 1 auto; }
-
-.track { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; font-size: 14px; }
-.track-name { color: var(--muted); }
-.track-state { font-weight: 600; }
-.track-steps { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
-/* Unlit steps are a neutral tint: --line is amber in the Kids theme and would read as "learning" */
-.track-steps i { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--muted) 22%, transparent); }
-.track-steps i.lit { background: var(--state); }
 
 /* Stroke order beside the readings panel; stacked on a phone */
 .card-main { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 12px; margin-top: 12px; }

@@ -67,7 +67,7 @@ add one and register it in the Child Index below.
 | `THEMES` in `js/core/storage.js` | `css/app.css` `:root[data-theme=…]`, `js/core/theme.js` `THEME_BAR_COLOR`, `js/settings/settings-ui.js` labels | A theme id is the palette key, the status-bar colour key and a button label. |
 | Element ids in `index.html` | `js/kana/kana-ui.js` `cacheDom()`/`initKana()`, `js/settings/settings-ui.js`, `js/core/shell.js`, the `screen-*` ids the `*-ui.js` modules fill | Modules bind static nodes by id. |
 | Tabs (`TABS` in `js/core/shell.js`) | `index.html` tab-bar buttons (`data-tab`) and `screen-<tab>` sections, `js/main.js` `registerTab`, `css/app.css` `.tabbar` column count, the tab count in `tools/browser-smoke.js` | A tab is a route, a button, a screen and a grid column; one missing piece leaves a dead button or a misaligned bar. |
-| Ids and classes the smoke test drives (`#btn-*`, `.mode-row[data-track]`, `.rating.*`, `.kanji-tile[data-kanji]`, `.rc-link[data-kanji]`, `.progress-panel .track`, `.card-sentence`, `#sentence-*`, `.prompt-row[data-status]` `.pw-*`) | `tools/browser-smoke.js`, `tools/scene.html` | The UI check finds the app through them. |
+| Ids and classes the smoke test drives (`#btn-*`, `.mode-row[data-track]`, `.rating.*`, `.kanji-tile[data-kanji]`, `.rc-link[data-kanji]`, `.progress-panel .track`, `.word-row[data-id]`, `#word-view .word-hero`, `.card-sentence`, `#sentence-*`, `.prompt-row[data-status]` `.pw-*`) | `tools/browser-smoke.js`, `tools/scene.html` | The UI check finds the app through them. |
 
 ## Verification
 

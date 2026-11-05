@@ -1,4 +1,4 @@
-/* [MODULE] words-css | Words tab: word list rows, add/edit form with suggestions, word sheet
+/* [MODULE] words-css | Words tab: word list rows, add/edit form with suggestions, word sheet with its hero row
    [IFACE] layer: presentation | in: classes set by words-ui.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -46,9 +46,20 @@
   .word-form .form-grid { grid-template-columns: 1fr 1fr; }
 }
 
-/* Word sheet */
-.hero { text-align: center; padding: 6px 0 4px; }
+/* Word sheet: the word and its reading | the progress panel; the panel drops under the word on a phone */
+.word-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 280px);
+  gap: 12px 20px;
+  align-items: center;
+}
+
+.hero { text-align: center; padding: 6px 0 4px; min-width: 0; }
 .hero-word { font-size: 52px; line-height: 1.2; overflow-wrap: anywhere; }
 .hero-reading { display: block; font-size: 22px; color: var(--muted); }
 .word-view .part-text { font-size: 18px; }
-.word-view .actions { margin-top: 20px; }
+.word-view > .actions { margin-top: 20px; }
+
+@media (max-width: 600px) {
+  .word-hero { grid-template-columns: minmax(0, 1fr); }
+}

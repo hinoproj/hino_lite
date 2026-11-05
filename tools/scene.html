@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- [MODULE] scene | Screenshot helper: seeds sample data and drives the app (full-window iframe) to one named screen
-     [IFACE] layer: tooling | in: ?scene=words|word-form|review|kanji|card|kana|sentences|sentence-form|sentence-words[&theme=dark|light|kids] -> out: the app showing that screen | crosses: [browser DOM, localStorage]
+     [IFACE] layer: tooling | in: ?scene=words|word|word-form|review|kanji|card|kana|sentences|sentence-form|sentence-words[&theme=dark|light|kids] -> out: the app showing that screen | crosses: [browser DOM, localStorage]
      [GRAPH] needs: [index] | feeds: [check] | group: tooling
      [STATE] stateful | persists: overwrites hino_lite_v2 in this browser profile | raises: nothing
 
@@ -72,7 +72,7 @@ async function waitFor(fn, timeout = 20000) {
   }
   return null;
 }
-const hash = { words: 'words', 'word-form': 'words', review: 'words', kanji: 'kanji', card: 'kanji/学', kana: 'kana',
+const hash = { words: 'words', word: 'words', 'word-form': 'words', review: 'words', kanji: 'kanji', card: 'kanji/学', kana: 'kana',
   sentences: 'sentences', 'sentence-form': 'sentences', 'sentence-words': 'sentences' }[scene] || 'kana';
 await new Promise((resolve) => { frame.onload = resolve; frame.src = '../index.html#' + hash; });
 const w = frame.contentWindow;
@@ -98,6 +98,9 @@ if (scene === 'word-form') {
     row.querySelector('.pw-add').click();
     set(d.querySelector('.prompt-row[data-writing="行きます"] .pw-meaning'), 'go — polite form of 行く');
   }
+} else if (scene === 'word') {
+  d.querySelector('#word-list .word-row[data-id="w1"]').click();
+  await waitFor(() => d.getElementById('word-view'));
 } else if (scene === 'review') {
   d.querySelector('.mode-row[data-track="words.read"] button.primary').click();
   await sleep(150);

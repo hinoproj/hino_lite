@@ -191,6 +191,10 @@ async function words() {
   $$('#word-list .word-row').find((r) => r.querySelector('.word-head').textContent === '勉強').click();
   await waitFor(() => $('#word-view'));
   log('a word opens in the sheet', visible('sheet-layer') && Boolean($('#word-view')));
+  log('word sheet: the hero holds a progress panel with both directions, unseen, and Mark as known',
+    $$('#word-view .word-hero .progress-panel .track').length === 2 &&
+    $$('#word-view .track').every((t) => t.dataset.state === 'unseen' && !t.querySelector('.lit')) &&
+    Boolean($('#btn-word-known')));
   $('#btn-edit-word').click();
   await waitFor(() => visible('screen-word-form'));
   log('edit prefills the form', $('#word-writing').value === '勉強' && $('#word-meaning').value === 'study');
@@ -259,6 +263,19 @@ async function wordReviews() {
     Object.values(recall).every((e) => e.score === 0) && Object.values(saved().reviews['words.read']).every((e) => e.score === 5));
   $('#btn-review-done').click();
   await waitFor(() => visible('screen-words'));
+
+  const tv = Object.values(saved().words).find((x) => x.reading === 'テレビ');
+  $('#word-list .word-row[data-id="' + tv.id + '"]').click();
+  await waitFor(() => $('#word-view'));
+  const lit = (i) => $$('#word-view .track')[i].querySelectorAll('.lit').length;
+  log('word sheet: steps light up to the state (learned 3, unknown 1)', lit(0) === 3 && lit(1) === 1, lit(0) + ',' + lit(1));
+  $('#btn-word-known').click();
+  await waitFor(() => !$('#btn-word-known'));
+  log('mark as known: Meaning → Japanese rises to learned, Japanese → meaning stays',
+    store().reviewStats('words.read', tv.id).score === 5 && store().reviewStats('words.recall', tv.id).score === 5 &&
+    $$('#word-view .track').every((t) => t.dataset.state === 'learned') && visible('sheet-layer'));
+  $('#word-view .sheet-head button').click();
+  await waitFor(() => !visible('sheet-layer'));
 }
 
 // --- Kanji --------------------------------------------------------------------

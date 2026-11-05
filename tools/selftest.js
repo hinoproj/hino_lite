@@ -196,6 +196,7 @@ check('a guess on a learned card only erodes by one', R.applyRating(10, R.RATING
 check('a miss below learned subtracts 3, floor 0', R.applyRating(4, R.RATING_MISSED) === 1 && R.applyRating(0, R.RATING_MISSED) === 0);
 check('score caps at 30', R.applyRating(29, R.RATING_EASY) === 30);
 check('mark as known lifts to 5 but never lowers', R.knownScore(-1) === 5 && R.knownScore(2) === 5 && R.knownScore(20) === 20);
+check('known means every direction at least learned', R.isKnown([5, 15]) && !R.isKnown([5, 4]) && !R.isKnown([-1, 20]) && !R.isKnown([]));
 check('ratings are four, lowest first', R.RATINGS.map((r) => r.value).join() === '-3,-1,1,2');
 
 const items = (n, offset = 0) => Array.from({ length: n }, (_, i) => ({ id: 'w' + (i + offset), addedAt: i + offset }));

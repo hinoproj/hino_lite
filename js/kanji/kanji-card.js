@@ -1,6 +1,6 @@
 // [MODULE] kanji-card | Kanji card sheet: glyph, progress panel with list actions, stroke order, readings with radicals/components, your words and sentences, example words with pitch accent
 // [IFACE] layer: presentation | in: a kanji character, an onChange callback -> out: the card in the sheet, enrollment/known changes | crosses: [browser DOM]
-// [GRAPH] needs: [kanji, library, words, review, storage, shell, dom, words-ui, sentences-ui] | feeds: [kanji-ui, words-ui] | group: presentation
+// [GRAPH] needs: [kanji, library, words, review, review-ui, storage, shell, dom, words-ui, sentences-ui] | feeds: [kanji-ui, words-ui] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
 
 /**
@@ -15,6 +15,7 @@ import * as K from './kanji.js';
 import * as library from './library.js';
 import * as W from '../words/words.js';
 import * as R from '../review/review.js';
+import { trackRow } from '../review/review-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
 import { h, ja, button, confirmAction, toast } from '../core/dom.js';
@@ -124,25 +125,14 @@ async function kanjiView(ch) {
 /** Both review directions with their state, and the list actions. */
 function progressPanel(ch) {
   const enrolled = store.isEnrolled(ch);
-  const known = K.TRACKS.every((t) => store.reviewStats(t, ch).score >= R.LEARNED_AT);
-  return h('section', { class: 'zone progress-panel' },
-    enrolled ? K.TRACKS.map((t) => trackRow(t, ch)) : h('p', { class: 'muted' }, 'Not in your kanji yet.'),
+  const known = R.isKnown(K.TRACKS.map((t) => store.reviewStats(t, ch).score));
+  return h('section', { class: 'progress-panel' },
+    enrolled ? K.TRACKS.map((t) => trackRow(K.TRACK_INFO[t].label, R.stateOf(store.reviewStats(t, ch).score))) : h('p', { class: 'muted' }, 'Not in your kanji yet.'),
     h('div', { class: 'actions' },
       enrolled
         ? button('Remove', () => removeKanji(ch), 'ghost small', { id: 'btn-kanji-remove' })
         : button('+ Add to my kanji', () => addKanji(ch), 'primary small', { id: 'btn-kanji-add' }),
       known ? null : button('Mark as known', () => markKnown(ch), 'ghost small', { id: 'btn-kanji-known' })));
-}
-
-/** One direction: its name, its state, and four steps lit up to the state (no points shown). */
-function trackRow(track, ch) {
-  const state = R.stateOf(store.reviewStats(track, ch).score);
-  const lit = R.STATES.indexOf(state);     // unseen 0 ... confident 4
-  return h('div', { class: 'track', dataset: { state } },
-    h('span', { class: 'track-name' }, K.TRACK_INFO[track].label),
-    h('span', { class: 'track-state' }, state),
-    h('span', { class: 'track-steps', 'aria-hidden': 'true' },
-      [1, 2, 3, 4].map((step) => h('i', { class: step <= lit ? 'lit' : null }))));
 }
 
 export function readingsNode(info) {

@@ -19,6 +19,8 @@ each with its own progress:
 
 "Show all" reveals everything at once; tapping the card works like the main button. Then rate
 yourself: **Didn't know**, **Guessed**, **Knew it** or **Easy!** ("Which one do I press?" explains).
+A word's card shows how far each review has come; **Mark as known** puts a word you already know
+straight to learned in both, so it comes up only now and then.
 
 **Sentences** — your sentences: the sentence, its reading (optional, kana), a translation and
 notes. Paste a sentence with readings in brackets and its translation at the end, and **Parse**

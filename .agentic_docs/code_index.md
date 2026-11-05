@@ -23,10 +23,10 @@ boundaries and `group:` values: on any conflict with an `AGENTS.md`, this file w
 | backup | js/core/backup.js | presentation | storage | shell, settings-ui | presentation | browser downloads, FileReader |
 | shell | js/core/shell.js | presentation | dom, storage, backup | main, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui | presentation | browser DOM, History API |
 | kana-ui | js/kana/kana-ui.js | presentation | kana-data, kana-srs, storage, theme, shell, dom | main | presentation | browser DOM |
-| review-ui | js/review/review-ui.js | presentation | review, storage, theme, shell, dom | words-ui, kanji-ui | presentation | browser DOM |
+| review-ui | js/review/review-ui.js | presentation | review, storage, theme, shell, dom | words-ui, kanji-ui, kanji-card | presentation | browser DOM |
 | words-ui | js/words/words-ui.js | presentation | words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card | main, kanji-card | presentation | browser DOM |
 | sentences-ui | js/sentences/sentences-ui.js | presentation | sentences, words, kanji, romaji, storage, shell, dom | main, kanji-card | presentation | browser DOM |
-| kanji-card | js/kanji/kanji-card.js | presentation | kanji, library, words, review, storage, shell, dom, words-ui, sentences-ui | kanji-ui, words-ui | presentation | browser DOM |
+| kanji-card | js/kanji/kanji-card.js | presentation | kanji, library, words, review, review-ui, storage, shell, dom, words-ui, sentences-ui | kanji-ui, words-ui | presentation | browser DOM |
 | kanji-ui | js/kanji/kanji-ui.js | presentation | kanji, library, review, review-ui, words, storage, shell, dom, kanji-card | main | presentation | browser DOM |
 | settings-ui | js/settings/settings-ui.js | presentation | storage, theme, backup, shell, dom | main | presentation | browser DOM |
 | main | js/main.js | presentation | storage, theme, shell, kana-ui, words-ui, sentences-ui, kanji-ui, settings-ui, kana-data, library, sw | index | presentation | browser DOM, service worker |
@@ -140,7 +140,7 @@ progress stalest first; short runs backfill with known cards only; shuffled.
 **Exposes**: `UNSEEN`, `SCORE_MIN`, `SCORE_MAX`, `INITIAL_SCORE`, `LEARNED_AT`, `CONFIDENT_AT`,
 `DEMOTION_SCORE`, `RATING_*`, `RATINGS`, `STATE_*`, `STATES`, `RUN_SIZES`, `MAX_NEW_PER_RUN`,
 `MAX_MAINTENANCE_PER_RUN`, `STALE_CAP_DAYS`, `CONFIDENT_FACTOR`, `stateOf`, `isRating`,
-`applyRating`, `knownScore`, `shuffle`, `maintenanceWeight`, `buildRun`, `countStates`
+`applyRating`, `knownScore`, `isKnown`, `shuffle`, `maintenanceWeight`, `buildRun`, `countStates`
 
 ## words
 
@@ -289,15 +289,18 @@ The self-rated run shared by words and kanji: an adapter gives the run, `plan(it
 reveals the rest, then four rating buttons and the "Which one do I press?" help (no points). Kids
 theme cheers a good rating. Summary: counts per rating, newly learned, per-item rows, "Run again"
 (accepts a promise). Also the `trackPanel` (run length + one row per track) and `stateDots` used
-by both tabs.
+by both tabs, and `trackRow` (a direction's name, state and four steps lit up to the state, no
+points) that the word sheet and the kanji card build their progress panels from.
 
-**Exposes**: `startReview`, `trackPanel`, `meter`, `stateDots`
+**Exposes**: `startReview`, `trackPanel`, `meter`, `stateDots`, `trackRow`
 
 ## words-ui
 
 **File**: `js/words/words-ui.js` · **Layer**: presentation
 
-Words tab (review panel, search, list), word sheet (fields, kanji chips, progress, Edit/Delete),
+Words tab (review panel, search, list), word sheet (hero: the word and its reading | a progress
+panel with both directions as lit steps and "Mark as known" until both are learned — the panel
+drops under the word below 600 px; then fields, kanji chips, Edit/Delete),
 add/edit form (rōmaji suggestions as hiragana/katakana chips, live "Adds to your kanji" preview,
 duplicate refusal with "Open it"), save → `storage.saveWord` + `enrollKanji`; the word review adapter.
 
@@ -322,8 +325,8 @@ marked. Edits never prompt. The sentence sheet also opens from a kanji card's "I
 **File**: `js/kanji/kanji-card.js` · **Layer**: presentation
 
 Kanji card in the sheet, ported from JLPT_coach's. Hero: glyph, level, meaning + also, and a
-progress panel (per track: name, state, four steps lit up to the state — never points; Add /
-Remove / Mark as known); on a phone the panel drops under the glyph. Then stroke order beside the
+progress panel (per track a `review-ui.trackRow`: name, state, four steps lit up to the state —
+never points; Add / Remove / Mark as known, hidden once `review.isKnown`); on a phone the panel drops under the glyph. Then stroke order beside the
 readings panel (readings, radicals, linkable components; stacked on a phone), "In your words" and
 "In your sentences" (kanji marked; 3 + show all; opens the sentence sheet), example words (8 + show
 all) → word sub-view with pitch-accent diagrams and "+ Add to my words" (opens the prefilled form)
@@ -362,10 +365,11 @@ KANA_DATA, library} for tests and debugging.
 ## app-css, review-css, words-css, sentences-css, kanji-css
 
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
-controls; kana screens), `css/review.css` (track panel, review card, ratings, help, summary),
-`css/words.css` (list, form, word sheet; its `.field*` classes serve the sentence form too),
-`css/sentences.css` (sentence list, form and Parse bar, sheet, word-card prompt rows), `css/kanji.css` (library, tiles, card hero with progress
-panel, card zones, strokes, readings with parts, your sentences, pitch; phone layout below 600 px). Themes are explicit (`data-theme`), never OS-derived.
+controls; kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
+review card, ratings, help, summary), `css/words.css` (list, form, word sheet with its hero row;
+its `.field*` classes serve the sentence form too),
+`css/sentences.css` (sentence list, form and Parse bar, sheet, word-card prompt rows), `css/kanji.css` (library, tiles, card hero with the
+progress panel's placement, card zones, strokes, readings with parts, your sentences, pitch; phone layout below 600 px). Themes are explicit (`data-theme`), never OS-derived.
 
 ## index
 
@@ -390,7 +394,7 @@ stroke colour → `currentColor`); writes `data/library/<level>.json` + `.stroke
 
 `uv run tools/check.py [all|selftest|smoke|serve|shots OUT]`. Serves the repo, runs the test pages
 in headless Chrome/Edge (throwaway profile), collects their POSTed reports; `serve` is the dev
-server; `shots` screenshots `scene.html` scenes at 390×844 and 1280×800.
+server; `shots` screenshots `scene.html` scenes (including the word sheet) at 390×844 and 1280×800.
 
 ## selftest-page, selftest
 

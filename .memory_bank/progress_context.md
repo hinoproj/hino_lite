@@ -1,5 +1,21 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-05] Word sheet: progress panel and "Mark as known" (P15)
+
+The word sheet still showed its two review states as chips ("Japanese → meaning: unseen") at the
+bottom. It now has the kanji card's progress panel: a hero row with the word and its reading on the
+left and the panel on the right (below 600 px it drops under the word), with both directions as lit
+steps (no points) and **Mark as known** (confirmed; both directions to learned, never lowered),
+hidden once both are learned. Words have no add/remove.
+
+The step row is now shared: `review-ui.trackRow` (moved from `kanji-card`), with its CSS moved from
+`kanji.css` to `review.css`; `.progress-panel` carries its own surface instead of borrowing
+`.zone`. New rule `review.isKnown` replaces the inline "both learned" check on both cards.
+`.states`/`.state-chip` removed from `app.css` (no users left); `.word-view > .actions` so the
+sheet's bottom margin no longer hits the panel's buttons. `sw.js` → `hino-lite-app-v5` (v4 is
+live). Selftest +1, smoke +3 (153/153, 101/101); `tools/scene.html` gained a `word` scene and
+`check.py shots` shoots it at 390×844 and 1280×800 (dark theme reviewed).
+
 ## [2026-11-03] Kanji card relaid out; "In your sentences" on the card
 
 The owner found the card's state chips and buttons floating between the hero and the zones

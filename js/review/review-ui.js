@@ -1,6 +1,6 @@
-// [MODULE] review-ui | Self-rated review run for words and kanji: step-by-step reveal, four rating buttons, help sheet, summary
+// [MODULE] review-ui | Self-rated review run for words and kanji: step-by-step reveal, four rating buttons, help sheet, summary; shared track panel, state dots and progress rows
 // [IFACE] layer: presentation | in: a composed run + an adapter (card plan, part renderers) -> out: rendered run/summary, recorded ratings | crosses: [browser DOM]
-// [GRAPH] needs: [review, storage, theme, shell, dom] | feeds: [words-ui, kanji-ui] | group: presentation
+// [GRAPH] needs: [review, storage, theme, shell, dom] | feeds: [words-ui, kanji-ui, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
 
 import * as R from './review.js';
@@ -20,6 +20,19 @@ let run = null;   // { config, items, index, revealed, results }
 export function stateDots(track1State, track2State) {
   return h('span', { class: 'state-dots', 'aria-hidden': 'true' },
     h('i', { dataset: { state: track1State } }), h('i', { dataset: { state: track2State } }));
+}
+
+/**
+ * One review direction in a card's progress panel (word sheet, kanji card):
+ * its name, its state, and four steps lit up to the state. No points (contract 9).
+ */
+export function trackRow(label, state) {
+  const lit = R.STATES.indexOf(state);     // unseen 0 ... confident 4
+  return h('div', { class: 'track', dataset: { state } },
+    h('span', { class: 'track-name' }, label),
+    h('span', { class: 'track-state' }, state),
+    h('span', { class: 'track-steps', 'aria-hidden': 'true' },
+      [1, 2, 3, 4].map((step) => h('i', { class: step <= lit ? 'lit' : null }))));
 }
 
 export function meter(counts) {
