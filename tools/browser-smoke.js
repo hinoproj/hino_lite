@@ -1,4 +1,4 @@
-// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji, backup, sentences and back navigation
+// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji, backup, sentences, pasted blocks and back navigation
 // [IFACE] layer: tooling | in: nothing -> out: report in #out and POSTed to /__report, ending SMOKE PASSED/FAILED | crosses: [browser DOM, localStorage, Cache Storage API, local HTTP server]
 // [GRAPH] needs: [index] | feeds: [browser-smoke-page] | group: tooling
 // [STATE] stateful | persists: clears hino_lite_v2 and the library cache before running | raises: nothing
@@ -629,6 +629,70 @@ async function sentences() {
     !(saved().reviews['sentences.read'] || {})[listenId] && !(saved().reviews['sentences.recall'] || {})[listenId]);
 }
 
+// --- Pasted blocks (P20) ---------------------------------------------------------
+
+async function pastedBlocks() {
+  const st = store();
+  const pressEnter = (el) => el.dispatchEvent(new w.InputEvent('beforeinput', { inputType: 'insertLineBreak', bubbles: true, cancelable: true }));
+  const values = (prefix, keys) => keys.map((k) => $('#' + prefix + k).value);
+
+  await tab('words');
+  $('#btn-add-word').click();
+  await waitFor(() => visible('screen-word-form'));
+  const writing = $('#word-writing');
+  writing.focus();
+  log('the Kanji field is one line: Enter moves to the reading', writing.tagName === 'TEXTAREA' && !pressEnter(writing) &&
+    d.activeElement === $('#word-reading'));
+  type(writing, '少し\n');
+  log('a single pasted line loses its line break', writing.value === '少し' && $('#word-paste-note').closest('.parse-bar').hidden);
+  writing.focus();
+  type(writing, '少し\nすこし\n• a little • a small amount • slightly\nAn adverb or noun indicating a small quantity or degree.');
+  log('a pasted word block fills the form, bullets kept, the last line as notes',
+    values('word-', ['writing', 'reading', 'meaning', 'example', 'notes']).join(' | ') ===
+      '少し | すこし | • a little • a small amount • slightly |  | An adverb or noun indicating a small quantity or degree.' &&
+      $('#kanji-preview').textContent.includes('少') && !$('#word-paste-note').closest('.parse-bar').hidden,
+    values('word-', ['writing', 'reading', 'meaning', 'example', 'notes']).join(' | '));
+  $('#btn-paste-undo').click();
+  log('Undo puts back what the fields held before the paste', values('word-', ['writing', 'reading', 'meaning', 'notes']).join('') === '少し' &&
+    $('#word-paste-note').closest('.parse-bar').hidden, values('word-', ['writing', 'reading', 'meaning', 'notes']).join(' | '));
+  writing.focus();
+  type(writing, 'ゆっくり\n\n• slowly\nTry ゆっくり歩く。\nAn adverb.');
+  log('a kana word block: no writing, the line before the last as the example',
+    values('word-', ['writing', 'reading', 'meaning', 'example', 'notes']).join(' | ') === ' | ゆっくり | • slowly | Try ゆっくり歩く。 | An adverb.',
+    values('word-', ['writing', 'reading', 'meaning', 'example', 'notes']).join(' | '));
+  $('#btn-save-word').click();
+  await waitFor(() => visible('screen-words'));
+  log('the pasted word saves', st.listWords().some((x) => x.writing === '' && x.reading === 'ゆっくり' && x.notes === 'An adverb.'));
+
+  await tab('sentences');
+  $('#btn-add-sentence').click();
+  await waitFor(() => visible('screen-sentence-form'));
+  const sentence = $('#sentence-sentence');
+  sentence.focus();
+  log('Enter in the sentence moves to the reading', !pressEnter(sentence) && d.activeElement === $('#sentence-reading'));
+  sentence.focus();
+  type(sentence, 'もう少(すこ)し、ゆっくり言(い)ってください\nPlease speak a little more slowly\n' +
+    'Combines もう少し (a little more), ゆっくり (slowly), and 言ってください (te-form of 言う + ください to make a polite request).');
+  log('a pasted sentence block fills the form; Parse has nothing left to do',
+    values('sentence-', ['sentence', 'reading', 'translation']).join(' | ') ===
+      'もう少し、ゆっくり言ってください | もうすこし、ゆっくりいってください | Please speak a little more slowly' &&
+      $('#sentence-notes').value.startsWith('Combines') && $('#btn-parse').hidden && !$('#btn-parse-undo').hidden &&
+      /pasted/.test($('#parse-note').textContent), values('sentence-', ['sentence', 'reading', 'translation', 'notes']).join(' | '));
+  $('#btn-parse-undo').click();
+  log('Undo empties the form again', values('sentence-', ['sentence', 'reading', 'translation', 'notes']).join('') === '');
+  sentence.focus();
+  type(sentence, 'もう少(すこ)し、ゆっくり言(い)ってください\nPlease speak a little more slowly\nA polite request.');
+  $('#btn-save-sentence').click();
+  await waitFor(() => visible('screen-sentence-words'));
+  const rows = promptRows();
+  log('its bracketed words reach the word-card prompt', rows.map((r) => rowValue(r, 'pw-writing') + '/' + rowValue(r, 'pw-reading')).join() === '少/すこ,言/い',
+    rows.map((r) => rowValue(r, 'pw-writing') + '/' + rowValue(r, 'pw-reading')).join());
+  $('#btn-prompt-done').click();
+  await waitFor(() => visible('screen-sentences'));
+  log('the pasted sentence saves with its notes', st.listSentences().some((x) => x.translation === 'Please speak a little more slowly' &&
+    x.notes === 'A polite request.'));
+}
+
 // --- Another tab, a newer version ------------------------------------------------
 
 async function otherTab() {
@@ -656,6 +720,7 @@ async function run() {
   await kanji();
   await backup();
   await sentences();
+  await pastedBlocks();
   await otherTab();
   await serviceWorker();
   log('no alerts were raised', alerts.length === 0, alerts.join(' | '));

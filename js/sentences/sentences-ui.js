@@ -1,4 +1,4 @@
-// [MODULE] sentences-ui | Sentences tab: review panel, labelled search toolbar, list grouped by progress, add/edit form with Parse, sentence sheet with progress panel, word-card prompt after a new sentence, sentence review adapter
+// [MODULE] sentences-ui | Sentences tab: review panel, labelled search toolbar, list grouped by progress, add/edit form with Parse and pasted-block fill (one Undo), sentence sheet with progress panel, word-card prompt after a new sentence, sentence review adapter
 // [IFACE] layer: presentation | in: DOM events -> out: rendered sentence screens, saved sentences, saved words, enrolled kanji, started sentence reviews, sentences marked as known | crosses: [browser DOM]
 // [GRAPH] needs: [sentences, words, kanji, romaji, review, review-ui, storage, shell, dom] | feeds: [main, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -11,7 +11,7 @@ import * as R from '../review/review.js';
 import { startReview, trackPanel, stateDots, trackRow } from '../review/review-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, ja, button, confirmAction, toast, filterGroup, listGroup, part } from '../core/dom.js';
+import { $, h, ja, button, confirmAction, toast, filterGroup, listGroup, part, pasteBlockField } from '../core/dom.js';
 
 let query = '';
 
@@ -140,6 +140,9 @@ function markSentenceKnown(sentence) {
  * sentence, and the reading and translation when it found them; Undo puts
  * back what was there. The words it found are remembered for the prompt that
  * follows saving a new sentence, even if the learner edits the text after.
+ *
+ * A pasted block (several lines, P20) fills the form at once (S.parsePaste);
+ * the same Undo then puts back what the fields held before the paste.
  */
 function openSentenceForm(prefill = {}, { id = null, swap = false } = {}) {
   const back = () => renderSentences();
@@ -187,6 +190,10 @@ function openSentenceForm(prefill = {}, { id = null, swap = false } = {}) {
     readingPreview.replaceChildren();
     if (hasLatin(typed)) readingPreview.append('Saves as ', ja(toHiragana(typed), 'preview-kana'));
   };
+  const noteWords = (lead, words) => {
+    parseNote.replaceChildren(lead);
+    if (words.length) parseNote.append('Readings found: ', ja(words.map((w) => w.writing).join(' · ')));
+  };
   const doParse = () => {
     const parsed = S.parse(inputs.sentence.value);
     before = { sentence: inputs.sentence.value, reading: inputs.reading.value, translation: inputs.translation.value };
@@ -194,10 +201,21 @@ function openSentenceForm(prefill = {}, { id = null, swap = false } = {}) {
     if (parsed.reading) inputs.reading.value = parsed.reading;
     if (parsed.translation) inputs.translation.value = parsed.translation;
     known = known.concat(parsed.words);
-    parseNote.replaceChildren();
-    if (parsed.words.length) parseNote.append('Readings found: ', ja(parsed.words.map((w) => w.writing).join(' · ')));
+    noteWords('', parsed.words);
     undoBtn.hidden = false;
     refresh();
+  };
+  // Overwrites the fields the block fills; refresh runs next, from the field's own input listener.
+  const fillFromPaste = (value, previous) => {
+    const parsed = S.parsePaste(value);
+    if (!parsed) return false;
+    before = Object.fromEntries(S.FIELDS.map((f) => [f, inputs[f].value]));
+    before.sentence = previous;
+    S.FIELDS.filter((f) => f === 'sentence' || parsed[f]).forEach((f) => { inputs[f].value = parsed[f]; });
+    known = known.concat(parsed.words);
+    noteWords('Filled from the pasted lines. ', parsed.words);
+    undoBtn.hidden = false;
+    return true;
   };
   const undoParse = () => {
     if (!before) return;
@@ -208,6 +226,7 @@ function openSentenceForm(prefill = {}, { id = null, swap = false } = {}) {
     refresh();
   };
 
+  pasteBlockField(inputs.sentence, inputs.reading, fillFromPaste);
   inputs.sentence.addEventListener('input', refresh);
   inputs.reading.addEventListener('input', refresh);
   form.addEventListener('submit', (e) => {

@@ -1,4 +1,4 @@
-/* [MODULE] sentences-css | Sentences tab: progress-group rows with state bars, add/edit form with the Parse bar, sentence sheet with its progress panel, word-card prompt rows, sentence review text
+/* [MODULE] sentences-css | Sentences tab: progress-group rows with state bars, add/edit form, sentence sheet with its progress panel, word-card prompt rows, sentence review text
    [IFACE] layer: presentation | in: classes set by sentences-ui.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -32,11 +32,9 @@
 
 .no-translation { font-style: italic; }
 
-/* Form (field, field-label, field-error, field-note come from words.css) */
+/* Form (field, field-label, field-error, field-note and the Parse bar come from words.css) */
 .sentence-form .form-grid { display: grid; gap: 4px 20px; }
 .sentence-form textarea[lang="ja"] { font-size: 20px; line-height: 1.45; }
-.parse-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
-.parse-bar .field-note { margin-top: 0; }
 .preview-kana { color: var(--text); font-size: 18px; }
 
 @media (min-width: 900px) {

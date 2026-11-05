@@ -1,5 +1,5 @@
-// [MODULE] sentences | Pure sentence rules: Parse (bracketed readings, trailing translation), word candidates, validation, search, review tracks, reviewability, reveal plans
-// [IFACE] layer: domain | in: typed or pasted sentence text, drafts, queries -> out: parsed fields, candidate words, errors, filtered lists | crosses: []
+// [MODULE] sentences | Pure sentence rules: Parse (bracketed readings, trailing translation), pasted-block split (P20), word candidates, validation, search, review tracks, reviewability, reveal plans
+// [IFACE] layer: domain | in: typed or pasted sentence text, pasted blocks, drafts, queries -> out: parsed fields, candidate words, errors, filtered lists | crosses: []
 // [GRAPH] needs: [romaji] | feeds: [sentences-ui, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
 
@@ -137,6 +137,18 @@ export function parse(text) {
   const { japanese, translation } = splitTranslation(text);
   const { text: sentence, reading, words } = readAnnotations(japanese);
   return { sentence, reading, translation, words };
+}
+
+/**
+ * A pasted block in the AI chat's sentence format (P20), empty lines skipped: the sentence with
+ * bracketed readings (read by `readAnnotations`, as Parse reads it), the translation, then the
+ * notes (every further line). Null when the text holds fewer than two lines: then it is not a block.
+ */
+export function parsePaste(text) {
+  const rows = String(text == null ? '' : text).split(/\r\n?|\n/).map((line) => line.trim()).filter(Boolean);
+  if (rows.length < 2) return null;
+  const { text: sentence, reading, words } = readAnnotations(rows[0]);
+  return { sentence, reading, translation: rows[1], notes: rows.slice(2).join('\n'), words };
 }
 
 /** Whether Parse would change anything (it shows only then). */

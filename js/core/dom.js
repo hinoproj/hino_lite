@@ -1,4 +1,4 @@
-// [MODULE] dom | Tiny DOM helpers: element builder, Japanese-text spans, toast, segmented control, labelled parts, list toolbar groups, titled list sections, confirm seam
+// [MODULE] dom | Tiny DOM helpers: element builder, Japanese-text spans, toast, segmented control, labelled parts, list toolbar groups, titled list sections, one-line field that takes a pasted block, confirm seam
 // [IFACE] layer: presentation | in: tag names, props, children -> out: DOM nodes | crosses: [browser DOM]
 // [GRAPH] needs: [] | feeds: [shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui] | group: presentation
 // [STATE] stateless | persists: nothing | raises: nothing
@@ -80,6 +80,33 @@ export function listGroup(title, count, content, { className, dataset } = {}) {
 /** A labelled block of a card or a review step (`.part`, app.css): the label, then any content. */
 export function part(label, ...content) {
   return h('div', { class: 'part' }, h('div', { class: 'part-label' }, label), content);
+}
+
+/**
+ * A textarea that takes one typed line and a pasted block (P20). Enter moves to `next` instead of
+ * breaking the line, so a line break in the value can only have come from a paste, whichever way
+ * it arrived: the context menu, Ctrl+V, or a phone keyboard's clipboard strip (which fires no
+ * paste event, hence the `input` listener). Then `onBlock(value, previous)` runs with the value the
+ * field held before the paste (taken at `beforeinput`, else the last value seen, as code may have
+ * set it since); when it returns false (one line after all) the line breaks are dropped. Register
+ * it before the field's other `input` listeners, so they see the result.
+ */
+export function pasteBlockField(field, next, onBlock) {
+  let previous = field.value;
+  field.setAttribute('enterkeyhint', 'next');
+  field.addEventListener('focus', () => { previous = field.value; });
+  field.addEventListener('beforeinput', (e) => {
+    previous = field.value;
+    if (e.inputType !== 'insertLineBreak' && e.inputType !== 'insertParagraph') return;
+    e.preventDefault();
+    next.focus();
+  });
+  field.addEventListener('input', () => {
+    if (/[\r\n]/.test(field.value) && !onBlock(field.value, previous)) {
+      field.value = field.value.replace(/[\r\n]+/g, '').trim();
+    }
+    previous = field.value;
+  });
 }
 
 /** The one place the app asks for confirmation, so tests can answer it. */

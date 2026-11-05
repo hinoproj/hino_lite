@@ -1,4 +1,4 @@
-// [MODULE] words-ui | Words tab: review panel, labelled search toolbar, list grouped by progress (two columns when wide), add/edit form with rōmaji suggestions, word sheet with progress panel, word review adapter
+// [MODULE] words-ui | Words tab: review panel, labelled search toolbar, list grouped by progress (two columns when wide), add/edit form with rōmaji suggestions and pasted-block fill with Undo, word sheet with progress panel, word review adapter
 // [IFACE] layer: presentation | in: DOM events, prefilled drafts (from the kanji card) -> out: rendered words screens, saved words, enrolled kanji, words marked as known | crosses: [browser DOM]
 // [GRAPH] needs: [words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card] | feeds: [main, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -10,7 +10,7 @@ import * as R from '../review/review.js';
 import { startReview, trackPanel, stateDots, trackRow } from '../review/review-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, ja, button, confirmAction, toast, filterGroup, listGroup, part } from '../core/dom.js';
+import { $, h, ja, button, confirmAction, toast, filterGroup, listGroup, part, pasteBlockField } from '../core/dom.js';
 import { openKanjiCard } from '../kanji/kanji-card.js';
 
 let query = '';
@@ -136,6 +136,10 @@ function markWordKnown(word) {
  * `prefill` fills the fields (a word to edit, or an example word from a kanji
  * card). `id` edits that word. `swap` reuses the current back entry -- used
  * when the form replaces an open sheet rather than opening from a tab.
+ *
+ * The Kanji field is a one-line textarea so that a pasted block keeps its lines
+ * (an <input> drops them): the block fills the form (W.parsePaste, P20), and
+ * Undo puts back what the fields held before the paste.
  */
 export function openWordForm(prefill = {}, { id = null, swap = false } = {}) {
   const back = () => renderWords();
@@ -144,9 +148,10 @@ export function openWordForm(prefill = {}, { id = null, swap = false } = {}) {
   const inputs = {};
   const errors = {};
   const input = (key, props) => {
-    inputs[key] = h(props.multiline ? 'textarea' : 'input', {
-      id: 'word-' + key, name: key, lang: props.lang, rows: props.multiline ? props.rows : null,
-      type: props.multiline ? null : 'text', placeholder: props.placeholder,
+    const area = Boolean(props.multiline || props.oneLine);
+    inputs[key] = h(area ? 'textarea' : 'input', {
+      id: 'word-' + key, name: key, lang: props.lang, rows: area ? props.rows || 1 : null,
+      type: area ? null : 'text', class: props.oneLine ? 'one-line' : null, placeholder: props.placeholder,
       autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', 'aria-describedby': 'word-' + key + '-error'
     });
     inputs[key].value = prefill[key] || '';
@@ -158,11 +163,17 @@ export function openWordForm(prefill = {}, { id = null, swap = false } = {}) {
 
   const suggestions = h('div', { class: 'chips suggestions', id: 'reading-suggestions', 'aria-live': 'polite' });
   const kanjiPreview = h('div', { class: 'field-note', id: 'kanji-preview' });
+  const pasteNote = h('span', { class: 'field-note', id: 'word-paste-note', 'aria-live': 'polite' });
+  const undoBtn = button('Undo', () => undoPaste(), 'small ghost', { id: 'btn-paste-undo' });
+  const pasteBar = h('div', { class: 'parse-bar', hidden: true }, undoBtn, pasteNote);
+  let beforePaste = null;
 
   const form = h('form', { class: 'word-form', id: 'word-form', autocomplete: 'off', novalidate: true },
     h('div', { class: 'form-grid' },
       h('div', { class: 'form-col' },
-        input('writing', { lang: 'ja', placeholder: 'e.g. 勉強 — leave empty for a kana-only word', after: kanjiPreview }),
+        input('writing', {
+          oneLine: true, lang: 'ja', placeholder: 'e.g. 勉強 — leave empty for a kana-only word', after: [kanjiPreview, pasteBar]
+        }),
         input('reading', { lang: 'ja', required: true, placeholder: 'kana, or type rōmaji: benkyou', after: suggestions }),
         input('meaning', { multiline: true, rows: 2, required: true, placeholder: 'study' })),
       h('div', { class: 'form-col' },
@@ -198,7 +209,29 @@ export function openWordForm(prefill = {}, { id = null, swap = false } = {}) {
     if (fresh.length) kanjiPreview.append('Adds to your kanji: ', ja(fresh.join(' '), 'preview-kanji'));
     else if (chars.length) kanjiPreview.append('Its kanji are already in your list.');
   };
+  // Overwrites the fields the block fills; the Kanji field always (a kana word has no writing).
+  const fillFromPaste = (value, previous) => {
+    const parsed = W.parsePaste(value);
+    if (!parsed) return false;
+    beforePaste = Object.fromEntries(W.FIELDS.map((f) => [f, inputs[f].value]));
+    beforePaste.writing = previous;
+    W.FIELDS.filter((f) => f === 'writing' || parsed[f]).forEach((f) => { inputs[f].value = parsed[f]; });
+    pasteNote.textContent = 'Filled from the pasted lines.';
+    pasteBar.hidden = false;
+    updateSuggestions();
+    return true;
+  };
+  const undoPaste = () => {
+    if (!beforePaste) return;
+    W.FIELDS.forEach((f) => { inputs[f].value = beforePaste[f]; });
+    beforePaste = null;
+    pasteBar.hidden = true;
+    updateSuggestions();
+    updateKanjiPreview();
+    inputs.writing.focus();
+  };
 
+  pasteBlockField(inputs.writing, inputs.reading, fillFromPaste);
   inputs.reading.addEventListener('input', updateSuggestions);
   inputs.writing.addEventListener('input', updateKanjiPreview);
   form.addEventListener('submit', (e) => {

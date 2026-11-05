@@ -1,4 +1,4 @@
-/* [MODULE] words-css | Words tab: progress-group grid (two columns from 720 px) and word rows, add/edit form with suggestions, word sheet (hero with progress panel, field grid)
+/* [MODULE] words-css | Words tab: progress-group grid (two columns from 720 px) and word rows, add/edit form with suggestions, the one-line Kanji field and the Parse bar (both forms), word sheet (hero with progress panel, field grid)
    [IFACE] layer: presentation | in: classes set by words-ui.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -35,10 +35,15 @@
 .field { display: block; margin-bottom: 14px; }
 .field-label { display: block; font-weight: 600; margin-bottom: 6px; }
 .field-label em { font-style: normal; font-weight: 400; color: var(--muted); font-size: 13px; }
-.field input[lang="ja"] { font-size: 22px; }
+.field input[lang="ja"], .field textarea.one-line[lang="ja"] { font-size: 22px; }
+/* A one-line textarea (the Kanji field) looks like an input; it is a textarea only so a pasted block keeps its lines (P20) */
+.field textarea.one-line { resize: none; min-height: 0; overflow: hidden; line-height: 1.25; }
 .field-error { color: var(--bad); font-size: 14px; margin-top: 4px; }
 .field-error:empty { display: none; }
 .field-note { color: var(--muted); font-size: 14px; margin-top: 6px; min-height: 1px; }
+/* Undo and a note under a field after Parse or a pasted block (both forms) */
+.parse-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
+.parse-bar .field-note { margin-top: 0; }
 .preview-kanji { font-size: 20px; color: var(--text); letter-spacing: 4px; }
 .suggestions { margin-top: 8px; }
 .suggestions .chip { font-size: 22px; background: var(--surface); border-color: var(--accent); }

@@ -54,6 +54,12 @@ Full graph, boundaries and per-module notes: `.agentic_docs/code_index.md`. Rule
   okurigana (落ち着いて) without a dictionary; the translation is the Latin/Cyrillic tail. Word
   candidates for the prompt are re-derived from the saved sentence plus Parse's words, so edits
   after Parse are safe. Conjugated forms stay as written; meanings are never prefilled (owner, P13).
+- **Pasted blocks are split by line position** (`words.parsePaste`, `sentences.parsePaste`, P20),
+  matching the owner's AI chat gem's output format; a sentence's first line goes through the
+  unchanged `readAnnotations`. The receiving fields (word Kanji, Sentence) are one-line textareas
+  (`dom.pasteBlockField`): an `<input>` strips pasted line breaks, and detection runs on `input`
+  rather than `paste` because a phone keyboard's clipboard strip fires no paste event. A typed Enter
+  moves to the next field, so any line break in the value came from a paste.
 - **Kanji library**: 2,099 kanji, example words with frequency rank < 11,000, KanjiVG strokes
   slimmed and recoloured to `currentColor` — 12 files, ~6.7 MB on disk, ~1.7 MB gzipped, in their
   own cache named after a content hash, downloaded on the first Kanji-tab visit (N5 first). A 207 KB
@@ -74,6 +80,6 @@ and downloads again on the next Kanji-tab visit.
 
 ## Verification
 
-- `uv run tools/check.py` — selftest (159 checks) + UI smoke (114 checks), must end `ALL CHECKS PASSED`
+- `uv run tools/check.py` — selftest (166 checks) + UI smoke (125 checks), must end `ALL CHECKS PASSED`
 - `uv run tools/check.py shots OUT` — screenshots at 390×844 and 1280×800 for visual review
 - `uv run tools/check.py serve` — local server with correct MIME types

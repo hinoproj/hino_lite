@@ -1,5 +1,45 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-05] Pasted blocks fill the word and sentence forms (P20)
+
+The owner copies words and sentences from an AI chat gem, one field per line. They asked for a
+multi-line paste to fill the forms. Their answers to the questions asked: keep the meaning
+bullets; for words the last line is the notes and, with five lines, the fourth is the example;
+for sentences it is simply line 2 = translation and line 3 = notes (no kana-line detection);
+overwrite with Undo, edit forms too. Explicit: **don't change the reading-parse logic**, so
+`readAnnotations`, `splitTranslation` and `parse` are untouched.
+
+**Shipped.**
+- Rules: `words.parsePaste` and `sentences.parsePaste` (P20 in `current_task.md`; null under two
+  non-empty lines). For words, every line between the meaning and the last joins the example.
+  A sentence's further lines join the notes.
+- `dom.pasteBlockField`: a textarea that takes one typed line. Enter moves to the next field
+  (`beforeinput` `insertLineBreak` is cancelled, `enterkeyhint="next"`), so a line break can only
+  come from a paste. Detection runs on `input`, not `paste`, because a phone keyboard's clipboard
+  strip fires no paste event. A single line just loses its break.
+- Word form: the Kanji field became a one-line textarea (`.one-line`, styled as an input). An
+  `<input>` strips line breaks from pasted text. A paste bar ("Filled from the pasted lines" +
+  Undo, `#btn-paste-undo`) sits under it.
+- Sentence form: the field blocks a typed Enter now; a block fills the form, and its bracketed
+  words join `known` for the word-card prompt. It reuses Parse's Undo and note.
+- `.parse-bar` moved from `sentences.css` to `words.css` (both forms use it).
+- Tests: selftest +7, smoke +11 (new `pastedBlocks()` flow after `sentences()`): 166/166, 125/125.
+  Phone screenshot of the word form checked: the Kanji field matches the Reading input.
+- `sw.js` → `hino-lite-app-v9`; no new files. [FIXED] `code_index.md` still named `sw`'s cache
+  `hino-lite-app-v3`.
+
+**Known issues.**
+- The Undo snapshot of the pasted-into field comes from `beforeinput`, else the field's last
+  seen value. A path that fires neither `beforeinput` nor `focus` after code set the field
+  (e.g. Undo, then a second paste without leaving the field) restores a stale value. Seen only
+  in the smoke test's synthetic events.
+- Pasting into a field that already holds text merges that text into line 1: the whole value
+  is split, not just the pasted part. Select-all and paste (the edit-form case) is correct.
+  Undo recovers.
+- A bracket that covers only the kanji (`もう少(すこ)し`) gives the prompt `少/すこ`, not
+  `少し/すこし`: P13's Parse limit, kept by the owner's decision. The prompt fields are editable.
+- Not yet tried on the phone: Android long-press Paste and Gboard's clipboard strip.
+
 ## [2026-11-05] Sentence reviews (P19)
 
 The owner asked for SRS on sentences. Three questions were put to the owner, who picked all three

@@ -20,7 +20,8 @@ on their own. It shares nothing with the platform at run time; findings move to 
 - **Kana**: six decks (hiragana/katakana × basic 46 / dakuten 25 / yōon 36); Read and Recall
   (timed multiple choice), Type (hiragana only); per-kana-per-mode scores; mistake replay.
 - **Words**: the learner types a word — kanji writing (optional), reading (kana; rōmaji is offered
-  as hiragana/katakana suggestions), meaning, example, notes (any text). One flat list. Two
+  as hiragana/katakana suggestions), meaning, example, notes (any text) — or pastes it one field
+  per line, as the owner's AI chat gem writes it (P20). One flat list. Two
   reviews with separate scores: Japanese → meaning and Meaning → Japanese, revealed step by step.
 - **Kanji**: library of all 2,099 kanji grouped by JLPT level, downloaded once; library kanji in a
   word's writing join the kanji list; add any kanji, remove one (progress kept), mark as known.
@@ -28,7 +29,8 @@ on their own. It shares nothing with the platform at run time; findings move to 
   "add to my words". Two reviews: Kanji → meaning and Meaning → kanji.
 - **Sentences** (from 2026-11-02): a list of the learner's sentences (sentence, optional reading,
   translation, notes). Pasted text with bracketed readings and a trailing translation is parsed
-  into the fields; a new sentence's kanji words are offered as word cards with the sentence as
+  into the fields, and a pasted block (sentence / translation / notes lines, P20) fills them at
+  once; a new sentence's kanji words are offered as word cards with the sentence as
   their example. From 2026-11-05 (P19) two reviews: Japanese → translation and Translation →
   Japanese, for sentences that have a translation.
 - **Self-rating** for words and kanji: Didn't know / Guessed / Knew it / Easy!, on JLPT_coach's

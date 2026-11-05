@@ -3,8 +3,8 @@
 **Status:** built and verified 2026-11-01 (`uv run tools/check.py`: selftest 117/117, smoke 71/71;
 screenshots at phone and tablet sizes reviewed). Folder renamed and pushed to Pages
 2026-11-02 (`https://hinoproj.github.io/hino_lite/`). Sentences tab (P13) built and verified
-2026-11-02 (selftest 149/149, smoke 93/93). Kanji card layout (P14) 2026-11-03 (152/152, 98/98). Word sheet progress panel (P15) 2026-11-05. Kanji card zones (P16) 2026-11-05. Kanji tab toolbar (P17) 2026-11-05. Words list in progress groups (P18) 2026-11-05 (154/154, 104/104). Sentence reviews (P19) 2026-11-05 (159/159, 114/114).
-Open: device sessions with the learner.
+2026-11-02 (selftest 149/149, smoke 93/93). Kanji card layout (P14) 2026-11-03 (152/152, 98/98). Word sheet progress panel (P15) 2026-11-05. Kanji card zones (P16) 2026-11-05. Kanji tab toolbar (P17) 2026-11-05. Words list in progress groups (P18) 2026-11-05 (154/154, 104/104). Sentence reviews (P19) 2026-11-05 (159/159, 114/114). Pasted blocks (P20) 2026-11-05 (166/166, 125/125).
+Open: device sessions with the learner; P20's paste on the phone itself (long-press Paste and the keyboard's clipboard strip).
 
 Extends the kana drill into **Hino Lite**: kana + the learner's own words + a kanji library whose
 kanji join a personal list automatically. Learner: the owner's son, on a phone (portrait) and a
@@ -33,6 +33,7 @@ tablet (landscape), offline, on-device storage only. Existing progress may be dr
 | P17 | (2026-11-05) **Kanji tab layout**: the review panel stays as it is; the library controls are one toolbar panel with labelled groups in a single row (Show: Mine/All · JLPT level · Search); level sections are visibly separated. |
 | P18 | (2026-11-05) **Words list in progress groups**: New · Learning · Learned · Confident, least known first, separated by hairline headings as the Kanji levels are; a word is New only if never reviewed either way and Learned/Confident only when both directions are, otherwise Learning; two columns from 720 px; the search sits in the same labelled toolbar panel as on the Kanji tab. |
 | P19 | (2026-11-05) **Sentence reviews**: two directions with separate progress — **Japanese → translation** (sentence → reading, only when it has kanji and a reading → translation + notes) and **Translation → Japanese** (translation → sentence + reading + notes); same ratings, run rule and Cards per run as words; only a sentence with a translation is reviewed (the others stay listed, marked "not in reviews"); the list is grouped by progress as Words (P18) but one column at every width; the sentence sheet gets the progress panel with Mark as known; deleting a sentence drops its scores. |
+| P20 | (2026-11-05) **Pasted blocks** in the AI chat's formats (the owner's gem instructions). **Word**, pasted into the Kanji field: kanji writing (only when the line has a kanji; a kana word starts with its reading), reading, meanings (bullets kept), then the last line → notes and any line between the meanings and the last → example (five lines: the fourth is the example). **Sentence**, pasted into the Sentence field: line 1 = the sentence with bracketed readings, read by the existing reading logic unchanged; line 2 = translation; line 3 (and any further) = notes. The form fills at once (no button), overwriting the fields the block fills; "Filled from the pasted lines" with **Undo** back to the fields as they were before the paste; new and edit forms alike. A single pasted line keeps today's behaviour (Parse button for sentences). |
 
 ## Tasks
 

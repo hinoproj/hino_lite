@@ -9,8 +9,20 @@ installed from GitHub Pages, everything stays on the device.
 **Kana** — the six hiragana/katakana decks with timed multiple choice and typing (below).
 
 **Words** — your words. Each has a kanji writing (optional), a reading (kana — type rōmaji and
-tap the hiragana or katakana suggestion), a meaning, an example and notes (any text). Two reviews,
-each with its own progress:
+tap the hiragana or katakana suggestion), a meaning, an example and notes (any text). Paste a
+word given one field per line into the **Kanji** field and the form fills itself:
+
+```
+少し
+すこし
+• a little • a small amount • slightly
+An adverb or noun indicating a small quantity or degree.
+```
+
+The first line is the kanji writing only when it has a kanji (a kana word starts with its reading),
+then the reading and the meaning; the last line becomes the notes, and any line between the
+meaning and the last becomes the example. **Undo** puts the form back as it was before the paste.
+Two reviews, each with its own progress:
 
 | Review | Shows | Main button reveals |
 | --- | --- | --- |
@@ -35,6 +47,17 @@ sorts it into the fields:
 A bracket — `()`, `[]` or their full-width forms — is the reading of the kanji word right before
 it (a particle in front is left out, お/ご are kept). The Latin or Cyrillic text at the end becomes
 the translation, with or without a `—`, `-` or `:` before it. **Undo** puts the pasted text back.
+
+Paste several lines and the form fills at once, no Parse needed: the first line is the sentence
+(its bracketed readings read as above), the second the translation, the rest the notes. **Undo**
+then puts the form back as it was before the paste.
+
+```
+もう少(すこ)し、ゆっくり言(い)ってください
+Please speak a little more slowly
+Combines もう少し (a little more), ゆっくり (slowly), and 言ってください (…).
+```
+
 After you save a new sentence, its kanji words are offered as word cards: bracketed words come
 with their reading, other kanji with an empty one. Type a meaning (for a conjugated word, add its
 dictionary form: "listen — て-form of 聞く") and tap **Add**; the card gets the sentence and its

@@ -273,6 +273,22 @@ check('search by meaning, rōmaji and katakana',
 check('search misses what is not there', !W.matchesQuery(full, 'xyz') && !W.matchesQuery(bare, 'gakkou'));
 check('duplicate key is writing + reading', W.duplicateKey({ writing: ' 勉強', reading: 'べんきょう ' }) === W.duplicateKey(full));
 
+const pasted = (text) => JSON.stringify(W.parsePaste(text));
+check('pasted word: writing, reading, meaning with its bullets, the last line as notes',
+  pasted('少し\nすこし\n• a little • a small amount • slightly\nAn adverb or noun indicating a small quantity or degree.') ===
+    JSON.stringify({ writing: '少し', reading: 'すこし', meaning: '• a little • a small amount • slightly', example: '',
+      notes: 'An adverb or noun indicating a small quantity or degree.' }), pasted('少し\nすこし\n• a little\nAn adverb.'));
+check('pasted word: with five lines the fourth is the example',
+  pasted('勉強\nべんきょう\nstudy\n毎日勉強します。\nA noun.') ===
+    JSON.stringify({ writing: '勉強', reading: 'べんきょう', meaning: 'study', example: '毎日勉強します。', notes: 'A noun.' }));
+check('pasted word: every line between the meaning and the last joins the example',
+  W.parsePaste('勉強\nべんきょう\nstudy\n毎日勉強します。\nI study every day.\nA noun.').example === '毎日勉強します。\nI study every day.');
+check('pasted word: a kana word starts with its reading',
+  pasted('ゆっくり\n• slowly\nAn adverb.') === JSON.stringify({ writing: '', reading: 'ゆっくり', meaning: '• slowly', example: '', notes: 'An adverb.' }),
+  pasted('ゆっくり\n• slowly\nAn adverb.'));
+check('pasted word: blank lines and CRLF are skipped; one line is not a block',
+  W.parsePaste('\r\n少し\r\n\r\n  すこし  \r\n').reading === 'すこし' && W.parsePaste('少し\n') === null && W.parsePaste('') === null);
+
 // --- Sentences --------------------------------------------------------------
 
 section('Sentences');
@@ -303,6 +319,16 @@ check('Parse: a bracket after a kana-only word is dropped, no word', same(S.pars
 check('Parse: a bracket without kana is not a reading', S.parse('聞いて（polite）ください').sentence === '聞いて（polite）ください');
 check('canParse: brackets or a translation, not a plain sentence',
   S.canParse('聞いて（きいて）') && S.canParse('ありがとう — thanks') && !S.canParse('もう一度聞いてください。'));
+
+const block = S.parsePaste('もう少(すこ)し、ゆっくり言(い)ってください\nPlease speak a little more slowly\n' +
+  'Combines もう少し (a little more), ゆっくり (slowly), and 言ってください (te-form of 言う + ください to make a polite request).');
+check('pasted sentence: line 1 read as Parse reads it, line 2 the translation, line 3 the notes',
+  block.sentence === 'もう少し、ゆっくり言ってください' && block.reading === 'もうすこし、ゆっくりいってください' &&
+    block.translation === 'Please speak a little more slowly' && block.notes.startsWith('Combines もう少し') &&
+    wordList(block.words) === '少/すこ 言/い', JSON.stringify(block));
+check('pasted sentence: two lines leave no notes; further lines join the notes; one line is not a block',
+  S.parsePaste('毎日、本を読む。\n\nI read every day.').notes === '' && S.parsePaste('毎日、本を読む。\nI read.\nA.\nB.').notes === 'A.\nB.' &&
+    S.parsePaste('毎日、本を読む。\n') === null);
 
 check('candidates: known readings where they occur',
   same(S.candidates('もう一度聞いてください。', listen.words), [{ writing: '一度', reading: 'いちど' }, { writing: '聞いて', reading: 'きいて' }]));

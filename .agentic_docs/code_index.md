@@ -155,9 +155,13 @@ Word rules. `normalizeDraft` trims and converts leftover rōmaji in the reading 
 Japanese → meaning = writing | reading | meaning+example+notes (no writing: reading | meaning…);
 Meaning → Japanese = meaning | reading | writing+example+notes (no writing: meaning | reading…);
 empty extras dropped. `matchesQuery` searches every field, and rōmaji/katakana queries match the reading.
+`parsePaste` (P20) splits a pasted block in the AI chat's word format, empty lines skipped: line 1
+is the writing only when it holds a kanji (a kana word starts with its reading), then reading,
+meaning (bullets kept); after the meaning the last line is the notes and every line between is the
+example; null for fewer than two lines.
 
 **Exposes**: `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`, `FIELDS`, `FIELD_LABELS`,
-`normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `matchesQuery`, `sortForList`
+`parsePaste`, `normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `matchesQuery`, `sortForList`
 
 ## sentences
 
@@ -170,7 +174,9 @@ bracket loses its leading non-kanji except お/ご, and when it holds several ka
 start whose kana align with the reading wins (日本語を勉強（べんきょう） → 勉強; 落ち着いて stays whole);
 a bracket after a kana-only token is dropped, one without kana stays as text; the sentence reading
 is filled only when no kanji or Latin is left. `parse` = both; `canParse` = Parse would change
-something. `candidates(sentence, known)`: known/bracketed words where they occur, then every other
+something. `parsePaste` (P20): a pasted block, empty lines skipped — line 1 through
+`readAnnotations` (no translation split), line 2 the translation, every further line the notes;
+null for fewer than two lines. `candidates(sentence, known)`: known/bracketed words where they occur, then every other
 kanji run (with a preceding お/ご) with an empty reading, in order, each once; kana-only words never.
 `exampleFor` = sentence + newline + translation. Reading optional, rōmaji → hiragana, no kanji or
 Latin. Conjugated forms stay as written; their dictionary form goes in the meaning, by hand.
@@ -179,7 +185,7 @@ Reviews (P19): tracks `sentences.read` (Japanese → translation) and `sentences
 kanji and a reading) | translation + notes; recall = translation | sentence + reading + notes.
 
 **Exposes**: `FIELDS`, `FIELD_LABELS`, `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`,
-`isReviewable`, `cardPlan`, `splitTranslation`, `readAnnotations`, `parse`, `canParse`,
+`isReviewable`, `cardPlan`, `splitTranslation`, `readAnnotations`, `parse`, `parsePaste`, `canParse`,
 `candidates`, `exampleFor`, `normalizeDraft`, `validate`, `matchesQuery`, `sortForList`
 
 ## kanji
@@ -235,7 +241,7 @@ band, words: [[word, reading, gloss, rank, pitch[], senses[]]]}`.
 
 **File**: `sw.js` · **Layer**: infrastructure
 
-Cache-first precache of `ASSETS` into `CACHE_NAME` (`hino-lite-app-v3`), fetched with
+Cache-first precache of `ASSETS` into `CACHE_NAME` (`hino-lite-app-v9`), fetched with
 `cache: 'reload'`; activation deletes every other bucket except `hino-lite-library-*`. Serves
 library files from their cache too. Bump `CACHE_NAME` on every release.
 
@@ -245,10 +251,14 @@ library files from their cache too. Bump `CACHE_NAME` on every release.
 
 `h()` element builder (text as text, `html:` for trusted markup), `ja()` for Japanese spans,
 `button`, `segmented`, `part` (a labelled block of a card or review step), `filterGroup` (a labelled group of a list toolbar), `listGroup` (a titled
-list section with a hairline heading), `toast`, `formatDaysAgo`, and `confirmAction`/`notify` — the single seams the
+list section with a hairline heading), `pasteBlockField` (a textarea that takes one typed line and
+a pasted block: Enter moves to the next field instead of breaking the line, so a line break can only
+come from a paste — the context menu, Ctrl+V or a phone keyboard's clipboard strip, which fires no
+paste event; the block goes to a callback with the value from before the paste, a single line just
+loses its breaks), `toast`, `formatDaysAgo`, and `confirmAction`/`notify` — the single seams the
 smoke test answers.
 
-**Exposes**: `$`, `h`, `ja`, `button`, `segmented`, `part`, `filterGroup`, `listGroup`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
+**Exposes**: `$`, `h`, `ja`, `button`, `segmented`, `part`, `filterGroup`, `listGroup`, `pasteBlockField`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
 
 ## theme
 
@@ -312,7 +322,10 @@ inside a group, two columns from 720 px), word sheet (hero: the word and its rea
 progress panel — both directions as lit steps and "Mark as known" until both are learned —
 under them on a phone, beside them from 720 px; then meaning, example, notes and kanji chips as
 hairline rows, two columns from 720 px; Edit/Delete on the right),
-add/edit form (rōmaji suggestions as hiragana/katakana chips, live "Adds to your kanji" preview,
+add/edit form (the Kanji field is a one-line textarea via `dom.pasteBlockField`, so a pasted block
+fills the form through `W.parsePaste` — it overwrites the fields the block fills, the Kanji field
+always — with "Filled from the pasted lines" and an Undo that restores the fields as they were
+before the paste; rōmaji suggestions as hiragana/katakana chips, live "Adds to your kanji" preview,
 duplicate refusal with "Open it"), save → `storage.saveWord` + `enrollKanji`; the word review adapter.
 
 **Exposes**: `renderWords`, `openWordView`, `openWordForm`
@@ -327,7 +340,9 @@ newest first inside a group; an untranslated row reads "No translation — not i
 state bars), sentence sheet (reading, a progress panel laid out as the word sheet's — both directions
 and Mark as known, or "Add a translation to review this sentence" — translation, notes, Edit,
 Delete — its scores go, words made from it stay), add/edit form (Parse button while `canParse`, Undo restores
-the pasted text, rōmaji reading preview). Saving a **new** sentence with kanji opens the word-card
+the pasted text; the Sentence field takes a pasted block via `dom.pasteBlockField` and `S.parsePaste`
+fills the form at once — its bracketed words join the prompt's known readings, and the same Undo
+restores the fields as they were before the paste; rōmaji reading preview). Saving a **new** sentence with kanji opens the word-card
 prompt (replaces the form's back entry): one row per candidate with editable kanji and reading and
 an empty meaning; Add is enabled once meaning and reading are filled, saves the word with the
 sentence as its example and enrolls its kanji; a word already in the list (writing|reading) is only
@@ -385,9 +400,9 @@ KANA_DATA, library} for tests and debugging.
 
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
 controls, among them the list toolbar `.filters` and the titled list sections `.list-group`; kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
-review card, ratings, help, summary), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form, word sheet with its hero row;
+review card, ratings, help, summary), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field, the Parse bar both forms use, word sheet with its hero row;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
-`css/sentences.css` (progress-group rows with state bars, one column; form and Parse bar; sheet with
+`css/sentences.css` (progress-group rows with state bars, one column; form; sheet with
 the progress panel under the sentence on a phone, beside it from 720 px; word-card prompt rows;
 the sentence review's text and summary rows), `css/kanji.css` (the JLPT level control's padding, tiles, card hero with the
 progress panel's placement, card zones (square outlines; only strokes filled; examples with a left rule only), strokes, readings with parts, your sentences, pitch; phone layout below 600 px). Themes are explicit (`data-theme`), never OS-derived.
@@ -422,7 +437,7 @@ server; `shots` screenshots `scene.html` scenes (including the word sheet) at 39
 **Files**: `tools/selftest.html`, `tools/selftest.js` · **Layer**: tooling
 
 Imports the shipped rule modules as they are and asserts kana tables/rules, rōmaji conversion,
-review scoring, progress groups and run composition, word, sentence (Parse, candidates, tracks,
+review scoring, progress groups and run composition, word (pasted blocks), sentence (Parse, pasted blocks, candidates, tracks,
 reviewability, reveal plans) and kanji rules, storage
 normalisation.
 
@@ -440,7 +455,9 @@ toolbar in one row at tablet width, kanji card
 remove / add / mark as known, kanji review, backup
 round trip and reminder, sentences (Parse/Undo, word-card prompt with readings, already-in-list,
 plain sentence with a rōmaji reading, search, a kanji card listing and opening its sentences, edit
-without prompt, backup, delete keeps words),
+without prompt, backup, delete keeps words), pasted blocks (P20: the one-line Kanji field and Enter moving on, a
+single line losing its break, word and kana-word blocks, sentence block with its readings reaching the
+prompt, Undo back to the fields before the paste),
 another tab's save taken over and newer-version keys kept, Android back, service worker install.
 
 ## scene

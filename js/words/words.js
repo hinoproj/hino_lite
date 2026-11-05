@@ -1,5 +1,5 @@
-// [MODULE] words | Pure word rules: input cleanup and validation, kanji extraction, duplicate key, reveal plan per mode, search
-// [IFACE] layer: domain | in: word drafts, query strings, a library-membership test -> out: clean words, errors, kanji lists, card plans | crosses: []
+// [MODULE] words | Pure word rules: input cleanup and validation, pasted-block split (P20), kanji extraction, duplicate key, reveal plan per mode, search
+// [IFACE] layer: domain | in: word drafts, pasted blocks, query strings, a library-membership test -> out: clean words, filled fields, errors, kanji lists, card plans | crosses: []
 // [GRAPH] needs: [romaji] | feeds: [words-ui, sentences-ui, kanji-card, kanji-ui, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
 
@@ -25,6 +25,26 @@ const HAN_RE = /\p{Script=Han}/u;
 
 function clean(value) {
   return String(value == null ? '' : value).trim();
+}
+
+/**
+ * A pasted block in the AI chat's word format (P20), one field per line, empty lines skipped:
+ *
+ *   少し                                   writing (only when the line holds a kanji;
+ *   すこし                                  reading   a kana word starts with its reading)
+ *   • a little • a small amount • slightly  meaning (bullets kept)
+ *   少し待ってください。                     example (every line between the meaning and the last)
+ *   An adverb or noun …                     notes (the last line)
+ *
+ * Null when the text holds fewer than two lines: then it is not a block.
+ */
+export function parsePaste(text) {
+  const rows = String(text == null ? '' : text).split(/\r\n?|\n/).map((line) => line.trim()).filter(Boolean);
+  if (rows.length < 2) return null;
+  const writing = HAN_RE.test(rows[0]) ? rows.shift() : '';
+  const [reading = '', meaning = '', ...rest] = rows;
+  const notes = rest.length ? rest.pop() : '';
+  return { writing, reading, meaning, example: rest.join('\n'), notes };
 }
 
 /**
