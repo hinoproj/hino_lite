@@ -18,7 +18,7 @@
  * BUMP CACHE_NAME whenever a file in ASSETS changes, otherwise installed
  * copies keep serving the old bundle forever: cache-first never revalidates.
  */
-var CACHE_NAME = 'hino-lite-app-v9';
+var CACHE_NAME = 'hino-lite-app-v10';
 var LIBRARY_PREFIX = 'hino-lite-library-';
 
 var ASSETS = [

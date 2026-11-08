@@ -60,7 +60,8 @@ Combines もう少し (a little more), ゆっくり (slowly), and 言ってく�
 
 After you save a new sentence, its kanji words are offered as word cards: bracketed words come
 with their reading, other kanji with an empty one. Type a meaning (for a conjugated word, add its
-dictionary form: "listen — て-form of 聞く") and tap **Add**; the card gets the sentence and its
+dictionary form: "listen — て-form of 聞く"), open **+ Notes** if you want to add any, and tap
+**Add**; the card gets the sentence and its
 translation as its example, and its kanji join your kanji list. Words already in your list are
 marked. Deleting a sentence keeps its word cards (its progress goes with it).
 

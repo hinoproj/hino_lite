@@ -1,4 +1,4 @@
-// [MODULE] sentences-ui | Sentences tab: review panel, labelled search toolbar, list grouped by progress, add/edit form with Parse and pasted-block fill (one Undo), sentence sheet with progress panel, word-card prompt after a new sentence, sentence review adapter
+// [MODULE] sentences-ui | Sentences tab: review panel, labelled search toolbar, list grouped by progress, add/edit form with Parse and pasted-block fill (one Undo), sentence sheet with progress panel, word-card prompt after a new sentence (notes collapsed per row), sentence review adapter
 // [IFACE] layer: presentation | in: DOM events -> out: rendered sentence screens, saved sentences, saved words, enrolled kanji, started sentence reviews, sentences marked as known | crosses: [browser DOM]
 // [GRAPH] needs: [sentences, words, kanji, romaji, review, review-ui, storage, shell, dom] | feeds: [main, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -299,14 +299,31 @@ function promptRow(candidate, example) {
   const writing = field('pw-writing', candidate.writing, 'kanji', 'ja');
   const reading = field('pw-reading', candidate.reading, 'reading', 'ja');
   const meaning = field('pw-meaning', '', 'meaning', null);
+  const notes = h('textarea', {
+    class: 'pw-notes', rows: 2, placeholder: 'notes — anything that helps you remember',
+    'aria-label': 'notes', hidden: true
+  });
+  const notesToggle = button('', () => toggleNotes(), 'link-btn pw-notes-toggle', { 'aria-expanded': 'false' });
   const status = h('div', { class: 'pw-status', role: 'status' });
   const add = button('Add', () => addWord(), 'primary small pw-add', { disabled: true });
   const row = h('div', { class: 'prompt-row', dataset: { status: 'new', writing: candidate.writing } },
-    writing, reading, meaning, h('div', { class: 'pw-foot' }, status, add));
+    writing, reading, meaning, h('div', { class: 'pw-foot' }, status, notesToggle, add), notes);
 
   const draft = () => W.normalizeDraft({
-    writing: writing.value, reading: reading.value, meaning: meaning.value, example, notes: ''
+    writing: writing.value, reading: reading.value, meaning: meaning.value, example, notes: notes.value
   });
+
+  /** Collapsed by default; the label shows a dot while collapsed notes hold text. */
+  const labelNotes = () => {
+    const open = !notes.hidden;
+    notesToggle.setAttribute('aria-expanded', String(open));
+    notesToggle.textContent = (open ? '− Notes' : '+ Notes') + (!open && notes.value.trim() ? ' •' : '');
+  };
+  const toggleNotes = () => {
+    notes.hidden = !notes.hidden;
+    labelNotes();
+    if (!notes.hidden) notes.focus();
+  };
   const isDuplicate = (d) => Boolean(d.reading) && store.listWords().some((w) => W.duplicateKey(w) === W.duplicateKey(d));
 
   const refresh = () => {
@@ -314,6 +331,9 @@ function promptRow(candidate, example) {
     const dup = isDuplicate(draft());
     row.dataset.status = dup ? 'dup' : 'new';
     add.hidden = dup;
+    notesToggle.hidden = dup;
+    if (dup) notes.hidden = true;
+    labelNotes();
     add.disabled = !(meaning.value.trim() && reading.value.trim());
     status.replaceChildren();
     if (dup) status.append('Already in your list');
@@ -335,12 +355,15 @@ function promptRow(candidate, example) {
     const added = store.enrollKanji(W.extractKanji(d.writing, K.isLibraryKanji));
     row.dataset.status = 'added';
     reading.value = d.reading;
-    [writing, reading, meaning].forEach((el) => { el.disabled = true; });
+    [writing, reading, meaning, notes].forEach((el) => { el.disabled = true; });
     add.hidden = true;
+    notesToggle.hidden = !d.notes;
+    labelNotes();
     status.replaceChildren('Added ✓');
     toast(added.length ? 'Added · ' + added.join(' ') + ' added to your kanji' : 'Added');
   };
 
+  notes.addEventListener('input', labelNotes);
   [writing, reading, meaning].forEach((el) => {
     el.addEventListener('input', refresh);
     el.addEventListener('keydown', (e) => {

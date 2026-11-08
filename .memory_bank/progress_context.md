@@ -1,5 +1,15 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-08] Word-card prompt rows get a notes field
+
+The owner asked for a notes field in the prompt that follows a new sentence, collapsed by default.
+Each `.prompt-row` now has a `.pw-notes` textarea (full row width at every size) behind a
+`.pw-notes-toggle` link button in the row foot ("+ Notes" / "− Notes", `aria-expanded`; a dot
+marks collapsed notes that hold text). Add saves the notes with the word. The toggle hides on a
+duplicate row, and on an added row unless it carries notes (the disabled notes stay viewable).
+Smoke +2, and the Add assertion now checks `notes`; the screenshot scene opens one row's notes.
+Phone and tablet shots checked. `sw.js` → `hino-lite-app-v10`.
+
 ## [2026-11-05] Pasted blocks fill the word and sentence forms (P20)
 
 The owner copies words and sentences from an AI chat gem, one field per line. They asked for a

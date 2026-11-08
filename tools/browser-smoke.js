@@ -479,11 +479,17 @@ async function sentences() {
   log('Add waits for a meaning', rows.every((r) => r.querySelector('.pw-add').disabled));
   type(rows[1].querySelector('.pw-meaning'), 'listen (て-form of 聞く)');
   log('a meaning enables Add', !rows[1].querySelector('.pw-add').disabled);
+  const notesToggle = rows[1].querySelector('.pw-notes-toggle');
+  log('notes start collapsed', rows[1].querySelector('.pw-notes').hidden && notesToggle.getAttribute('aria-expanded') === 'false');
+  notesToggle.click();
+  log('the toggle opens the notes', !rows[1].querySelector('.pw-notes').hidden && notesToggle.getAttribute('aria-expanded') === 'true');
+  type(rows[1].querySelector('.pw-notes'), 'polite request');
   rows[1].querySelector('.pw-add').click();
   await sleep(50);
   const card = st.listWords().find((x) => x.writing === '聞いて');
-  log('Add saves the word with the sentence as its example', Boolean(card) && card.reading === 'きいて' &&
-    card.example === 'もう一度聞いてください。\nPlease listen once more.' && rows[1].dataset.status === 'added', JSON.stringify(card));
+  log('Add saves the word with the sentence as its example and the notes', Boolean(card) && card.reading === 'きいて' &&
+    card.example === 'もう一度聞いてください。\nPlease listen once more.' && card.notes === 'polite request' &&
+    rows[1].dataset.status === 'added', JSON.stringify(card));
   log('its kanji join the kanji list', st.isEnrolled('聞'));
   $('#btn-prompt-done').click();
   await waitFor(() => visible('screen-sentences'));

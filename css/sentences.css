@@ -1,4 +1,4 @@
-/* [MODULE] sentences-css | Sentences tab: progress-group rows with state bars, add/edit form, sentence sheet with its progress panel, word-card prompt rows, sentence review text
+/* [MODULE] sentences-css | Sentences tab: progress-group rows with state bars, add/edit form, sentence sheet with its progress panel, word-card prompt rows with their collapsible notes, sentence review text
    [IFACE] layer: presentation | in: classes set by sentences-ui.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -87,7 +87,8 @@
   border-radius: var(--radius);
 }
 
-.prompt-row input {
+.prompt-row input,
+.prompt-row textarea {
   width: 100%;
   min-width: 0;
   font: inherit;
@@ -98,9 +99,10 @@
   color: var(--text);
 }
 
-.prompt-row input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.prompt-row textarea { grid-column: 1 / -1; resize: vertical; min-height: 52px; }
+.prompt-row input:focus, .prompt-row textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .prompt-row input[lang="ja"] { font-size: 20px; }
-.prompt-row input:disabled { opacity: .8; }
+.prompt-row input:disabled, .prompt-row textarea:disabled { opacity: .8; }
 .prompt-row .pw-meaning { grid-column: 1 / -1; }
 
 .pw-foot {
@@ -113,6 +115,7 @@
 }
 
 .pw-status { color: var(--muted); font-size: 15px; }
+.pw-notes-toggle { margin-left: auto; font-size: 15px; white-space: nowrap; }
 .pw-status .field-error { margin-top: 0; }
 .prompt-row[data-status="dup"] .pw-status { color: var(--warn); }
 .prompt-row[data-status="dup"] .pw-meaning { display: none; }

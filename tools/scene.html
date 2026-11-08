@@ -101,6 +101,8 @@ if (scene === 'word-form') {
     set(row.querySelector('.pw-meaning'), 'friend');
     row.querySelector('.pw-add').click();
     set(d.querySelector('.prompt-row[data-writing="行きます"] .pw-meaning'), 'go — polite form of 行く');
+    d.querySelector('.prompt-row[data-writing="行きます"] .pw-notes-toggle').click();
+    set(d.querySelector('.prompt-row[data-writing="行きます"] .pw-notes'), 'へ marks the direction');
   }
 } else if (scene === 'word') {
   d.querySelector('#word-list .word-row[data-id="w1"]').click();

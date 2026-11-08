@@ -241,7 +241,7 @@ band, words: [[word, reading, gloss, rank, pitch[], senses[]]]}`.
 
 **File**: `sw.js` · **Layer**: infrastructure
 
-Cache-first precache of `ASSETS` into `CACHE_NAME` (`hino-lite-app-v9`), fetched with
+Cache-first precache of `ASSETS` into `CACHE_NAME` (`hino-lite-app-v10`), fetched with
 `cache: 'reload'`; activation deletes every other bucket except `hino-lite-library-*`. Serves
 library files from their cache too. Bump `CACHE_NAME` on every release.
 
@@ -344,8 +344,9 @@ the pasted text; the Sentence field takes a pasted block via `dom.pasteBlockFiel
 fills the form at once — its bracketed words join the prompt's known readings, and the same Undo
 restores the fields as they were before the paste; rōmaji reading preview). Saving a **new** sentence with kanji opens the word-card
 prompt (replaces the form's back entry): one row per candidate with editable kanji and reading and
-an empty meaning; Add is enabled once meaning and reading are filled, saves the word with the
-sentence as its example and enrolls its kanji; a word already in the list (writing|reading) is only
+an empty meaning, plus a notes textarea collapsed behind "+ Notes" (a dot marks collapsed notes that
+hold text); Add is enabled once meaning and reading are filled, saves the word with the
+sentence as its example and the notes, and enrolls its kanji; a word already in the list (writing|reading) is only
 marked. Edits never prompt. The sentence sheet also opens from a kanji card's "In your sentences".
 The sentence review adapter: runs over the reviewable sentences, renders `S.cardPlan`'s parts.
 
@@ -403,7 +404,7 @@ controls, among them the list toolbar `.filters` and the titled list sections `.
 review card, ratings, help, summary), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field, the Parse bar both forms use, word sheet with its hero row;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
 `css/sentences.css` (progress-group rows with state bars, one column; form; sheet with
-the progress panel under the sentence on a phone, beside it from 720 px; word-card prompt rows;
+the progress panel under the sentence on a phone, beside it from 720 px; word-card prompt rows and their collapsible notes;
 the sentence review's text and summary rows), `css/kanji.css` (the JLPT level control's padding, tiles, card hero with the
 progress panel's placement, card zones (square outlines; only strokes filled; examples with a left rule only), strokes, readings with parts, your sentences, pitch; phone layout below 600 px). Themes are explicit (`data-theme`), never OS-derived.
 
@@ -453,7 +454,7 @@ Learned after reviews and Mark as known; two columns at tablet width), library d
 toolbar in one row at tablet width, kanji card
 (progress panel, parts in the readings panel, components, example words, add to my words),
 remove / add / mark as known, kanji review, backup
-round trip and reminder, sentences (Parse/Undo, word-card prompt with readings, already-in-list,
+round trip and reminder, sentences (Parse/Undo, word-card prompt with readings and collapsed notes saved on Add, already-in-list,
 plain sentence with a rōmaji reading, search, a kanji card listing and opening its sentences, edit
 without prompt, backup, delete keeps words), pasted blocks (P20: the one-line Kanji field and Enter moving on, a
 single line losing its break, word and kana-word blocks, sentence block with its readings reaching the
