@@ -78,7 +78,7 @@ the same way.
 **Kanji** — all 2,099 library kanji by JLPT level (N5…N1, no level), downloaded once on the first
 visit (~6.7 MB on the device). Kanji in your words' writing join *your* list automatically; you can
 also add any kanji, remove one (its progress is kept), or mark it as known. The card shows how far
-along the kanji is in each review, stroke order, readings with its radical and components, your own
+along the kanji is in each review, stroke order, readings with components, your own
 words and sentences that use it, and example words with pitch accent (one tap adds a word to your
 list). Two reviews: **Kanji → meaning** and **Meaning → kanji**.
 

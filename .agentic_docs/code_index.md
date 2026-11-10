@@ -231,7 +231,7 @@ Stores values computed by the rule modules and applies no rule itself.
 
 Downloads the 12 level files (N5 first) into `hino-lite-library-<LIBRARY.version>` on the first
 Kanji-tab visit and drops older versions; reads go straight to that cache, memoised per level, so
-a level is either fully stored or reported missing. Detail shape: `{m, alt, on, kun, rad: [glyph, name] | null, comp: [[glyph, meaning, link | null]],
+a level is either fully stored or reported missing. Detail shape: `{m, alt, on, kun, comp: [[glyph, meaning, link | null]],
 band, words: [[word, reading, gloss, rank, pitch[], senses[]]]}`.
 
 **Exposes**: `CACHE_PREFIX`, `CACHE_NAME`, `LEVELS`, `TOTAL_BYTES`, `supported`, `isDownloading`,
@@ -359,7 +359,7 @@ The sentence review adapter: runs over the reviewable sentences, renders `S.card
 Kanji card in the sheet, ported from JLPT_coach's. Hero: glyph, level, meaning + also, and a
 progress panel (per track a `review-ui.trackRow`: name, state, four steps lit up to the state —
 never points; Add / Remove / Mark as known, hidden once `review.isKnown`); on a phone the panel drops under the glyph. Then stroke order beside the
-readings panel (readings, the one Kangxi radical — never a link — and components, each opening its `link` kanji: 亻 opens 人; stacked on a phone), "In your words" and
+readings panel (readings, then components, each opening its `link` kanji — 亻 opens 人; no radical row; stacked on a phone), "In your words" and
 "In your sentences" (kanji marked; 3 + show all; opens the sentence sheet), example words (8 + show
 all) → word sub-view with pitch-accent diagrams and "+ Add to my words" (opens the prefilled form)
 or "In your words ✓". Own view stack with ←; the learner's words and sentences open their own

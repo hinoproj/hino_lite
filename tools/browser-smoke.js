@@ -332,11 +332,9 @@ async function kanji() {
     $$('#kanji-card .example-row').length > 0 && $$('#kanji-card .example-row').length <= 8 &&
     $$('#kanji-card .examples-zone .example-row').length > 0);
   log('card: "In your words" lists 学校', $$('#kanji-card [data-word-id]').some((b) => b.textContent === '学校'));
-  log('card: the progress panel shows both directions, the radical and components sit in the readings panel',
-    $$('#kanji-card .progress-panel .track').length === 2 && Boolean($('#kanji-card .readings-zone .component-parts')));
-  log('card: one radical (学 → 子), never a link',
-    $$('#kanji-card .radical-parts .part-chip').length === 1 && !$('#kanji-card .radical-parts .rc-link') &&
-    $('#kanji-card .radical-parts .part-glyph').textContent === '子');
+  log('card: the progress panel shows both directions, components sit in the readings panel, no radical row',
+    $$('#kanji-card .progress-panel .track').length === 2 && Boolean($('#kanji-card .readings-zone .component-parts')) &&
+    $$('#kanji-card .readings-zone .sub-label').map((l) => l.textContent).join('|') === 'Components');
   const link = $('#kanji-card .rc-link');
   if (link) {
     const target = link.dataset.kanji;

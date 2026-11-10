@@ -95,7 +95,6 @@ def build(data_dir: Path) -> None:
                         if (w.get("frequency_rank") or FREQ_MAX) < FREQ_MAX),
                        key=lambda w: w["frequency_rank"])
         readings = entry.get("readings") or {}
-        radical = entry.get("radical")
         self_glosses = [t for w in words if w["word"] == kanji
                         for t in (w.get("word_meaning") or "").split(";")]
         detail = {
@@ -103,8 +102,7 @@ def build(data_dir: Path) -> None:
             "alt": entry.get("alternative_meanings") or [],
             "on": readings.get("onyomi") or [],
             "kun": readings.get("kunyomi") or [],
-            # The one Kangxi radical [glyph, name] or None; direct parts [glyph, meaning, kanji a tap opens or None].
-            "rad": [radical["character"], radical["name"]] if radical else None,
+            # Direct parts: [glyph, meaning, the kanji a tap opens or None]. The card shows no radical.
             "comp": [[c["character"], c.get("meaning") or "", c.get("link")] for c in entry.get("components") or []],
             "band": entry.get("frequency_band"),
             "words": [word_tuple(w) for w in words],

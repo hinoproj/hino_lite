@@ -1,4 +1,4 @@
-// [MODULE] kanji-card | Kanji card sheet: glyph, progress panel with list actions, stroke order, readings with the radical and components, your words and sentences, example words with pitch accent
+// [MODULE] kanji-card | Kanji card sheet: glyph, progress panel with list actions, stroke order, readings with components, your words and sentences, example words with pitch accent
 // [IFACE] layer: presentation | in: a kanji character, an onChange callback -> out: the card in the sheet, enrollment/known changes | crosses: [browser DOM]
 // [GRAPH] needs: [kanji, library, words, review, review-ui, storage, shell, dom, words-ui, sentences-ui] | feeds: [kanji-ui, words-ui] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -74,7 +74,7 @@ function zone(label, content, extraClass) {
 
 /**
  * Layout: hero (glyph, meaning, progress panel) -> stroke order beside the
- * readings panel (readings, the radical, components) -> the learner's own words
+ * readings panel (readings, components) -> the learner's own words
  * and sentences -> example words. The progress panel sits beside the meaning
  * on wide sheets and drops under the glyph on a phone (kanji.css).
  */
@@ -101,7 +101,6 @@ async function kanjiView(ch) {
     info ? h('div', { class: 'card-main' },
       svg ? zone('Stroke order', h('div', { class: 'strokes', html: svg, role: 'img', 'aria-label': 'Stroke order of ' + ch }), 'strokes-zone') : null,
       zone('Readings', [readingsNode(info),
-        partsBlock('Radical', info.rad ? [info.rad] : [], 'radical-parts'),
         partsBlock('Components', info.comp, 'component-parts')], 'readings-zone')) : null,
 
     yourWords.length || yourSentences.length ? h('div', { class: 'card-row' },
@@ -144,7 +143,8 @@ export function readingsNode(info) {
 
 /**
  * Parts as [glyph, meaning, link] chips. `link` is the library kanji a tap opens: the glyph itself
- * or, for a variant shape, its full form (亻 opens 人). The radical has no link and never opens.
+ * or, for a variant shape, its full form (亻 opens 人); a part without one is a plain label.
+ * No separate radical row: the kanji's radical is almost always one of its components already.
  */
 function partsBlock(label, parts, listClass) {
   if (!parts.length) return null;
