@@ -97,7 +97,7 @@ function fillSections(container) {
     nodes.push(view.scope === 'mine' && !myKanji().length
       ? h('div', { class: 'empty' },
         h('p', null, 'Your kanji list is empty.'),
-        h('p', { class: 'muted' }, 'Kanji from your words appear here by themselves. You can also open “All” and add any kanji.'))
+        h('p', { class: 'muted' }, 'Kanji from your words and sentences appear here by themselves. You can also open “All” and add any kanji.'))
       : h('p', { class: 'muted' }, 'No kanji match.'));
   }
   container.replaceChildren(...nodes);

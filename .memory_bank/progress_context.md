@@ -1,5 +1,15 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-10] Sentence kanji join the kanji list on save
+
+The owner edited a sentence to add a kanji and found it missing from "Mine": until now only word
+cards enrolled kanji, and an edited sentence never offered word cards. On the owner's call, every
+sentence save (new or edit) now enrolls its library kanji. `storage.enrollKanji` takes
+`{ restoreRemoved }` (default true, so word saves behave as before); sentence saves pass `false`, so
+fixing a typo never brings back a kanji the learner removed. The toast names the kanji added.
+No retroactive pass over sentences saved earlier (owner: skip for now). Empty "Mine" hint and README
+mention sentences. `sw.js` → `hino-lite-app-v13`. Smoke +2. `ALL CHECKS PASSED`.
+
 ## [2026-11-10] Kanji card: no radical row; components link to library kanji
 
 The platform repo replaced the library's scraped parts fields with open data: KanjiVG trees plus

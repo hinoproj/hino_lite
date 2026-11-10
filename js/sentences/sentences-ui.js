@@ -1,4 +1,4 @@
-// [MODULE] sentences-ui | Sentences tab: review panel, labelled search toolbar, list grouped by progress, add/edit form with Parse and pasted-block fill (one Undo), sentence sheet with progress panel, word-card prompt after a new sentence (notes collapsed per row), sentence review adapter
+// [MODULE] sentences-ui | Sentences tab: review panel, labelled search toolbar, list grouped by progress, add/edit form with Parse and pasted-block fill (one Undo), its kanji enrolled on every save, sentence sheet with progress panel, word-card prompt after a new sentence (notes collapsed per row), sentence review adapter
 // [IFACE] layer: presentation | in: DOM events -> out: rendered sentence screens, saved sentences, saved words, enrolled kanji, started sentence reviews, sentences marked as known | crosses: [browser DOM]
 // [GRAPH] needs: [sentences, words, kanji, romaji, review, review-ui, storage, shell, dom] | feeds: [main, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -256,8 +256,10 @@ function saveFromForm(inputs, errors, id, known) {
   }
 
   const saved = store.saveSentence(draft, id);
+  // A sentence's kanji join the list on every save; one the learner removed stays removed.
+  const added = store.enrollKanji(W.extractKanji(saved.sentence, K.isLibraryKanji), { restoreRemoved: false });
   const rows = id ? [] : S.candidates(saved.sentence, known);
-  toast('Saved');
+  toast(added.length ? 'Saved · ' + added.join(' ') + ' added to your kanji' : 'Saved');
   if (rows.length) openWordPrompt(saved, rows);
   else shell.leave();
 }

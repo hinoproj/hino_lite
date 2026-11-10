@@ -342,7 +342,10 @@ and Mark as known, or "Add a translation to review this sentence" — translatio
 Delete — its scores go, words made from it stay), add/edit form (Parse button while `canParse`, Undo restores
 the pasted text; the Sentence field takes a pasted block via `dom.pasteBlockField` and `S.parsePaste`
 fills the form at once — its bracketed words join the prompt's known readings, and the same Undo
-restores the fields as they were before the paste; rōmaji reading preview). Saving a **new** sentence with kanji opens the word-card
+restores the fields as they were before the paste; rōmaji reading preview). Every save (new or edit)
+enrolls the sentence's library kanji via `enrollKanji(…, { restoreRemoved: false })` — a kanji the
+learner removed stays removed — and the toast names the ones added; no retroactive pass over older
+sentences. Saving a **new** sentence with kanji opens the word-card
 prompt (replaces the form's back entry): one row per candidate with editable kanji and reading and
 an empty meaning, plus a notes textarea collapsed behind "+ Notes" (a dot marks collapsed notes that
 hold text); Add is enabled once meaning and reading are filled, saves the word with the
@@ -455,8 +458,8 @@ toolbar in one row at tablet width, kanji card
 (progress panel, parts in the readings panel, components, example words, add to my words),
 remove / add / mark as known, kanji review, backup
 round trip and reminder, sentences (Parse/Undo, word-card prompt with readings and collapsed notes saved on Add, already-in-list,
-plain sentence with a rōmaji reading, search, a kanji card listing and opening its sentences, edit
-without prompt, backup, delete keeps words), pasted blocks (P20: the one-line Kanji field and Enter moving on, a
+plain sentence with a rōmaji reading, search, a kanji card listing and opening its sentences, saving
+and editing a sentence enrolling its kanji (a removed one stays removed), edit without prompt, backup, delete keeps words), pasted blocks (P20: the one-line Kanji field and Enter moving on, a
 single line losing its break, word and kana-word blocks, sentence block with its readings reaching the
 prompt, Undo back to the fields before the paste),
 another tab's save taken over and newer-version keys kept, Android back, service worker install.

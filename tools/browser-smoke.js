@@ -483,6 +483,7 @@ async function sentences() {
   $('#btn-parse').click();
   $('#btn-save-sentence').click();
   await waitFor(() => visible('screen-sentence-words'));
+  log('saving a sentence adds its kanji to the list', st.isEnrolled('度') && st.isEnrolled('聞'));
   let rows = promptRows();
   log('saving offers its kanji words with their readings', rows.length === 2 && rowValue(rows[0], 'pw-writing') === '一度' &&
     rowValue(rows[0], 'pw-reading') === 'いちど' && rowValue(rows[1], 'pw-writing') === '聞いて',
@@ -612,10 +613,13 @@ async function sentences() {
   $('#btn-edit-sentence').click();
   await waitFor(() => visible('screen-sentence-form'));
   log('edit prefills the form', $('#sentence-sentence').value === '毎日、本を読む。');
+  type($('#sentence-sentence'), '毎日、会社で新しい本を読む。');
   type($('#sentence-translation'), 'I learn every day.');
   $('#btn-save-sentence').click();
   await waitFor(() => visible('screen-sentences'));
   log('editing saves without a prompt', visible('screen-sentences') && st.listSentences().some((x) => x.translation === 'I learn every day.'));
+  log('an edit adds the new kanji; a removed one (会) stays removed', st.isEnrolled('新') && st.isEnrolled('社') &&
+    !st.isEnrolled('会') && st.kanjiEntry('会').removed === true);
 
   await tab('kanji');
   await waitFor(() => $('.kanji-tile[data-kanji="聞"]'));

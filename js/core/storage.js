@@ -361,13 +361,16 @@ export function listKanji() {
     .map(([ch, e]) => ({ id: ch, addedAt: e.addedAt }));
 }
 
-/** Add kanji (or bring removed ones back). Returns those that were not in the list before. */
-export function enrollKanji(chars) {
+/**
+ * Add kanji (or bring removed ones back). Returns those that were not in the list before.
+ * `restoreRemoved: false` leaves a kanji the learner removed off the list (sentence saves).
+ */
+export function enrollKanji(chars, { restoreRemoved = true } = {}) {
   const now = Date.now();
   const added = [];
   chars.forEach((ch) => {
     const entry = state.kanji[ch];
-    if (entry && !entry.removed) return;
+    if (entry && (!entry.removed || !restoreRemoved)) return;
     state.kanji[ch] = { addedAt: now, removed: false };
     added.push(ch);
   });
