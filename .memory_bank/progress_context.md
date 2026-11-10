@@ -1,5 +1,23 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-10] Kanji card: one Kangxi radical; components link to library kanji
+
+The platform repo replaced the library's scraped parts fields with open data: KanjiVG trees plus
+Unicode Kangxi radicals, written by `web_platform/tools/build_kanji_parts.py`. The WaniKani
+`radicals` list became one `radical`, and each component now carries the `link` it opens.
+
+`tools/build_library.py` now writes:
+- `rad` as one `[glyph, name]` or `null` (it was a list);
+- `comp` as `[glyph, meaning, link]`.
+
+The card shows "Radical" as a single chip that is never a link. A component opens its `link`
+kanji, which covers variant shapes: 休's 亻 opens 人. A part with no name shows as the bare
+glyph. The two lists now carry the classes `.radical-parts` and `.component-parts`.
+
+Library rebuilt: version `35536d9210`, 6.66 MB; devices download it again on their next visit to
+the Kanji tab. `sw.js` → `hino-lite-app-v11`. Smoke +3: 学's one radical 子 is not a link; 休's
+亻 links to and opens 人. `ALL CHECKS PASSED`; the card was checked in the phone and tablet shots.
+
 ## [2026-11-08] Word-card prompt rows get a notes field
 
 The owner asked for a notes field in the prompt that follows a new sentence, collapsed by default.

@@ -111,7 +111,7 @@
 .reading-pill .rt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .reading-pill .rv { font-size: 20px; }
 
-/* Radicals and components, inside the readings panel */
+/* The radical and components, inside the readings panel */
 .sub-label {
   font-size: 12px;
   letter-spacing: .06em;

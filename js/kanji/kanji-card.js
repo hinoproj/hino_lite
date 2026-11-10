@@ -1,4 +1,4 @@
-// [MODULE] kanji-card | Kanji card sheet: glyph, progress panel with list actions, stroke order, readings with radicals/components, your words and sentences, example words with pitch accent
+// [MODULE] kanji-card | Kanji card sheet: glyph, progress panel with list actions, stroke order, readings with the radical and components, your words and sentences, example words with pitch accent
 // [IFACE] layer: presentation | in: a kanji character, an onChange callback -> out: the card in the sheet, enrollment/known changes | crosses: [browser DOM]
 // [GRAPH] needs: [kanji, library, words, review, review-ui, storage, shell, dom, words-ui, sentences-ui] | feeds: [kanji-ui, words-ui] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -74,7 +74,7 @@ function zone(label, content, extraClass) {
 
 /**
  * Layout: hero (glyph, meaning, progress panel) -> stroke order beside the
- * readings panel (readings, radicals, components) -> the learner's own words
+ * readings panel (readings, the radical, components) -> the learner's own words
  * and sentences -> example words. The progress panel sits beside the meaning
  * on wide sheets and drops under the glyph on a phone (kanji.css).
  */
@@ -101,8 +101,8 @@ async function kanjiView(ch) {
     info ? h('div', { class: 'card-main' },
       svg ? zone('Stroke order', h('div', { class: 'strokes', html: svg, role: 'img', 'aria-label': 'Stroke order of ' + ch }), 'strokes-zone') : null,
       zone('Readings', [readingsNode(info),
-        partsBlock('Radicals', info.rad, false),
-        partsBlock('Components', info.comp, true)], 'readings-zone')) : null,
+        partsBlock('Radical', info.rad ? [info.rad] : [], 'radical-parts'),
+        partsBlock('Components', info.comp, 'component-parts')], 'readings-zone')) : null,
 
     yourWords.length || yourSentences.length ? h('div', { class: 'card-row' },
       yourWords.length
@@ -142,13 +142,17 @@ export function readingsNode(info) {
     info.kun.map((r) => h('div', { class: 'reading-pill kun' }, h('span', { class: 'rt' }, 'Kun'), ja(r, 'rv'))));
 }
 
-function partsBlock(label, parts, linkable) {
+/**
+ * Parts as [glyph, meaning, link] chips. `link` is the library kanji a tap opens: the glyph itself
+ * or, for a variant shape, its full form (亻 opens 人). The radical has no link and never opens.
+ */
+function partsBlock(label, parts, listClass) {
   if (!parts.length) return null;
-  return [h('div', { class: 'sub-label' }, label), h('div', { class: 'parts' }, parts.map(([glyph, meaning]) => {
-    const open = linkable && glyph !== stack[stack.length - 1].ch && K.isLibraryKanji(glyph);
-    const content = [ja(glyph, 'part-glyph'), h('span', { class: 'part-meaning' }, meaning)];
+  return [h('div', { class: 'sub-label' }, label), h('div', { class: 'parts ' + listClass }, parts.map(([glyph, meaning, link]) => {
+    const open = link && link !== stack[stack.length - 1].ch && K.isLibraryKanji(link);
+    const content = [ja(glyph, 'part-glyph'), meaning ? h('span', { class: 'part-meaning' }, meaning) : null];
     return open
-      ? button(content, () => push({ type: 'kanji', ch: glyph }), 'part-chip rc-link', { title: 'Open ' + glyph, 'data-kanji': glyph })
+      ? button(content, () => push({ type: 'kanji', ch: link }), 'part-chip rc-link', { title: 'Open ' + link, 'data-kanji': link })
       : h('span', { class: 'part-chip' }, content);
   }))];
 }

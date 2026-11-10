@@ -332,8 +332,11 @@ async function kanji() {
     $$('#kanji-card .example-row').length > 0 && $$('#kanji-card .example-row').length <= 8 &&
     $$('#kanji-card .examples-zone .example-row').length > 0);
   log('card: "In your words" lists 学校', $$('#kanji-card [data-word-id]').some((b) => b.textContent === '学校'));
-  log('card: the progress panel shows both directions, radicals sit in the readings panel',
-    $$('#kanji-card .progress-panel .track').length === 2 && Boolean($('#kanji-card .readings-zone .parts')));
+  log('card: the progress panel shows both directions, the radical and components sit in the readings panel',
+    $$('#kanji-card .progress-panel .track').length === 2 && Boolean($('#kanji-card .readings-zone .component-parts')));
+  log('card: one radical (学 → 子), never a link',
+    $$('#kanji-card .radical-parts .part-chip').length === 1 && !$('#kanji-card .radical-parts .rc-link') &&
+    $('#kanji-card .radical-parts .part-glyph').textContent === '子');
   const link = $('#kanji-card .rc-link');
   if (link) {
     const target = link.dataset.kanji;
@@ -380,6 +383,16 @@ async function kanji() {
   await waitFor(() => !$('#btn-kanji-known'));
   log('add + mark as known: 一 is learned in both directions', store().isEnrolled('一') &&
     store().reviewStats('kanji.read', '一').score === 5 && store().reviewStats('kanji.recall', '一').score === 5);
+  await closeCard();
+
+  await openTile('休');
+  const variant = $$('#kanji-card .component-parts .rc-link').find((b) => b.querySelector('.part-glyph').textContent === '亻');
+  log('a variant shape links to its full kanji (休: 亻 opens 人)', Boolean(variant) && variant.dataset.kanji === '人');
+  if (variant) {
+    variant.click();
+    await waitFor(() => $('#kanji-card[data-kanji="人"]'));
+    log('亻 opened the card of 人', Boolean($('#kanji-card[data-kanji="人"]')));
+  }
   await closeCard();
 
   $('.mode-row[data-track="kanji.read"] button.primary').click();
