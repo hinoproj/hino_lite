@@ -1,17 +1,19 @@
-// [MODULE] kanji-ui | Kanji tab: one-time library download, review panel, labelled library toolbar (Show / JLPT level / Search) in one row, level sections of tiles, kanji review adapter
+// [MODULE] kanji-ui | Kanji tab: one-time library download, review panel, labelled library toolbar (Show / JLPT level / Search) in one row, level sections of tiles, kanji review adapter (glyph beside its stroke order; readings, components, the learner's words and sentences as plain rows)
 // [IFACE] layer: presentation | in: DOM events, library readiness -> out: rendered kanji screen, started kanji reviews | crosses: [browser DOM]
-// [GRAPH] needs: [kanji, library, review, review-ui, words, storage, shell, dom, kanji-card] | feeds: [main] | group: presentation
+// [GRAPH] needs: [kanji, library, review, review-ui, storage, shell, dom, kanji-card] | feeds: [main] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
 
 import * as K from './kanji.js';
 import * as library from './library.js';
 import * as R from '../review/review.js';
 import { startReview, trackPanel, stateDots } from '../review/review-ui.js';
-import * as W from '../words/words.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
 import { $, h, ja, button, segmented, toast, filterGroup, listGroup, part } from '../core/dom.js';
-import { openKanjiCard, readingsNode } from './kanji-card.js';
+import { openKanjiCard, readingsNode, partsList, markKanji } from './kanji-card.js';
+
+const REVIEW_WORDS = 4;       // the learner's words and sentences on a review card: it must fit a phone
+const REVIEW_SENTENCES = 2;
 
 const view = { scope: null, levels: new Set(K.LEVELS.map((l) => l.id)), query: '' };
 const dl = { ready: new Set(), running: false, progress: 0, error: '', autoTried: false };
@@ -195,10 +197,16 @@ async function composeRun(track) {
   return preload(run.map((item) => item.id));
 }
 
-function renderKanjiPart(item, key, asPrompt) {
+/**
+ * One part of a kanji review card. `strokesWithGlyph`: the plan reveals stroke order in the glyph's
+ * step, so both are drawn side by side without labels; otherwise stroke order is a labelled part.
+ * The learner's words and sentences are plain rows (the card is one tap target), each carrying its
+ * reading and meaning or translation, since nothing on it opens.
+ */
+function renderKanjiPart(item, key, asPrompt, strokesWithGlyph) {
   const ch = item.id;
   const info = loaded.info.get(ch);
-  if (key === 'glyph') return asPrompt ? ja(ch, 'prompt-glyph', 'div') : part('Kanji', ja(ch, 'part-glyph', 'div'));
+  if (key === 'glyph') return ja(ch, asPrompt ? 'prompt-glyph' : 'reveal-glyph', 'div');
   if (key === 'meaning') {
     const alt = info.alt.slice(0, 3).join(', ');
     return asPrompt
@@ -208,11 +216,25 @@ function renderKanjiPart(item, key, asPrompt) {
   if (key === 'readings') return part('Readings', readingsNode(info));
   if (key === 'strokes') {
     const svg = loaded.svg.get(ch);
-    return svg ? part('Stroke order', h('div', { class: 'strokes small', html: svg })) : null;
+    if (!svg) return null;
+    const diagram = h('div', { class: 'strokes', html: svg, role: 'img', 'aria-label': 'Stroke order of ' + ch });
+    return strokesWithGlyph ? h('div', { class: 'reveal-strokes' }, diagram) : part('Stroke order', h('div', { class: 'reveal-strokes' }, diagram));
   }
+  if (key === 'components') return info.comp.length ? part('Components', partsList(info.comp)) : null;
   if (key === 'words') {
-    const words = K.wordsUsing(ch, store.listWords());
-    return words.length ? part('Your words', h('div', { class: 'chips' }, words.map((w) => ja(W.headline(w), 'chip')))) : null;
+    const words = K.wordsUsing(ch, store.listWords()).slice(0, REVIEW_WORDS);
+    return words.length ? part('Your words', h('div', { class: 'use-rows' }, words.map((w) =>
+      h('div', { class: 'use-row', dataset: { wordId: w.id } },
+        h('div', { class: 'use-ja', lang: 'ja' }, markKanji(w.writing, ch), w.reading ? ja(w.reading, 'use-reading') : null),
+        w.meaning ? h('div', { class: 'use-meaning clamp' }, w.meaning) : null)))) : null;
+  }
+  if (key === 'sentences') {
+    const sentences = K.sentencesUsing(ch, store.listSentences()).slice(0, REVIEW_SENTENCES);
+    return sentences.length ? part('Your sentences', h('div', { class: 'use-rows' }, sentences.map((s) =>
+      h('div', { class: 'use-row', dataset: { sentenceId: s.id } },
+        h('div', { class: 'use-ja', lang: 'ja' }, markKanji(s.sentence, ch)),
+        s.reading ? ja(s.reading, 'use-reading', 'div') : null,
+        s.translation ? h('div', { class: 'use-meaning' }, s.translation) : null)))) : null;
   }
   return null;
 }
@@ -223,13 +245,15 @@ async function startKanjiReview(track) {
     toast('The kanji library is still downloading.');
     return;
   }
+  const plan = K.cardPlan(track);
+  const strokesWithGlyph = plan.steps.some((s) => s.keys.includes('glyph') && s.keys.includes('strokes'));
   startReview({
     title: 'Kanji',
     modeLabel: K.TRACK_INFO[track].label,
     track,
     items,
-    plan: () => K.cardPlan(track),
-    renderPart: renderKanjiPart,
+    plan: () => plan,
+    renderPart: (item, key, asPrompt) => renderKanjiPart(item, key, asPrompt, strokesWithGlyph),
     label: (item) => ja(item.id, 'summary-item'),
     onExit: () => renderKanji(),
     again: () => composeRun(track)

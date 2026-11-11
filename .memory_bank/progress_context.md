@@ -1,5 +1,23 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-11] Kanji review: stroke order with the kanji, words and sentences in full (P21)
+
+The owner found the revealed kanji in Meaning → kanji tiny and left-aligned under a "KANJI" label.
+Cause: `.part-glyph` was defined twice, 72px in `review.css` for the review card and 26px in
+`kanji.css` for component chips; `kanji.css` loads last, so the review glyph took the chip size.
+The review glyph now has its own class (`.reveal-glyph`); `.part-glyph` belongs to the chips only.
+
+New reveal order (owner's decisions, P21): Meaning → kanji = meaning | glyph + stroke order side by
+side, unlabelled | readings, components, your words, your sentences; Kanji → meaning gets the same
+last step with stroke order in it. Review cards have nothing to tap, so words show writing (kanji
+marked), reading and meaning (two lines max); sentences show text, reading and translation; caps
+4 words / 2 sentences; no library example words (owner). Button: "Show readings & words".
+`kanji-card` now exports `partsList` and `markKanji`, shared with the review; `kanji-ui` no longer
+imports `words`. Side-by-side layout uses `:has()`; without it the pair stacks, centred.
+Smoke +5 (a Meaning → kanji run, the glyph's computed size included); `scene.html` and `check.py
+shots` gained kanji-review scenes. `sw.js` → `hino-lite-app-v14`. `ALL CHECKS PASSED` (167 + 136).
+An uncommitted tile-height change in `css/kanji.css` (96 → 85px) predates this work and was left as found.
+
 ## [2026-11-10] Sentence kanji join the kanji list on save
 
 The owner edited a sentence to add a kanji and found it missing from "Mine": until now only word

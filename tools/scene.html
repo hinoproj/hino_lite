@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- [MODULE] scene | Screenshot helper: seeds sample data and drives the app (full-window iframe) to one named screen
-     [IFACE] layer: tooling | in: ?scene=words|word|word-form|review|kanji|card|kana|sentences|sentence|sentence-review|sentence-form|sentence-words[&theme=dark|light|kids] -> out: the app showing that screen | crosses: [browser DOM, localStorage]
+     [IFACE] layer: tooling | in: ?scene=words|word|word-form|review|kanji|card|kana|sentences|sentence|sentence-review|sentence-form|sentence-words|kanji-review|kanji-review-step|kanji-read-review[&theme=dark|light|kids] -> out: the app showing that screen | crosses: [browser DOM, localStorage]
      [GRAPH] needs: [index] | feeds: [check] | group: tooling
      [STATE] stateful | persists: overwrites hino_lite_v2 in this browser profile | raises: nothing
 
@@ -18,7 +18,7 @@
   // Hold the page's load event (when headless Chrome takes the screenshot) while the scene plays out.
   (function () {
     var scene = new URLSearchParams(location.search).get('scene');
-    var ms = scene === 'kanji' || scene === 'card' ? 9000 : 3500;
+    var ms = scene === 'kanji' || scene === 'card' || scene.indexOf('kanji-') === 0 ? 9000 : 3500;
     document.write('<img alt="" style="display:none" src="/__delay?ms=' + ms + '">');
   })();
 </script>
@@ -77,7 +77,7 @@ async function waitFor(fn, timeout = 20000) {
 }
 const hash = { words: 'words', word: 'words', 'word-form': 'words', review: 'words', kanji: 'kanji', card: 'kanji/学', kana: 'kana',
   sentences: 'sentences', sentence: 'sentences', 'sentence-review': 'sentences', 'sentence-form': 'sentences',
-  'sentence-words': 'sentences' }[scene] || 'kana';
+  'sentence-words': 'sentences', 'kanji-review': 'kanji', 'kanji-review-step': 'kanji', 'kanji-read-review': 'kanji' }[scene] || 'kana';
 await new Promise((resolve) => { frame.onload = resolve; frame.src = '../index.html#' + hash; });
 const w = frame.contentWindow;
 const d = frame.contentDocument;
@@ -128,6 +128,23 @@ if (scene === 'word-form') {
     d.querySelector('.kanji-tile[data-kanji="学"]').click();
     await waitFor(() => d.querySelector('#kanji-card .strokes svg'));
   }
+} else if (scene.startsWith('kanji-')) {
+  // A kanji review on 学's card (it has a word and a sentence): Meaning → kanji fully revealed or at
+  // its first step, or Kanji → meaning fully revealed. Earlier cards are revealed and rated on the way.
+  const read = scene === 'kanji-read-review';
+  const revealAll = async () => { while (d.getElementById('btn-reveal')) { d.getElementById('btn-reveal').click(); await sleep(30); } };
+  await waitFor(async () => (await w.HinoLite.library.readyLevels()).size === 6);
+  await sleep(300);
+  d.querySelector('.mode-row[data-track="kanji.' + (read ? 'read' : 'recall') + '"] button.primary').click();
+  await waitFor(() => d.querySelector('.review-prompt'));
+  for (let i = 0; i < 10; i++) {
+    if (!read) { d.getElementById('btn-reveal').click(); await sleep(50); }
+    if ((d.querySelector(read ? '.prompt-glyph' : '.reveal-glyph') || {}).textContent === '学') break;
+    await revealAll();
+    d.querySelector('.rating.knew').click();
+    await sleep(100);
+  }
+  if (scene !== 'kanji-review-step') await revealAll();
 }
 await sleep(300);
 document.title = 'ready';

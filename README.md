@@ -81,7 +81,15 @@ visit (~6.7 MB on the device). Kanji in your words' writing join *your* list aut
 also add any kanji, remove one (its progress is kept), or mark it as known. The card shows how far
 along the kanji is in each review, stroke order, readings with components, your own
 words and sentences that use it, and example words with pitch accent (one tap adds a word to your
-list). Two reviews: **Kanji → meaning** and **Meaning → kanji**.
+list). Two reviews, each with its own progress:
+
+| Review | Shows | Main button reveals |
+| --- | --- | --- |
+| Kanji → meaning | the kanji | meaning → readings, stroke order, components, your words and sentences |
+| Meaning → kanji | the meaning | the kanji beside its stroke order → readings, components, your words and sentences |
+
+On a review card your words (up to 4) and sentences (up to 2) come with their reading and their
+meaning or translation, since nothing on the card opens.
 
 **Settings** — theme (Dark, Light, Kids), backup export/import, reset.
 

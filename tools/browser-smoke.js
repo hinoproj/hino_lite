@@ -1,4 +1,4 @@
-// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji, backup, sentences, pasted blocks and back navigation
+// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji and both kanji reviews, backup, sentences, pasted blocks and back navigation
 // [IFACE] layer: tooling | in: nothing -> out: report in #out and POSTed to /__report, ending SMOKE PASSED/FAILED | crosses: [browser DOM, localStorage, Cache Storage API, local HTTP server]
 // [GRAPH] needs: [index] | feeds: [browser-smoke-page] | group: tooling
 // [STATE] stateful | persists: clears hino_lite_v2 and the library cache before running | raises: nothing
@@ -401,17 +401,71 @@ async function kanji() {
     if (!$('.review-prompt .prompt-glyph')) ok = false;
     $('#btn-reveal').click();
     await sleep(20);
+    if ($('#screen-review .reveal-strokes')) ok = false;
     $('#btn-reveal').click();
     await sleep(20);
-    if (!$('#screen-review .reading-pill')) ok = false;
+    if (!$('#screen-review .reading-pill') || !$('#screen-review .part .reveal-strokes svg')) ok = false;
     $('.rating.knew').click();
     await sleep(40);
   }
-  log('Kanji → meaning: glyph, then meaning, then readings', ok);
+  log('Kanji → meaning: glyph, then meaning, then readings with stroke order', ok);
   await waitFor(() => visible('screen-review-summary'));
   log('a first "Knew it" scores 4', store().reviewStats('kanji.read', '学').score === 4);
   $('#btn-review-done').click();
   await waitFor(() => visible('screen-kanji'));
+  await kanjiRecallRun();
+}
+
+/**
+ * Meaning → kanji: the kanji comes with its stroke order, large and without labels; the last step
+ * holds readings, components and the learner's words and sentences as plain rows that carry their
+ * reading and meaning or translation. The sentence is stored directly and removed afterwards, so the
+ * Sentences check still starts from an empty list.
+ */
+async function kanjiRecallRun() {
+  const sentence = store().saveSentence({ sentence: '学校に行きます。', reading: 'がっこうにいきます。', translation: 'I go to school.', notes: '' });
+  const wordFor = { 勉: ['べんきょう', 'study'], 強: ['べんきょう', 'study'], 学: ['がっこう', 'school'], 校: ['がっこう', 'school'] };
+  $('.mode-row[data-track="kanji.recall"] button.primary').click();
+  await waitFor(() => visible('screen-review'), 6000);
+  let pairOk = true;
+  let sizeOk = true;
+  let restOk = true;
+  let usesOk = true;
+  let components = 0;
+  for (let i = 0; i < 5; i++) {
+    if (!$('.review-prompt .prompt-text') || $('#btn-reveal').textContent !== 'Show kanji') pairOk = false;
+    $('#btn-reveal').click();
+    await sleep(20);
+    const step = $('#screen-review .review-step');
+    const glyph = step && step.querySelector('.reveal-glyph');
+    if (!glyph || !step.querySelector('.reveal-strokes svg') || step.querySelector('.part-label')) pairOk = false;
+    if (glyph && parseFloat(w.getComputedStyle(glyph).fontSize) < 80) sizeOk = false;
+    const ch = glyph ? glyph.textContent : '';
+    if ($('#btn-reveal').textContent !== 'Show readings & words') restOk = false;
+    $('#btn-reveal').click();
+    await sleep(20);
+    if (!$('#screen-review .reading-pill') || $('#screen-review .review-card button')) restOk = false;
+    if ($('#screen-review .component-parts .part-chip')) components += 1;
+    const wordRow = $('#screen-review .use-row[data-word-id]');
+    const sentenceRow = $('#screen-review .use-row[data-sentence-id]');
+    if (wordFor[ch]) {
+      if (!wordRow || !wordFor[ch].every((t) => wordRow.textContent.includes(t)) || wordRow.querySelector('mark').textContent !== ch) usesOk = false;
+    } else if (wordRow) usesOk = false;
+    if (ch === '学' || ch === '校') {
+      if (!sentenceRow || !['がっこうにいきます。', 'I go to school.'].every((t) => sentenceRow.textContent.includes(t))) usesOk = false;
+    } else if (sentenceRow) usesOk = false;
+    $('.rating.knew').click();
+    await sleep(40);
+  }
+  log('Meaning → kanji: the kanji comes with its stroke order, no labels', pairOk);
+  log('the revealed kanji is drawn large (not the component chips\' size)', sizeOk);
+  log('then readings, nothing to tap on the card', restOk);
+  log('components are listed', components > 0, components);
+  log('your words and sentences show their reading and meaning or translation', usesOk);
+  await waitFor(() => visible('screen-review-summary'));
+  $('#btn-review-done').click();
+  await waitFor(() => visible('screen-kanji'));
+  store().deleteSentence(sentence.id);
 }
 
 // --- Backup, reminder, theme -------------------------------------------------------

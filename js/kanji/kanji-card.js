@@ -1,4 +1,4 @@
-// [MODULE] kanji-card | Kanji card sheet: glyph, progress panel with list actions, stroke order, readings with components, your words and sentences, example words with pitch accent
+// [MODULE] kanji-card | Kanji card sheet: glyph, progress panel with list actions, stroke order, readings with components, your words and sentences, example words with pitch accent; component chips and kanji marking shared with the kanji review
 // [IFACE] layer: presentation | in: a kanji character, an onChange callback -> out: the card in the sheet, enrollment/known changes | crosses: [browser DOM]
 // [GRAPH] needs: [kanji, library, words, review, review-ui, storage, shell, dom, words-ui, sentences-ui] | feeds: [kanji-ui, words-ui] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -101,7 +101,7 @@ async function kanjiView(ch) {
     info ? h('div', { class: 'card-main' },
       svg ? zone('Stroke order', h('div', { class: 'strokes', html: svg, role: 'img', 'aria-label': 'Stroke order of ' + ch }), 'strokes-zone') : null,
       zone('Readings', [readingsNode(info),
-        partsBlock('Components', info.comp, 'component-parts')], 'readings-zone')) : null,
+        partsBlock('Components', info.comp)], 'readings-zone')) : null,
 
     yourWords.length || yourSentences.length ? h('div', { class: 'card-row' },
       yourWords.length
@@ -143,27 +143,36 @@ export function readingsNode(info) {
 
 /**
  * Parts as [glyph, meaning, link] chips. `link` is the library kanji a tap opens: the glyph itself
- * or, for a variant shape, its full form (亻 opens 人); a part without one is a plain label.
- * No separate radical row: the kanji's radical is almost always one of its components already.
+ * or, for a variant shape, its full form (亻 opens 人). A chip is a button only when `openerFor(link)`
+ * returns a handler; otherwise (no link, or the review card, which passes none) it is a plain label.
  */
-function partsBlock(label, parts, listClass) {
-  if (!parts.length) return null;
-  return [h('div', { class: 'sub-label' }, label), h('div', { class: 'parts ' + listClass }, parts.map(([glyph, meaning, link]) => {
-    const open = link && link !== stack[stack.length - 1].ch && K.isLibraryKanji(link);
+export function partsList(parts, openerFor = () => null) {
+  return h('div', { class: 'parts component-parts' }, parts.map(([glyph, meaning, link]) => {
+    const open = link ? openerFor(link) : null;
     const content = [ja(glyph, 'part-glyph'), meaning ? h('span', { class: 'part-meaning' }, meaning) : null];
     return open
-      ? button(content, () => push({ type: 'kanji', ch: link }), 'part-chip rc-link', { title: 'Open ' + link, 'data-kanji': link })
+      ? button(content, open, 'part-chip rc-link', { title: 'Open ' + link, 'data-kanji': link })
       : h('span', { class: 'part-chip' }, content);
-  }))];
+  }));
 }
 
-/** A learner's sentence with this kanji picked out; the text goes in as text nodes. */
+/** No separate radical row: the kanji's radical is almost always one of its components already. */
+function partsBlock(label, parts) {
+  if (!parts.length) return null;
+  const current = stack[stack.length - 1].ch;
+  return [h('div', { class: 'sub-label' }, label), partsList(parts, (link) =>
+    (link !== current && K.isLibraryKanji(link) ? () => push({ type: 'kanji', ch: link }) : null))];
+}
+
+/** Learner text with every `ch` in it picked out as <mark>; the text goes in as text nodes (contract 7). */
+export function markKanji(text, ch) {
+  return String(text).split(ch).flatMap((piece, i) => (i ? [h('mark', null, ch), piece] : [piece]));
+}
+
 function sentenceRow(sentence, ch) {
-  const pieces = sentence.sentence.split(ch);
-  const text = pieces.flatMap((piece, i) => (i ? [h('mark', null, ch), piece] : [piece]));
   return h('button', { type: 'button', class: 'card-sentence', dataset: { sentenceId: sentence.id },
     onclick: () => openSentenceView(sentence.id) },
-  h('span', { class: 'cs-text', lang: 'ja' }, text),
+  h('span', { class: 'cs-text', lang: 'ja' }, markKanji(sentence.sentence, ch)),
   sentence.translation ? h('span', { class: 'cs-translation' }, sentence.translation) : null);
 }
 

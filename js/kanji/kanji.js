@@ -65,17 +65,18 @@ export function matchesQuery(ch, query) {
 }
 
 /**
- * The card plan for one kanji in one track (same pattern as words):
- *   Kanji → meaning   glyph | meaning | readings, stroke order, your words
- *   Meaning → kanji   meaning | glyph | readings, stroke order, your words
+ * The card plan for one kanji in one track (same pattern as words). Stroke order comes with the
+ * glyph when the glyph is the answer; when the glyph is the prompt it waits for the last step.
+ *   Kanji → meaning   glyph | meaning | readings, stroke order, components, your words, your sentences
+ *   Meaning → kanji   meaning | glyph, stroke order | readings, components, your words, your sentences
  */
 export function cardPlan(track) {
   if (track === TRACK_RECALL) {
-    return { prompt: 'meaning', steps: [{ button: 'Show kanji', keys: ['glyph'] },
-      { button: 'Show readings', keys: ['readings', 'strokes', 'words'] }] };
+    return { prompt: 'meaning', steps: [{ button: 'Show kanji', keys: ['glyph', 'strokes'] },
+      { button: 'Show readings & words', keys: ['readings', 'components', 'words', 'sentences'] }] };
   }
   return { prompt: 'glyph', steps: [{ button: 'Show meaning', keys: ['meaning'] },
-    { button: 'Show readings', keys: ['readings', 'strokes', 'words'] }] };
+    { button: 'Show readings & words', keys: ['readings', 'strokes', 'components', 'words', 'sentences'] }] };
 }
 
 /** The learner's words whose writing contains this kanji. */

@@ -380,8 +380,12 @@ check('search by rōmaji reading', K.matchesQuery('学', 'gaku'));
 check('search by pasted word', K.matchesQuery('勉', '勉強') && !K.matchesQuery('学', '勉強'));
 check('Latin search is word-prefix ("on" does not match "prison")',
   !K.allKanji().filter((c) => K.matchesQuery(c, 'on')).some((c) => /prison/i.test(K.indexEntry(c).meaning)));
-check('kanji card plans', steps(K.cardPlan(K.TRACK_READ)) === 'glyph | meaning | readings,strokes,words' &&
-  steps(K.cardPlan(K.TRACK_RECALL)) === 'meaning | glyph | readings,strokes,words');
+check('Kanji → meaning: stroke order waits for the last step, with components, words and sentences',
+  steps(K.cardPlan(K.TRACK_READ)) === 'glyph | meaning | readings,strokes,components,words,sentences',
+  steps(K.cardPlan(K.TRACK_READ)));
+check('Meaning → kanji: stroke order comes with the glyph',
+  steps(K.cardPlan(K.TRACK_RECALL)) === 'meaning | glyph,strokes | readings,components,words,sentences',
+  steps(K.cardPlan(K.TRACK_RECALL)));
 check('words using a kanji', K.wordsUsing('強', [full, bare]).length === 1);
 check('sentences using a kanji: the sentence text only, not the translation or reading',
   K.sentencesUsing('聞', [{ sentence: 'もう一度聞いてください。' }, { sentence: 'はい。', translation: '聞', reading: '聞' }, {}])

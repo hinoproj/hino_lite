@@ -12,7 +12,7 @@ boundaries and `group:` values: on any conflict with an `AGENTS.md`, this file w
 | romaji | js/core/romaji.js | domain | — | words, words-ui, sentences, sentences-ui, kanji, selftest | domain | — |
 | kana-srs | js/kana/kana-srs.js | domain | kana-data | kana-ui, selftest | domain | — |
 | review | js/review/review.js | domain | — | review-ui, words-ui, sentences-ui, kanji-ui, kanji-card, selftest | domain | — |
-| words | js/words/words.js | domain | romaji | words-ui, sentences-ui, kanji-card, kanji-ui, selftest | domain | — |
+| words | js/words/words.js | domain | romaji | words-ui, sentences-ui, kanji-card, selftest | domain | — |
 | sentences | js/sentences/sentences.js | domain | romaji | sentences-ui, selftest | domain | — |
 | kanji | js/kanji/kanji.js | domain | kanji-index, romaji | kanji-ui, kanji-card, words-ui, sentences-ui, library, selftest | domain | — |
 | storage | js/core/storage.js | infrastructure | — | main, theme, backup, shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui, selftest | infrastructure | browser localStorage, StorageManager |
@@ -27,7 +27,7 @@ boundaries and `group:` values: on any conflict with an `AGENTS.md`, this file w
 | words-ui | js/words/words-ui.js | presentation | words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card | main, kanji-card | presentation | browser DOM |
 | sentences-ui | js/sentences/sentences-ui.js | presentation | sentences, words, kanji, romaji, review, review-ui, storage, shell, dom | main, kanji-card | presentation | browser DOM |
 | kanji-card | js/kanji/kanji-card.js | presentation | kanji, library, words, review, review-ui, storage, shell, dom, words-ui, sentences-ui | kanji-ui, words-ui | presentation | browser DOM |
-| kanji-ui | js/kanji/kanji-ui.js | presentation | kanji, library, review, review-ui, words, storage, shell, dom, kanji-card | main | presentation | browser DOM |
+| kanji-ui | js/kanji/kanji-ui.js | presentation | kanji, library, review, review-ui, storage, shell, dom, kanji-card | main | presentation | browser DOM |
 | settings-ui | js/settings/settings-ui.js | presentation | storage, theme, backup, shell, dom | main | presentation | browser DOM |
 | main | js/main.js | presentation | storage, theme, shell, kana-ui, words-ui, sentences-ui, kanji-ui, settings-ui, kana-data, library, sw | index | presentation | browser DOM, service worker |
 | app-css | css/app.css | presentation | — | index | presentation | — |
@@ -194,8 +194,9 @@ kanji and a reading) | translation + notes; recall = translation | sentence + re
 
 Library membership and order from `kanji-index`; search (kanji in the query → membership; kana →
 reading contains; Latin → meaning word-prefix, or the query as kana prefixes a reading);
-`cardPlan(track)`: Kanji → meaning = glyph | meaning | readings, strokes, your words; Meaning →
-kanji = meaning | glyph | readings, strokes, your words. `wordsUsing` / `sentencesUsing`: the
+`cardPlan(track)`: Kanji → meaning = glyph | meaning | readings, strokes, components, your words,
+your sentences; Meaning → kanji = meaning | glyph, strokes | readings, components, your words, your
+sentences (stroke order comes with the glyph when the glyph is the answer). `wordsUsing` / `sentencesUsing`: the
 learner's words (writing) and sentences (sentence text only) that contain a kanji.
 
 **Exposes**: `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`, `LEVELS`, `isLibraryKanji`,
@@ -366,9 +367,10 @@ readings panel (readings, then components, each opening its `link` kanji — 亻
 "In your sentences" (kanji marked; 3 + show all; opens the sentence sheet), example words (8 + show
 all) → word sub-view with pitch-accent diagrams and "+ Add to my words" (opens the prefilled form)
 or "In your words ✓". Own view stack with ←; the learner's words and sentences open their own
-sheets in place of the card.
+sheets in place of the card. `partsList` (component chips; buttons only when given an opener) and
+`markKanji` (learner text with the kanji as `<mark>`, text nodes only) also serve the kanji review.
 
-**Exposes**: `openKanjiCard`, `readingsNode`, `pitchSvg`
+**Exposes**: `openKanjiCard`, `readingsNode`, `partsList`, `markKanji`, `pitchSvg`
 
 ## kanji-ui
 
@@ -379,7 +381,11 @@ panel (enabled once the enrolled kanji's levels are stored), a library toolbar p
 groups in one row on a tablet (Show: Mine/All · JLPT level: the levels as one multi-select segmented
 control · Search; each takes a full row on a phone), level
 sections of tiles with state dots under hairline headings (`dom.listGroup`); the kanji review adapter (preloads details
-and strokes).
+and strokes). Review parts: a revealed glyph (`.reveal-glyph`) sits beside its stroke order
+(`.reveal-strokes`) without labels when the plan reveals both in one step, otherwise stroke order is a
+labelled part; components as plain chips; the learner's words (≤ 4: writing with the kanji marked,
+reading, meaning clamped to two lines) and sentences (≤ 2: sentence, reading, translation) as plain
+`.use-row`s — nothing on the card is a button, since the card is one tap target.
 
 **Exposes**: `renderKanji`
 
@@ -404,7 +410,8 @@ KANA_DATA, library} for tests and debugging.
 
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
 controls, among them the list toolbar `.filters` and the titled list sections `.list-group`; kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
-review card, ratings, help, summary), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field, the Parse bar both forms use, word sheet with its hero row;
+review card, ratings, help, summary; the kanji review's glyph beside its stroke order — side by side
+via `:has()`, stacked and centred without it — and the `.use-row`s of words and sentences), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field, the Parse bar both forms use, word sheet with its hero row;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
 `css/sentences.css` (progress-group rows with state bars, one column; form; sheet with
 the progress panel under the sentence on a phone, beside it from 720 px; word-card prompt rows and their collapsible notes;
@@ -434,7 +441,7 @@ stroke colour → `currentColor`); writes `data/library/<level>.json` + `.stroke
 
 `uv run tools/check.py [all|selftest|smoke|serve|shots OUT]`. Serves the repo, runs the test pages
 in headless Chrome/Edge (throwaway profile), collects their POSTed reports; `serve` is the dev
-server; `shots` screenshots `scene.html` scenes (including the word sheet) at 390×844 and 1280×800.
+server; `shots` screenshots `scene.html` scenes (including the word sheet and the kanji reviews) at 390×844 and 1280×800.
 
 ## selftest-page, selftest
 
@@ -456,7 +463,9 @@ untranslated sentence's hint, scores dropped with a deleted sentence, the word l
 Learned after reviews and Mark as known; two columns at tablet width), library download, Mine/All/levels/search and the labelled
 toolbar in one row at tablet width, kanji card
 (progress panel, parts in the readings panel, components, example words, add to my words),
-remove / add / mark as known, kanji review, backup
+remove / add / mark as known, both kanji reviews (Kanji → meaning: stroke order only in the last
+step; Meaning → kanji: the glyph drawn large beside its stroke order, then readings, components and
+the learner's words and sentences with reading and meaning/translation, nothing tappable), backup
 round trip and reminder, sentences (Parse/Undo, word-card prompt with readings and collapsed notes saved on Add, already-in-list,
 plain sentence with a rōmaji reading, search, a kanji card listing and opening its sentences, saving
 and editing a sentence enrolling its kanji (a removed one stays removed), edit without prompt, backup, delete keeps words), pasted blocks (P20: the one-line Kanji field and Enter moving on, a
@@ -469,4 +478,4 @@ another tab's save taken over and newer-version keys kept, Android back, service
 **File**: `tools/scene.html` · **Layer**: tooling
 
 Seeds sample data and drives the app (iframe sized to the requested width) to one screen for
-`check.py shots`; holds its load event on `/__delay` so the screenshot waits for real work.
+`check.py shots` (the kanji-review scenes walk the run to 学's card, which has a word and a sentence); holds its load event on `/__delay` so the screenshot waits for real work.

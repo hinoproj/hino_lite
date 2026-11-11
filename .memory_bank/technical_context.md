@@ -42,6 +42,9 @@ Full graph, boundaries and per-module notes: `.agentic_docs/code_index.md`. Rule
   Learning; `isKnown`'s "both learned" bar, so the list and "Mark as known" agree.
 - **Reveal plans are rules** (`words.cardPlan`, `kanji.cardPlan`); the shared `review-ui` renders
   any plan through an adapter's part renderers. Example/notes always come last (they contain the word).
+  An adapter may lay parts out from the plan (the kanji adapter puts stroke order beside the glyph when
+  the plan reveals both in one step), but never decides what is revealed when. A review card is one
+  tap target: nothing on it is a button, so anything the learner would otherwise open is shown in full.
 - **Storage**: one JSON document in `localStorage` (`hino_lite_v2`) = the backup format (`app:
   'hino_lite'`, `version: 2`); `navigator.storage.persist()` at boot. Kanji list stored explicitly
   (`{addedAt, removed}`) so "nothing leaves automatically" holds after edits; removing hides and
