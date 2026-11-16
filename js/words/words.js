@@ -14,7 +14,7 @@ export const TRACK_INFO = {
   [TRACK_RECALL]: { label: 'Meaning → Japanese', description: 'See the meaning, recall the word.' }
 };
 
-export const FIELDS = ['writing', 'reading', 'meaning', 'example', 'notes'];
+export const FIELDS = ['writing', 'reading', 'meaning', 'notes', 'example'];
 export const FIELD_LABELS = {
   writing: 'Kanji', reading: 'Reading', meaning: 'Meaning', example: 'Example', notes: 'Notes'
 };
@@ -33,8 +33,8 @@ function clean(value) {
  *   少し                                   writing (only when the line holds a kanji;
  *   すこし                                  reading   a kana word starts with its reading)
  *   • a little • a small amount • slightly  meaning (bullets kept)
- *   少し待ってください。                     example (every line between the meaning and the last)
- *   An adverb or noun …                     notes (the last line)
+ *   An adverb or noun …                     notes (every line between the meaning and the last)
+ *   少し待ってください。 - Wait a little.     example (the last line: sentence - translation)
  *
  * Null when the text holds fewer than two lines: then it is not a block.
  */
@@ -43,8 +43,8 @@ export function parsePaste(text) {
   if (rows.length < 2) return null;
   const writing = HAN_RE.test(rows[0]) ? rows.shift() : '';
   const [reading = '', meaning = '', ...rest] = rows;
-  const notes = rest.length ? rest.pop() : '';
-  return { writing, reading, meaning, example: rest.join('\n'), notes };
+  const example = rest.length ? rest.pop() : '';
+  return { writing, reading, meaning, notes: rest.join('\n'), example };
 }
 
 /**
@@ -94,17 +94,17 @@ export function headline(word) {
  * each press of the main button reveals. Fields that are empty are dropped,
  * so a word without notes simply reveals less.
  *
- *   Japanese → meaning   writing | reading | meaning, example, notes
- *                        (no writing: reading | meaning, example, notes)
- *   Meaning → Japanese   meaning | reading | writing, example, notes
- *                        (no writing: meaning | reading, example, notes)
+ *   Japanese → meaning   writing | reading | meaning, notes, example
+ *                        (no writing: reading | meaning, notes, example)
+ *   Meaning → Japanese   meaning | reading | writing, notes, example
+ *                        (no writing: meaning | reading, notes, example)
  *
- * Example and notes always come last: they contain the word, so earlier they
+ * Notes and example always come last: they contain the word, so earlier they
  * would give the answer away in the second mode.
  */
 export function cardPlan(word, track) {
   const has = (f) => Boolean(clean(word[f]));
-  const extras = ['example', 'notes'].filter(has);
+  const extras = ['notes', 'example'].filter(has);
   if (track === TRACK_RECALL) {
     return has('writing')
       ? { prompt: 'meaning', steps: [{ button: 'Show reading', keys: ['reading'] },

@@ -77,16 +77,17 @@ function wordItems() {
 
 /**
  * Layout: hero (the word and its reading; the progress panel under it on a
- * phone, beside it on a wide sheet) -> meaning, example, notes, kanji as
- * hairline rows (two columns on a wide sheet) -> Edit / Delete on the right.
- * See words.css. Re-opening replaces the sheet's content in place.
+ * phone, beside it on a wide sheet) -> meaning, notes, kanji as hairline rows
+ * (two columns on a wide sheet), then the example across the full width ->
+ * Edit / Delete on the right. See words.css. Re-opening replaces the sheet's
+ * content in place.
  */
 export function openWordView(id) {
   const word = store.getWord(id);
   if (!word) return;
   const kanji = W.extractKanji(word.writing, K.isLibraryKanji);
-  const field = (key) => (word[key]
-    ? h('div', { class: 'part' }, h('div', { class: 'part-label' }, W.FIELD_LABELS[key]),
+  const field = (key, className = 'part') => (word[key]
+    ? h('div', { class: className }, h('div', { class: 'part-label' }, W.FIELD_LABELS[key]),
       h('div', { class: 'part-text pre', lang: key === 'example' ? 'ja' : null }, word[key]))
     : null);
 
@@ -96,9 +97,10 @@ export function openWordView(id) {
       h('div', { class: 'hero' }, ja(W.headline(word), 'hero-word'), word.writing ? ja(word.reading, 'hero-reading') : null),
       progressPanel(word)),
     h('div', { class: 'word-fields' },
-      field('meaning'), field('example'), field('notes'),
+      field('meaning'), field('notes'),
       kanji.length ? h('div', { class: 'part' }, h('div', { class: 'part-label' }, 'Kanji'),
-        h('div', { class: 'chips' }, kanji.map((ch) => button(ja(ch), () => openKanjiCard(ch), 'chip glyph-chip')))) : null),
+        h('div', { class: 'chips' }, kanji.map((ch) => button(ja(ch), () => openKanjiCard(ch), 'chip glyph-chip')))) : null,
+      field('example', 'part wide')),
     h('div', { class: 'actions' },
       button('Edit', () => {
         shell.closeSheetNow();
@@ -140,6 +142,10 @@ function markWordKnown(word) {
  * The Kanji field is a one-line textarea so that a pasted block keeps its lines
  * (an <input> drops them): the block fills the form (W.parsePaste, P20), and
  * Undo puts back what the fields held before the paste.
+ *
+ * Layout: Kanji, Reading, Meaning | Notes in the grid (two columns when wide),
+ * then Example across the full width. The example stays a textarea: words made
+ * from a sentence keep the sentence and its translation on two lines.
  */
 export function openWordForm(prefill = {}, { id = null, swap = false } = {}) {
   const back = () => renderWords();
@@ -176,9 +182,9 @@ export function openWordForm(prefill = {}, { id = null, swap = false } = {}) {
         }),
         input('reading', { lang: 'ja', required: true, placeholder: 'kana, or type rōmaji: benkyou', after: suggestions }),
         input('meaning', { multiline: true, rows: 2, required: true, placeholder: 'study' })),
-      h('div', { class: 'form-col' },
-        input('example', { multiline: true, rows: 3, lang: 'ja', placeholder: '毎日日本語を勉強します。' }),
-        input('notes', { multiline: true, rows: 3, placeholder: 'anything that helps you remember' }))),
+      h('div', { class: 'form-col stretch' },
+        input('notes', { multiline: true, rows: 5, placeholder: 'anything that helps you remember' }))),
+    input('example', { multiline: true, rows: 2, lang: 'ja', placeholder: '毎日日本語を勉強します。 - I study Japanese every day.' }),
     h('div', { class: 'actions' },
       h('button', { type: 'submit', class: 'primary', id: 'btn-save-word' }, 'Save'),
       button('Cancel', shell.leave, 'ghost', { id: 'btn-cancel-word' })));

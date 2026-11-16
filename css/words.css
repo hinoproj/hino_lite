@@ -1,4 +1,4 @@
-/* [MODULE] words-css | Words tab: progress-group grid (two columns from 720 px) and word rows, add/edit form with suggestions, the one-line Kanji field and the Parse bar (both forms), word sheet (hero with progress panel, field grid)
+/* [MODULE] words-css | Words tab: progress-group grid (two columns from 720 px) and word rows, add/edit form with suggestions, the one-line Kanji field and the Parse bar (both forms), word sheet (hero with progress panel, field grid with a full-width example)
    [IFACE] layer: presentation | in: classes set by words-ui.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -50,6 +50,10 @@
 
 @media (min-width: 900px) {
   .word-form .form-grid { grid-template-columns: 1fr 1fr; }
+  /* Notes fill the right column, down to the Meaning field's bottom; the example runs full width below */
+  .word-form .form-col.stretch { display: flex; flex-direction: column; }
+  .word-form .form-col.stretch .field { flex: 1; display: flex; flex-direction: column; }
+  .word-form .form-col.stretch textarea { flex: 1; }
 }
 
 /* Word sheet, owner's variant E (2026-11-05).
@@ -63,10 +67,12 @@
 .hero-word { font-size: 52px; line-height: 1.2; overflow-wrap: anywhere; }
 .hero-reading { display: block; font-size: 22px; color: var(--muted); }
 
-/* Meaning, example, notes, kanji: hairline rows, no boxes, inset 10 px from the sheet's edge.
-   One column on a phone, two on a wide sheet. Grid gaps and padding replace .part's margin. */
+/* Meaning, notes, kanji, then the example: hairline rows, no boxes, inset 10 px from the sheet's edge.
+   One column on a phone, two on a wide sheet, where the example (.wide) spans both.
+   Grid gaps and padding replace .part's margin. */
 .word-fields { display: grid; gap: 0 40px; margin: 22px 10px 0; }
 .word-fields > .part { margin-top: 0; min-width: 0; padding: 14px 0 18px; border-top: 1px solid var(--line); }
+.word-fields > .part.wide { grid-column: 1 / -1; }
 .word-view .part-text { font-size: 18px; }
 .word-view > .actions { margin-top: 24px; justify-content: flex-end; }
 

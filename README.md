@@ -9,7 +9,7 @@ installed from GitHub Pages, everything stays on the device.
 **Kana** — the six hiragana/katakana decks with timed multiple choice and typing (below).
 
 **Words** — your words. Each has a kanji writing (optional), a reading (kana — type rōmaji and
-tap the hiragana or katakana suggestion), a meaning, an example and notes (any text). Paste a
+tap the hiragana or katakana suggestion), a meaning, notes and an example (any text). Paste a
 word given one field per line into the **Kanji** field and the form fills itself:
 
 ```
@@ -17,17 +17,18 @@ word given one field per line into the **Kanji** field and the form fills itself
 すこし
 • a little • a small amount • slightly
 An adverb or noun indicating a small quantity or degree.
+少し待ってください。 - Please wait a little.
 ```
 
 The first line is the kanji writing only when it has a kanji (a kana word starts with its reading),
-then the reading and the meaning; the last line becomes the notes, and any line between the
-meaning and the last becomes the example. **Undo** puts the form back as it was before the paste.
-Two reviews, each with its own progress:
+then the reading and the meaning; the last line becomes the example (the sentence and its
+translation on one line), and any line between the meaning and the last becomes the notes.
+**Undo** puts the form back as it was before the paste. Two reviews, each with its own progress:
 
 | Review | Shows | Main button reveals |
 | --- | --- | --- |
-| Japanese → meaning | the kanji writing (or the reading when there is none) | reading → meaning, example, notes |
-| Meaning → Japanese | the meaning | reading → kanji writing, example, notes |
+| Japanese → meaning | the kanji writing (or the reading when there is none) | reading → meaning, notes, example |
+| Meaning → Japanese | the meaning | reading → kanji writing, notes, example |
 
 "Show all" reveals everything at once; tapping the card works like the main button. Then rate
 yourself: **Didn't know**, **Guessed**, **Knew it** or **Easy!** ("Which one do I press?" explains).

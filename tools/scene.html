@@ -30,7 +30,7 @@ const now = Date.now();
 const word = (id, writing, reading, meaning, example, notes, age) =>
   ({ id, writing, reading, meaning, example, notes, createdAt: now - age * day, updatedAt: now - age * day });
 const words = [
-  word('w1', '勉強', 'べんきょう', 'study', '毎日日本語を勉強します。\nI study Japanese every day.', '', 9),
+  word('w1', '勉強', 'べんきょう', 'study', '毎日日本語を勉強します。 - I study Japanese every day.', 'A noun; with する it is a verb.\n勉 = exertion, 強 = strong.', 9),
   word('w2', '', 'テレビ', 'TV, television', '', 'loanword', 7),
   word('w3', '学校', 'がっこう', 'school', '学校に行きます。', '', 5),
   word('w4', '先生', 'せんせい', 'teacher', '', 'also used for doctors', 3),

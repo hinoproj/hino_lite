@@ -152,13 +152,14 @@ known first; `groupByProgress(items, scoresOf)` splits a list into them, empty g
 Word rules. `normalizeDraft` trims and converts leftover rōmaji in the reading to hiragana;
 `validate` requires a kana-only reading and a meaning; `duplicateKey` = writing|reading;
 `extractKanji` = library kanji in the writing, in order, once, 々 skipped. `cardPlan(word, track)`:
-Japanese → meaning = writing | reading | meaning+example+notes (no writing: reading | meaning…);
-Meaning → Japanese = meaning | reading | writing+example+notes (no writing: meaning | reading…);
+Japanese → meaning = writing | reading | meaning+notes+example (no writing: reading | meaning…);
+Meaning → Japanese = meaning | reading | writing+notes+example (no writing: meaning | reading…);
 empty extras dropped. `matchesQuery` searches every field, and rōmaji/katakana queries match the reading.
 `parsePaste` (P20) splits a pasted block in the AI chat's word format, empty lines skipped: line 1
 is the writing only when it holds a kanji (a kana word starts with its reading), then reading,
-meaning (bullets kept); after the meaning the last line is the notes and every line between is the
-example; null for fewer than two lines.
+meaning (bullets kept); after the meaning the last line is the example (`sentence - translation`
+on one line) and every line between is the notes (2026-11-16; before, the order was the reverse);
+null for fewer than two lines. `FIELDS` lists the fields in display order: notes before example.
 
 **Exposes**: `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`, `FIELDS`, `FIELD_LABELS`,
 `parsePaste`, `normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `matchesQuery`, `sortForList`
@@ -321,9 +322,12 @@ Words tab (review panel; a toolbar panel with the labelled search; the list in p
 New · Learning · Learned · Confident by `review.progressGroup`, empty groups hidden, newest first
 inside a group, two columns from 720 px), word sheet (hero: the word and its reading with a
 progress panel — both directions as lit steps and "Mark as known" until both are learned —
-under them on a phone, beside them from 720 px; then meaning, example, notes and kanji chips as
-hairline rows, two columns from 720 px; Edit/Delete on the right),
-add/edit form (the Kanji field is a one-line textarea via `dom.pasteBlockField`, so a pasted block
+under them on a phone, beside them from 720 px; then meaning, notes and kanji chips as
+hairline rows, two columns from 720 px, and the example last across the full width (`.part.wide`);
+Edit/Delete on the right),
+add/edit form (Kanji, Reading, Meaning | Notes in a grid, two columns from 900 px where Notes stretch
+to the column's height; Example below the grid at full width, still a textarea because words made
+from a sentence keep sentence and translation on two lines; the Kanji field is a one-line textarea via `dom.pasteBlockField`, so a pasted block
 fills the form through `W.parsePaste` — it overwrites the fields the block fills, the Kanji field
 always — with "Filled from the pasted lines" and an Undo that restores the fields as they were
 before the paste; rōmaji suggestions as hiragana/katakana chips, live "Adds to your kanji" preview,
@@ -411,7 +415,7 @@ KANA_DATA, library} for tests and debugging.
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
 controls, among them the list toolbar `.filters` and the titled list sections `.list-group`; kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
 review card, ratings, help, summary; the kanji review's glyph beside its stroke order — side by side
-via `:has()`, stacked and centred without it — and the `.use-row`s of words and sentences), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field, the Parse bar both forms use, word sheet with its hero row;
+via `:has()`, stacked and centred without it — and the `.use-row`s of words and sentences), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field and Notes stretched beside Reading and Meaning from 900 px, the Parse bar both forms use, word sheet with its hero row and a full-width example row;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
 `css/sentences.css` (progress-group rows with state bars, one column; form; sheet with
 the progress panel under the sentence on a phone, beside it from 720 px; word-card prompt rows and their collapsible notes;
@@ -441,7 +445,7 @@ stroke colour → `currentColor`); writes `data/library/<level>.json` + `.stroke
 
 `uv run tools/check.py [all|selftest|smoke|serve|shots OUT]`. Serves the repo, runs the test pages
 in headless Chrome/Edge (throwaway profile), collects their POSTed reports; `serve` is the dev
-server; `shots` screenshots `scene.html` scenes (including the word sheet and the kanji reviews) at 390×844 and 1280×800.
+server; `shots` screenshots `scene.html` scenes (including the word sheet, the word form at both sizes and the kanji reviews) at 390×844 and 1280×800.
 
 ## selftest-page, selftest
 

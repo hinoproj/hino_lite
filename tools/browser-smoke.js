@@ -147,6 +147,9 @@ async function words() {
   $('#btn-add-word').click();
   await waitFor(() => visible('screen-word-form'));
   log('the form hides the tab bar', d.getElementById('tabbar').hidden);
+  log('form: notes in the grid, the example under it across the full width, last before the buttons',
+    $('#word-notes').closest('.form-grid') !== null && $('#word-example').closest('.form-grid') === null &&
+      $('#btn-save-word').closest('.actions').previousElementSibling.contains($('#word-example')));
   type($('#word-writing'), '勉強');
   log('kanji preview names the new kanji', $('#kanji-preview').textContent.includes('勉 強'), $('#kanji-preview').textContent);
   type($('#word-reading'), 'benkyou');
@@ -200,6 +203,11 @@ async function words() {
     $$('#word-view .word-fields > .part').every((p) => w.getComputedStyle(p).borderTopStyle === 'solid') &&
     $$('#word-view .track').every((t) => t.dataset.state === 'unseen' && !t.querySelector('.lit')) &&
     Boolean($('#btn-word-known')));
+  const lastField = $$('#word-view .word-fields > .part').pop();
+  log('word sheet: the example comes last, across the full width',
+    lastField.classList.contains('wide') && lastField.querySelector('.part-label').textContent === 'Example' &&
+      w.getComputedStyle(lastField).gridColumnStart === '1' && w.getComputedStyle(lastField).gridColumnEnd === '-1',
+    w.getComputedStyle(lastField).gridColumn);
   $('#btn-edit-word').click();
   await waitFor(() => visible('screen-word-form'));
   log('edit prefills the form', $('#word-writing').value === '勉強' && $('#word-meaning').value === 'study');
@@ -721,23 +729,27 @@ async function pastedBlocks() {
   type(writing, '少し\n');
   log('a single pasted line loses its line break', writing.value === '少し' && $('#word-paste-note').closest('.parse-bar').hidden);
   writing.focus();
-  type(writing, '少し\nすこし\n• a little • a small amount • slightly\nAn adverb or noun indicating a small quantity or degree.');
-  log('a pasted word block fills the form, bullets kept, the last line as notes',
-    values('word-', ['writing', 'reading', 'meaning', 'example', 'notes']).join(' | ') ===
-      '少し | すこし | • a little • a small amount • slightly |  | An adverb or noun indicating a small quantity or degree.' &&
+  type(writing, '少し\nすこし\n• a little • a small amount • slightly\nAn adverb or noun indicating a small quantity or degree.\n' +
+    '少し待ってください。 - Please wait a little.');
+  log('a pasted word block fills the form, bullets kept, then the notes, the last line as the example',
+    values('word-', ['writing', 'reading', 'meaning', 'notes', 'example']).join(' | ') ===
+      '少し | すこし | • a little • a small amount • slightly | An adverb or noun indicating a small quantity or degree. | ' +
+      '少し待ってください。 - Please wait a little.' &&
       $('#kanji-preview').textContent.includes('少') && !$('#word-paste-note').closest('.parse-bar').hidden,
-    values('word-', ['writing', 'reading', 'meaning', 'example', 'notes']).join(' | '));
+    values('word-', ['writing', 'reading', 'meaning', 'notes', 'example']).join(' | '));
   $('#btn-paste-undo').click();
-  log('Undo puts back what the fields held before the paste', values('word-', ['writing', 'reading', 'meaning', 'notes']).join('') === '少し' &&
-    $('#word-paste-note').closest('.parse-bar').hidden, values('word-', ['writing', 'reading', 'meaning', 'notes']).join(' | '));
+  log('Undo puts back what the fields held before the paste', values('word-', ['writing', 'reading', 'meaning', 'notes', 'example']).join('') === '少し' &&
+    $('#word-paste-note').closest('.parse-bar').hidden, values('word-', ['writing', 'reading', 'meaning', 'notes', 'example']).join(' | '));
   writing.focus();
-  type(writing, 'ゆっくり\n\n• slowly\nTry ゆっくり歩く。\nAn adverb.');
-  log('a kana word block: no writing, the line before the last as the example',
-    values('word-', ['writing', 'reading', 'meaning', 'example', 'notes']).join(' | ') === ' | ゆっくり | • slowly | Try ゆっくり歩く。 | An adverb.',
-    values('word-', ['writing', 'reading', 'meaning', 'example', 'notes']).join(' | '));
+  type(writing, 'ゆっくり\n\n• slowly\nAn adverb.\nSaid of pace.\nゆっくり歩く。 - Walk slowly.');
+  log('a kana word block: no writing, the lines before the last as the notes',
+    values('word-', ['writing', 'reading', 'meaning', 'notes', 'example']).join(' | ') ===
+      ' | ゆっくり | • slowly | An adverb.\nSaid of pace. | ゆっくり歩く。 - Walk slowly.',
+    values('word-', ['writing', 'reading', 'meaning', 'notes', 'example']).join(' | '));
   $('#btn-save-word').click();
   await waitFor(() => visible('screen-words'));
-  log('the pasted word saves', st.listWords().some((x) => x.writing === '' && x.reading === 'ゆっくり' && x.notes === 'An adverb.'));
+  log('the pasted word saves', st.listWords().some((x) => x.writing === '' && x.reading === 'ゆっくり' &&
+    x.notes === 'An adverb.\nSaid of pace.' && x.example === 'ゆっくり歩く。 - Walk slowly.'));
 
   await tab('sentences');
   $('#btn-add-sentence').click();

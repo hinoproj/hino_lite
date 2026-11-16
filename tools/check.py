@@ -42,7 +42,7 @@ CHROME_PATHS = [
 ]
 # (name, hash or query, width, height) -- see tools/scene.html for the scenes.
 SHOTS = [("words", "words", 390, 844), ("word", "word", 390, 844), ("word-tablet", "word", 1280, 800),
-         ("word-form", "word-form", 390, 844),
+         ("word-form", "word-form", 390, 844), ("word-form-tablet", "word-form", 1280, 800),
          ("review", "review", 390, 844), ("kanji", "kanji", 390, 844), ("card", "card", 390, 844),
          ("kana", "kana", 390, 844), ("words-tablet", "words", 1280, 800),
          ("kanji-tablet", "kanji", 1280, 800), ("card-tablet", "card", 1280, 800),

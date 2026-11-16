@@ -1,5 +1,21 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-16] Words: notes before example (P22)
+
+Owner's call: notes come before the example everywhere, and the example is last. The gem will
+write the example as one line, `sentence - translation`, while notes may run to several lines, so
+`words.parsePaste` now reads the **last** line after the meanings as the example and every line
+between as the notes (the reverse of P20's word order; a single line after the meanings is the
+example). The owner updates the gem instructions; a block in the old order now fills the two
+fields swapped, with no warning (Undo restores). `FIELDS` and `cardPlan` extras follow the new
+order. Form: Kanji, Reading, Meaning beside Notes (Notes stretch to the column's height from
+900 px), Example below at full width; it stays a textarea, since words made from a sentence keep
+sentence + translation on two lines (`sentences.exampleFor`, untouched on the owner's call:
+Sentences unchanged). Word sheet: meaning, notes, kanji, then the example spanning both columns
+(`.part.wide`). `sw.js` → `hino-lite-app-v15`. Selftest +1 (reveal order), parse cases rewritten;
+smoke +2 (form layout, sheet's last row); `scene.html` word w1 has notes and a one-line example;
+`check.py shots` gained `word-form-tablet`. `ALL CHECKS PASSED` (168 + 138).
+
 ## [2026-11-11] Kanji review: stroke order with the kanji, words and sentences in full (P21)
 
 The owner found the revealed kanji in Meaning → kanji tiny and left-aligned under a "KANJI" label.
