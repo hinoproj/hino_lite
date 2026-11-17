@@ -1,4 +1,4 @@
-/* [MODULE] app-css | Visual layer: dark/light/kids themes, shell (tabs, sheet, banner, toast), shared controls (incl. the list toolbar and titled list sections), the accented mora in bold, kana screens
+/* [MODULE] app-css | Visual layer: dark/light/kids themes, shell (tabs, sheet, banner, toast), shared controls (incl. the list toolbar and titled list sections), a reading's accent (bold nucleus, FLAT label, its tip), kana screens
    [IFACE] layer: presentation | in: class names and data-* attributes set by the UI modules -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -17,6 +17,7 @@
   --line: #2f3444;
   --text: #eef1f7;
   --muted: #98a0b5;
+  --muted-accent: #a3aabd;   /* the accented mora in a muted reading: a step toward --text */
   --accent: #7aa2ff;
   --good: #49c17f;
   --warn: #e0a33a;
@@ -36,6 +37,7 @@
   --line: #dcdfe9;
   --text: #171a22;
   --muted: #616a80;
+  --muted-accent: #555d72;
   --accent: #2f5fd8;
   --good: #1f9e5f;
   --warn: #b57a15;
@@ -51,6 +53,7 @@
   --line: #ffd48a;
   --text: #3b2a1a;
   --muted: #8a6a4a;
+  --muted-accent: #7a5c3f;
   --accent: #ff7a59;
   --good: #22b7a0;
   --warn: #ffb300;
@@ -104,8 +107,42 @@ body {
     "Yu Gothic UI", "Yu Gothic", Meiryo, system-ui, sans-serif;
 }
 
-/* The accented mora of a word's reading (P23: words.accentSplit, dom.jaMarked). Japanese faces carry a real bold. */
-.accent-mora { font-weight: 800; }
+/* A word's reading with its accent (P23: words.accentView, dom.jaReading). The nucleus is bold
+   (Japanese faces carry a real bold); in the grey readings of the word list and sheet it also steps
+   toward --text. Everywhere else (review cards) only the weight changes. A flat word gets a FLAT
+   label in the reading's own colour; its tip explains it. */
+.accent-mora { font-weight: 900; }
+.word-reading .accent-mora, .hero-reading .accent-mora { color: var(--muted-accent); }
+.accent-flat {
+  display: inline-block;
+  margin-left: .45em;
+  padding: .28em .6em .24em;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font: 600 clamp(10px, .5em, 13px)/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  vertical-align: .2em;
+  white-space: nowrap;
+}
+.accent-flat[role="button"] { cursor: pointer; }
+.accent-flat:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tip {
+  position: fixed;
+  z-index: 60;
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.45;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .28);
+}
+.tip strong { display: block; margin-bottom: 4px; }
+.tip p { margin: 0; }
+.tip p + p { margin-top: 6px; }
 
 .muted { color: var(--muted); }
 .sub { color: var(--muted); font-size: 14px; font-weight: 400; }

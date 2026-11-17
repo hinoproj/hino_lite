@@ -1,5 +1,18 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-17] Pitch accent: FLAT label with a tip, `--muted-accent` (P23)
+
+Owner added `--muted-accent` (dark `#a3aabd`, a step lighter than `--muted`); defined for light
+(`#555d72`) and kids (`#7a5c3f`) too, used only for the bold mora inside the grey readings of the
+list and sheet. On review cards the bold mora keeps the text colour (owner: weight only). Flat
+words: a mock of seven variants (claude.ai artifact "Flat Accent Marks"); the owner picked E, a
+FLAT label after the reading, with a tip on hover and click. Tip copy follows the owner's source
+on what the bracket marks (the accent nucleus; flat = nothing stands out, the particle stays
+level). The tip opens on a tap only on the word sheet and the form preview: a list row is a
+button and a review card is one tap target, so there it is hover-only (P21's rule kept).
+New: `words.accentView`, `dom.jaReading` (replaces `jaMarked`) + `hideTip`. `sw.js` →
+`hino-lite-app-v18`. `ALL CHECKS PASSED` (181 + 152).
+
 ## [2026-11-17] Words: pitch accent in the reading, shown in bold (P23)
 
 The gem now writes the reading line with its accent: `[きょ]う` marks the accented mora,

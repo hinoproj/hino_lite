@@ -27,7 +27,9 @@ translation on one line), and any line between the meaning and the last becomes 
 
 The reading may carry its pitch accent: `[きょ]う` marks the accented mora, `とけい [flat]` says there
 is none, and a reading without brackets means the accent is not known. The accented mora shows in
-**bold** wherever the word's reading appears; flat and unknown readings show no bold. Type the same
+**bold** wherever the word's reading appears (it is the accent nucleus: the voice is high there and
+falls right after it). A flat word shows a **FLAT** label instead; hover it, or tap it on the word
+sheet, for what flat means. A reading whose accent is not known shows neither. Type the same
 notation in the Reading field (rōmaji works: `[kyo]u`); a word being edited shows its accent that way.
 
 Two reviews, each with its own progress:

@@ -95,6 +95,15 @@ export function accentSplit(reading, accent) {
   return { before: units.slice(0, accent - 1).join(''), mora: units[accent - 1], after: units.slice(accent).join('') };
 }
 
+/**
+ * How a reading shows its accent: `marked` (the split around the bold mora, or
+ * null) and `flat` (true only for a word known to be flat, which gets a "flat"
+ * label; a reading whose accent is not known shows neither).
+ */
+export function accentView(reading, accent) {
+  return { marked: accentSplit(reading, accent), flat: accent === 0 };
+}
+
 /** The text of a reading without its [flat] mark, and whether it had one (rōmaji suggestions work on the rest). */
 export function splitFlatMark(text) {
   const value = String(text == null ? '' : text);

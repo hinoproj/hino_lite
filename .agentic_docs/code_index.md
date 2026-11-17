@@ -167,10 +167,10 @@ from 1, 0 flat, null not known) reads `[flat]` before rōmaji conversion, conver
 brackets, and counts `morae` (small ゃゅょぁ… join the kana before; っ, ん, ー stand alone); a bracket
 left over stays in the reading and `validate` refuses it. `formatAccent` writes the notation back
 for the form; `accentSplit` gives `{before, mora, after}` for display, null when nothing is
-highlighted; `splitFlatMark` lets rōmaji suggestions work on the reading without its mark.
+highlighted; `accentView` gives `{marked, flat}` for display (FLAT only when the accent is 0); `splitFlatMark` lets rōmaji suggestions work on the reading without its mark.
 
 **Exposes**: `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`, `FIELDS`, `FIELD_LABELS`, `FLAT_MARK`,
-`morae`, `splitAccent`, `formatAccent`, `accentSplit`, `splitFlatMark`, `parsePaste`, `normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `matchesQuery`, `sortForList`
+`morae`, `splitAccent`, `formatAccent`, `accentSplit`, `accentView`, `splitFlatMark`, `parsePaste`, `normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `matchesQuery`, `sortForList`
 
 ## sentences
 
@@ -269,9 +269,9 @@ paste event; the block goes to a callback with the value from before the paste, 
 loses its breaks), `toast`, `formatDaysAgo`, and `confirmAction`/`notify` — the single seams the
 smoke test answers.
 
-`jaMarked` is `ja` with one part in bold (`.accent-mora`): a reading around its accented mora.
+`jaReading` draws a word's reading with its accent from `words.accentView`: the nucleus in bold (`.accent-mora`), or a FLAT label (`.accent-flat`) whose tip (`#tip`, one for the app, placed under or above its label) explains a flat word; the tip opens on mouse hover, and on a tap or Enter only when `tappable` (a list row or a review card owns its tap); a press elsewhere, Escape, scroll or back closes it (`hideTip`).
 
-**Exposes**: `$`, `h`, `ja`, `jaMarked`, `button`, `segmented`, `part`, `filterGroup`, `listGroup`, `pasteBlockField`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
+**Exposes**: `$`, `h`, `ja`, `jaReading`, `hideTip`, `button`, `segmented`, `part`, `filterGroup`, `listGroup`, `pasteBlockField`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
 
 ## theme
 
@@ -346,7 +346,7 @@ duplicate refusal with "Open it"; the Reading field holds the accent notation, s
 that way when editing (`W.formatAccent`) with an "Accent:" preview under it, and rōmaji suggestions keep
 a `[flat]` mark), save → `storage.saveWord` + `enrollKanji`; the word review adapter. Every reading it
 shows — list row, sheet hero, a kana word's headline, the review's reading part and prompt, the run
-summary — puts the accented mora in bold (`readingNode` → `dom.jaMarked` with `W.accentSplit`).
+summary — shows its accent (`readingNode` → `dom.jaReading` with `W.accentView`): the nucleus in bold, FLAT for a flat word; the FLAT tip opens on a tap only on the word sheet and in the form's preview.
 
 **Exposes**: `renderWords`, `openWordView`, `openWordForm`
 
@@ -403,7 +403,7 @@ sections of tiles with state dots under hairline headings (`dom.listGroup`); the
 and strokes). Review parts: a revealed glyph (`.reveal-glyph`) sits beside its stroke order
 (`.reveal-strokes`) without labels when the plan reveals both in one step, otherwise stroke order is a
 labelled part; components as plain chips; the learner's words (≤ 4: writing with the kanji marked,
-reading with its accented mora in bold via `words.accentSplit`, meaning clamped to two lines) and sentences (≤ 2: sentence, reading, translation) as plain
+reading with its accent via `words.accentView` (FLAT's tip on hover only), meaning clamped to two lines) and sentences (≤ 2: sentence, reading, translation) as plain
 `.use-row`s — nothing on the card is a button, since the card is one tap target.
 
 **Exposes**: `renderKanji`
@@ -428,7 +428,7 @@ KANA_DATA, library} for tests and debugging.
 ## app-css, review-css, words-css, sentences-css, kanji-css
 
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
-controls, among them the list toolbar `.filters` and the titled list sections `.list-group`, the accented mora `.accent-mora` in bold; kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
+controls, among them the list toolbar `.filters` and the titled list sections `.list-group`, a reading's accent (`.accent-mora` bold, coloured `--muted-accent` only in the list's and sheet's grey readings; the `.accent-flat` label and its `.tip`); kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
 review card, ratings, help, summary; the kanji review's glyph beside its stroke order — side by side
 via `:has()`, stacked and centred without it — and the `.use-row`s of words and sentences), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field and Notes stretched beside Reading and Meaning from 900 px, the Parse bar both forms use, word sheet with its hero row and a full-width example row;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),

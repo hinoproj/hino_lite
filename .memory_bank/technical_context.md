@@ -39,7 +39,9 @@ Full graph, boundaries and per-module notes: `.agentic_docs/code_index.md`. Rule
   (search, duplicate keys, kanji enrollment and the kanji review read it), `accent` holds the
   accented mora's position from 1 (0 flat, null not known). The bracket notation exists only at the
   edges: the gem's pasted line and the form's Reading field (`words.splitAccent` / `formatAccent`).
-  Display is the accented mora in bold (`dom.jaMarked`).
+  Display (`words.accentView` → `dom.jaReading`): the nucleus in bold, a FLAT label for a flat word
+  (its tip opens on hover, and on a tap only where nothing else owns the tap, so a review card
+  stays one tap target), nothing when not known.
 - **Sentence reviews** use the same scheduler, tracks `sentences.read`/`sentences.recall`; only a
   sentence with a translation is reviewed (`sentences.isReviewable`), the others stay in the list.
 - **List progress groups** (`review.progressGroup` / `groupByProgress`, used by the word and sentence lists): with two directions,
@@ -88,6 +90,6 @@ and downloads again on the next Kanji-tab visit.
 
 ## Verification
 
-- `uv run tools/check.py` — selftest (180 checks) + UI smoke (147 checks), must end `ALL CHECKS PASSED`
+- `uv run tools/check.py` — selftest (181 checks) + UI smoke (152 checks), must end `ALL CHECKS PASSED`
 - `uv run tools/check.py shots OUT` — screenshots at 390×844 and 1280×800 for visual review
 - `uv run tools/check.py serve` — local server with correct MIME types

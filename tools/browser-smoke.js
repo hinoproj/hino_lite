@@ -785,13 +785,35 @@ async function pastedBlocks() {
   await sleep(50);
   log('a bracket left over is refused and stays in the field', visible('screen-word-form') &&
     /\[ \]/.test($('#word-reading-error').textContent) && $('#word-reading').value === '[きょ]う [flat]');
+  type($('#word-reading'), 'とけい [flat]');
+  log('the preview of a flat reading shows the FLAT label', $('#accent-preview .accent-flat') !== null);
+  $('#btn-save-word').click();
+  await waitFor(() => visible('screen-words'));
+  const flatRow = $('.word-row[data-id="' + today.id + '"]');
+  const flatLabel = flatRow.querySelector('.word-reading .accent-flat');
+  log('a flat word saves accent 0 and its list row shows a FLAT label that does not take the tap',
+    st.getWord(today.id).accent === 0 && Boolean(flatLabel) && !flatLabel.hasAttribute('tabindex') &&
+      !flatRow.querySelector('.accent-mora'));
+  flatRow.click();
+  await waitFor(() => $('#word-view'));
+  const sheetLabel = $('#word-view .hero-reading .accent-flat');
+  sheetLabel.click();
+  const tip = d.getElementById('tip');
+  log('on the sheet a tap on FLAT opens its tip', Boolean(tip) && !tip.hidden && /Flat word/.test(tip.textContent) &&
+    sheetLabel.getAttribute('aria-expanded') === 'true' && visible('sheet-layer'));
+  $('#word-view .word-fields').dispatchEvent(new w.PointerEvent('pointerdown', { bubbles: true }));
+  log('a press elsewhere closes the tip', tip.hidden && sheetLabel.getAttribute('aria-expanded') === 'false');
+  $('#btn-edit-word').click();
+  await waitFor(() => visible('screen-word-form'));
+  log('edit shows a flat word as [flat]', $('#word-reading').value === 'とけい [flat]', $('#word-reading').value);
   type($('#word-reading'), 'とけい');
   $('#btn-save-word').click();
   await waitFor(() => visible('screen-words'));
   const plain = st.getWord(today.id);
   log('a reading without brackets saves the accent as not known; nothing in bold',
     plain.reading === 'とけい' && plain.accent === null &&
-      !$('.word-row[data-id="' + today.id + '"] .accent-mora'), JSON.stringify([plain.reading, plain.accent]));
+      !$('.word-row[data-id="' + today.id + '"] .accent-mora') && !$('.word-row[data-id="' + today.id + '"] .accent-flat'),
+    JSON.stringify([plain.reading, plain.accent]));
 
   await tab('sentences');
   $('#btn-add-sentence').click();

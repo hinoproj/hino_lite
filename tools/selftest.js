@@ -330,6 +330,10 @@ check('accent: the form shows the notation back, and it reads the same again',
   W.formatAccent('きょう', 1) === '[きょ]う' && W.formatAccent('とけい', 0) === 'とけい [flat]' &&
     W.formatAccent('ひとつ', null) === 'ひとつ' && W.formatAccent('ひとつ', undefined) === 'ひとつ' &&
     [['いっしょ', 3], ['とけい', 0], ['たまご', 2]].every(([r, a]) => W.splitAccent(W.formatAccent(r, a)).accent === a));
+check('accent view: bold nucleus, a flat label only when flat, neither when not known',
+  JSON.stringify(W.accentView('きょう', 1)) === JSON.stringify({ marked: { before: '', mora: 'きょ', after: 'う' }, flat: false }) &&
+    JSON.stringify(W.accentView('とけい', 0)) === JSON.stringify({ marked: null, flat: true }) &&
+    JSON.stringify(W.accentView('さんぼん', null)) === JSON.stringify({ marked: null, flat: false }));
 check('accent: rōmaji suggestions see the reading without its [flat] mark',
   JSON.stringify(W.splitFlatMark('tokei [flat]')) === JSON.stringify({ body: 'tokei', flat: true }) &&
     W.splitFlatMark('tokei').flat === false);

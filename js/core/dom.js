@@ -1,4 +1,4 @@
-// [MODULE] dom | Tiny DOM helpers: element builder, Japanese-text spans (one part in bold for an accented mora), toast, segmented control, labelled parts, list toolbar groups, titled list sections, one-line field that takes a pasted block, confirm seam
+// [MODULE] dom | Tiny DOM helpers: element builder, Japanese-text spans, a word's reading with its accent (bold mora or a FLAT label with its explanation tip), toast, segmented control, labelled parts, list toolbar groups, titled list sections, one-line field that takes a pasted block, confirm seam
 // [IFACE] layer: presentation | in: tag names, props, children -> out: DOM nodes | crosses: [browser DOM]
 // [GRAPH] needs: [] | feeds: [shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui] | group: presentation
 // [STATE] stateless | persists: nothing | raises: nothing
@@ -45,12 +45,87 @@ export function ja(text, className, tag = 'span') {
 }
 
 /**
- * Japanese text with one part in bold: `marked` is {before, mora, after} (a
- * reading around its accented mora, from words.accentSplit), or null for plain text.
+ * A reading with its accent (P23), from words.accentView: `marked`
+ * ({before, mora, after}) puts the accent nucleus in bold; `flat` adds a FLAT
+ * label whose tip explains it. The tip opens on mouse hover everywhere, and on
+ * a tap only when `tappable` -- never inside a review card or a list row,
+ * where the tap belongs to the card or the row.
  */
-export function jaMarked(text, marked, className, tag = 'span') {
-  if (!marked) return ja(text, className, tag);
-  return h(tag, { lang: 'ja', class: className }, marked.before, h('b', { class: 'accent-mora' }, marked.mora), marked.after);
+export function jaReading(text, { marked = null, flat = false, tappable = false } = {}, className, tag = 'span') {
+  const body = marked ? [marked.before, h('b', { class: 'accent-mora' }, marked.mora), marked.after] : [text];
+  return h(tag, { lang: 'ja', class: className }, body, flat ? flatLabel(tappable) : null);
+}
+
+function flatLabel(tappable) {
+  const label = h('span', { class: 'accent-flat', lang: 'en' }, 'flat');
+  withTip(label, () => [
+    h('strong', null, 'Flat word (heiban)'),
+    h('p', null, 'No kana stands out. The first one is a little lower, the rest stay level, and a particle after the word (が, を, に…) stays level too.'),
+    h('p', null, 'Don’t push a peak anywhere. (In a word with a bold kana, that kana is the peak: the voice is high there and falls right after it.)')
+  ], tappable);
+  return label;
+}
+
+// One tip for the whole app, placed under (or above) whatever opened it.
+let tipEl = null;
+let tipOwner = null;
+let tipPinned = false;
+
+function tipNode() {
+  if (tipEl) return tipEl;
+  tipEl = h('div', { class: 'tip', id: 'tip', role: 'tooltip', hidden: true });
+  document.body.append(tipEl);
+  // A hover tip goes with any press; a tapped one with a press outside it and its label.
+  document.addEventListener('pointerdown', (e) => {
+    if (!tipOwner) return;
+    if (!tipPinned || !(tipOwner.contains(e.target) || tipEl.contains(e.target))) hideTip();
+  }, true);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideTip(); });
+  ['scroll', 'resize', 'popstate'].forEach((type) => window.addEventListener(type, hideTip, true));
+  return tipEl;
+}
+
+function showTip(owner, content, pinned) {
+  const tip = tipNode();
+  tip.replaceChildren(...content());
+  tip.hidden = false;
+  tipOwner = owner;
+  tipPinned = pinned;
+  owner.setAttribute('aria-describedby', 'tip');
+  if (owner.hasAttribute('aria-expanded')) owner.setAttribute('aria-expanded', 'true');
+  const r = owner.getBoundingClientRect();
+  const width = tip.offsetWidth;
+  const height = tip.offsetHeight;
+  const left = Math.min(Math.max(8, r.left + r.width / 2 - width / 2), window.innerWidth - width - 8);
+  const below = r.bottom + 8 + height <= window.innerHeight - 8;
+  tip.style.left = Math.max(8, left) + 'px';
+  tip.style.top = (below ? r.bottom + 8 : Math.max(8, r.top - 8 - height)) + 'px';
+}
+
+export function hideTip() {
+  if (!tipOwner) return;
+  tipOwner.removeAttribute('aria-describedby');
+  if (tipOwner.hasAttribute('aria-expanded')) tipOwner.setAttribute('aria-expanded', 'false');
+  tipEl.hidden = true;
+  tipOwner = null;
+  tipPinned = false;
+}
+
+/** Hover (a mouse) shows `content()` under `owner`; when `tappable`, a tap or Enter pins it until a press elsewhere. */
+function withTip(owner, content, tappable) {
+  owner.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !tipPinned) showTip(owner, content, false); });
+  owner.addEventListener('pointerleave', () => { if (tipOwner === owner && !tipPinned) hideTip(); });
+  if (!tappable) return;
+  Object.assign(owner, { tabIndex: 0 });
+  owner.setAttribute('role', 'button');
+  owner.setAttribute('aria-expanded', 'false');
+  const toggle = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (tipOwner === owner && tipPinned) hideTip(); else showTip(owner, content, true);
+  };
+  owner.addEventListener('click', toggle);
+  owner.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') toggle(e); });
 }
 
 export function button(label, onClick, className, extra) {

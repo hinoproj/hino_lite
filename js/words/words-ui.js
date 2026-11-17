@@ -10,7 +10,7 @@ import * as R from '../review/review.js';
 import { startReview, trackPanel, stateDots, trackRow } from '../review/review-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, ja, jaMarked, button, confirmAction, toast, filterGroup, listGroup, part, pasteBlockField } from '../core/dom.js';
+import { $, h, ja, jaReading, button, confirmAction, toast, filterGroup, listGroup, part, pasteBlockField } from '../core/dom.js';
 import { openKanjiCard } from '../kanji/kanji-card.js';
 
 let query = '';
@@ -23,14 +23,18 @@ function wordStates(word) {
   return wordScores(word).map(R.stateOf);
 }
 
-/** A word's reading with its accented mora in bold (P23); plain when flat or not known. */
-function readingNode(word, className, tag) {
-  return jaMarked(word.reading, W.accentSplit(word.reading, word.accent), className, tag);
+/**
+ * A word's reading with its accent (P23): the nucleus in bold, a FLAT label for
+ * a flat word, nothing when not known. `tappable` only where the tap is free
+ * (the word sheet); a list row and a review card own their taps.
+ */
+function readingNode(word, className, tag, tappable = false) {
+  return jaReading(word.reading, { ...W.accentView(word.reading, word.accent), tappable }, className, tag);
 }
 
 /** The headline as a node: the writing, or a kana word's reading with its accent. */
-function headlineNode(word, className, tag) {
-  return word.writing ? ja(word.writing, className, tag) : readingNode(word, className, tag);
+function headlineNode(word, className, tag, tappable = false) {
+  return word.writing ? ja(word.writing, className, tag) : readingNode(word, className, tag, tappable);
 }
 
 // --- Words tab ----------------------------------------------------------
@@ -104,7 +108,7 @@ export function openWordView(id) {
   shell.openSheet(h('div', { class: 'word-view', id: 'word-view' },
     h('div', { class: 'sheet-head' }, h('span'), button('✕', shell.closeSheet, 'icon-btn ghost', { 'aria-label': 'Close' })),
     h('div', { class: 'word-hero' },
-      h('div', { class: 'hero' }, headlineNode(word, 'hero-word'), word.writing ? readingNode(word, 'hero-reading') : null),
+      h('div', { class: 'hero' }, headlineNode(word, 'hero-word', 'span', true), word.writing ? readingNode(word, 'hero-reading', 'span', true) : null),
       progressPanel(word)),
     h('div', { class: 'word-fields' },
       field('meaning'), field('notes'),
@@ -227,8 +231,7 @@ export function openWordForm(prefill = {}, { id = null, swap = false } = {}) {
     accentPreview.replaceChildren();
     if (!/[[［]/.test(value)) return;
     const { reading, accent } = W.splitAccent(value);
-    if (accent === 0) accentPreview.append('Accent: flat, no mora in bold');
-    else if (accent) accentPreview.append('Accent: ', jaMarked(reading, W.accentSplit(reading, accent), 'preview-kana'));
+    if (accent !== null) accentPreview.append('Accent: ', jaReading(reading, { ...W.accentView(reading, accent), tappable: true }, 'preview-kana'));
   };
   const updateReading = () => {
     updateSuggestions();
