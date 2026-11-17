@@ -1,5 +1,13 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-17] Word review: kanji, reading and meaning centred on a phone (P24)
+
+Owner's call after trying v20 on the phone: under the centred prompt, left-aligned answer parts
+looked off. At ≤ 520 px a word review's kanji, reading and meaning (`.part.main`, set in
+`words-ui` `renderWordPart`) are centred, labels included; notes, example and their toggle stay
+left-aligned. Tablet and wide screens unchanged; sentence and kanji reviews untouched. Added to
+P24. `sw.js` → `hino-lite-app-v21`. `ALL CHECKS PASSED`.
+
 ## [2026-11-17] Review: "Easy!" is now +3
 
 Owner's call. `RATING_EASY` 2 → 3 in `review.js`, so a first "Easy!" starts from 3 and lands on 6

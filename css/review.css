@@ -1,4 +1,4 @@
-/* [MODULE] review-css | Self-rated review run: card with step-by-step reveal (a word's notes and example folded under one toggle, a size smaller on a phone), reveal buttons, rating row, help sheet, summary; the kanji review's glyph beside its stroke order and the learner's word and sentence rows; the progress panel on the word sheet and kanji card
+/* [MODULE] review-css | Self-rated review run: card with step-by-step reveal (a word's notes and example folded under one toggle, a size smaller on a phone; its kanji, reading and meaning centred there), reveal buttons, rating row, help sheet, summary; the kanji review's glyph beside its stroke order and the learner's word and sentence rows; the progress panel on the word sheet and kanji card
    [IFACE] layer: presentation | in: classes and data-* set by review-ui.js, the words/kanji adapters, words-ui.js and kanji-card.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -177,6 +177,9 @@
   .prompt-ja.long { font-size: 36px; }
   /* A word's notes and example: long text inside the card's padding inside the screen's */
   .part-text.extra { font-size: 17px; }
+  /* A word's kanji, reading and meaning sit centred under the centred prompt; notes, example and
+     their toggle stay left-aligned (long text reads better ragged-right) */
+  .review-step > .part.main { text-align: center; }
   .prompt-glyph { font-size: 112px; }
   .reveal-glyph { font-size: 96px; }
   .reveal-strokes { width: 124px; }

@@ -332,9 +332,11 @@ function renderWordPart(word, key, asPrompt) {
     if (key === 'meaning') return h('div', { class: 'prompt-text' }, value);
     return key === 'reading' ? readingNode(word, className, 'div') : ja(value, className, 'div');
   }
-  if (key === 'writing') return part(W.FIELD_LABELS.writing, ja(value, 'part-ja big', 'div'));
-  if (key === 'reading') return part(W.FIELD_LABELS.reading, readingNode(word, 'part-ja', 'div'));
-  if (key === 'meaning') return part(W.FIELD_LABELS.meaning, h('div', { class: 'part-text pre' }, value));
+  // Kanji, reading and meaning: the answer itself, centred under the prompt on a phone (review.css .part.main)
+  const main = (node) => { node.classList.add('main'); return node; };
+  if (key === 'writing') return main(part(W.FIELD_LABELS.writing, ja(value, 'part-ja big', 'div')));
+  if (key === 'reading') return main(part(W.FIELD_LABELS.reading, readingNode(word, 'part-ja', 'div')));
+  if (key === 'meaning') return main(part(W.FIELD_LABELS.meaning, h('div', { class: 'part-text pre' }, value)));
   // Notes and example: the card's secondary text, a size smaller on a phone (review.css .extra)
   return part(W.FIELD_LABELS[key], h('div', { class: 'part-text pre extra', lang: key === 'example' ? 'ja' : null }, value));
 }

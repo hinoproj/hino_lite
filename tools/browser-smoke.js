@@ -239,6 +239,7 @@ async function wordReviews() {
   log('a word run starts with all 3 new words', $('#review-count').textContent === '1 / 3', $('#review-count').textContent);
   let stepsOk = true;
   let folds = 0;
+  let mainOk = true;
   for (let i = 0; i < 3; i++) {
     const prompt = $('.review-prompt').textContent;
     const word = Object.values(saved().words).find((x) => (x.writing || x.reading) === prompt);
@@ -248,6 +249,8 @@ async function wordReviews() {
     while ($('#btn-reveal') && presses < 5) { $('#btn-reveal').click(); presses += 1; await sleep(20); }
     if (presses !== (word.writing ? 2 : 1)) stepsOk = false;
     if (i === 0 && word.writing && !$('.review-step')) stepsOk = false;
+    const mainLabels = $$('#screen-review .review-step > .part.main').map((p) => p.querySelector('.part-label').textContent).join(',');
+    if (mainLabels !== (word.writing ? 'Reading,Meaning' : 'Meaning')) mainOk = false;
     const fold = $('#screen-review .review-step .review-fold');
     if (word.example || word.notes) {
       const closed = Boolean(fold) && !fold.open && !$('.review-card').hasAttribute('role');
@@ -260,6 +263,7 @@ async function wordReviews() {
     await sleep(40);
   }
   log('Japanese → meaning reveals in the planned steps', stepsOk);
+  log('reading and meaning are the card\'s main parts (.part.main, centred on a phone); notes and example are not', mainOk);
   log('notes and example come folded and closed, the revealed card is no longer a button, the toggle opens them; the example is .extra (smaller on a phone)',
     folds > 0, String(folds));
   await waitFor(() => visible('screen-review-summary'));

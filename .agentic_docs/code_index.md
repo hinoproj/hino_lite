@@ -337,8 +337,8 @@ progress panel — both directions as lit steps and "Mark as known" until both a
 under them on a phone, beside them from 720 px; then meaning and kanji chips as hairline rows,
 side by side from 720 px with the kanji column starting under the progress panel (a meaning
 without kanji spans the row), then notes and the example, each across the full width (`.part.wide`);
-Edit/Delete on the right), the word review's notes and example as `.part-text.extra` (a size
-smaller on a phone),
+Edit/Delete on the right), the word review's kanji, reading and meaning as `.part.main` (centred on a phone) and its notes and
+example as `.part-text.extra` (a size smaller on a phone),
 add/edit form (Kanji, Reading, Meaning | Notes in a grid, two columns from 900 px where Notes stretch
 to the column's height; Example below the grid at full width, still a textarea because words made
 from a sentence keep sentence and translation on two lines; the Kanji field is a one-line textarea via `dom.pasteBlockField`, so a pasted block
@@ -432,7 +432,7 @@ KANA_DATA, library} for tests and debugging.
 
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
 controls, among them the list toolbar `.filters` and the titled list sections `.list-group`, a reading's accent (`.accent-mora` bold, coloured `--muted-accent` only in the list's and sheet's grey readings; the `.accent-flat` label and its `.tip`); kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
-review card, ratings, help, summary; a word's notes and example (`.part-text.extra`) a size smaller on a phone; the `.review-fold` toggle (a part label in the accent colour with a turning chevron; one folded part hides its own label); the kanji review's glyph beside its stroke order — side by side
+review card, ratings, help, summary; a word's notes and example (`.part-text.extra`) a size smaller on a phone, its kanji, reading and meaning (`.part.main`) centred there; the `.review-fold` toggle (a part label in the accent colour with a turning chevron; one folded part hides its own label); the kanji review's glyph beside its stroke order — side by side
 via `:has()`, stacked and centred without it — and the `.use-row`s of words and sentences), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field and Notes stretched beside Reading and Meaning from 900 px, the Parse bar both forms use, word sheet with its hero row, meaning beside kanji (the kanji column as wide as the progress panel, `--hero-panel`), notes and example as full-width rows;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
 `css/sentences.css` (progress-group rows with state bars, one column; form; sheet with
@@ -479,7 +479,7 @@ normalisation.
 **Files**: `tools/browser-smoke.html`, `tools/browser-smoke.js` · **Layer**: tooling
 
 Drives the real app in an iframe: kana runs and themes, word add/validate/duplicate/edit/search,
-both word reviews (notes and example folded and closed, the revealed card not a button, the toggle opening them, the example `.extra`) and the rating help, the word sheet's meaning and kanji row with the kanji under the progress panel, both sentence reviews (only translated sentences, the reveal
+both word reviews (notes and example folded and closed, the revealed card not a button, the toggle opening them, the example `.extra`; reading and meaning `.part.main`) and the rating help, the word sheet's meaning and kanji row with the kanji under the progress panel, both sentence reviews (only translated sentences, the reveal
 steps, own tracks), the sentence list's groups, the sentence sheet's panel and Mark as known, an
 untranslated sentence's hint, scores dropped with a deleted sentence, the word list's progress groups (New, then Learning /
 Learned after reviews and Mark as known; two columns at tablet width), library download, Mine/All/levels/search and the labelled
