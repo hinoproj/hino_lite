@@ -1,4 +1,4 @@
-// [MODULE] review-ui | Self-rated review run for words and kanji: step-by-step reveal, four rating buttons, help sheet, summary; shared track panel, state dots and progress rows
+// [MODULE] review-ui | Self-rated review run for words and kanji: step-by-step reveal (a step's folded parts under one toggle), four rating buttons, help sheet, summary; shared track panel, state dots and progress rows
 // [IFACE] layer: presentation | in: a composed run + an adapter (card plan, part renderers) -> out: rendered run/summary, recorded ratings | crosses: [browser DOM]
 // [GRAPH] needs: [review, storage, theme, shell, dom] | feeds: [words-ui, sentences-ui, kanji-ui, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -77,7 +77,9 @@ export function trackPanel(tracks, info, itemsOf, onStart, { disabled = false } 
  *   title, modeLabel   heading text
  *   track              storage track id ('words.read', 'kanji.recall', ...)
  *   items              the composed run (review.buildRun output), each {id, ...}
- *   plan(item)         {prompt: key, steps: [{button, keys: [...]}]}
+ *   plan(item)         {prompt: key, steps: [{button, keys: [...], fold?: {label, keys: [...]}}]};
+ *                      a step's fold keys come after its keys, under one toggle, collapsed
+ *                      on every new card
  *   renderPart(item, key, asPrompt)  Node, or null when the item has nothing for that key
  *   label(item)        Node naming the item in the summary
  *   onExit()           re-render the screen the run started from
@@ -106,11 +108,17 @@ function current() {
 
 function stepsOf(item) {
   const plan = run.config.plan(item);
+  const parts = (keys) => keys.map((k) => run.config.renderPart(item, k, false)).filter(Boolean);
   // Drop steps with nothing to show (e.g. no example and no notes), keep their order.
   const steps = plan.steps
-    .map((s) => ({ button: s.button, nodes: s.keys.map((k) => run.config.renderPart(item, k, false)).filter(Boolean) }))
+    .map((s) => ({ button: s.button, nodes: parts(s.keys).concat(s.fold ? foldNode(s.fold.label, parts(s.fold.keys)) || [] : []) }))
     .filter((s) => s.nodes.length);
   return { prompt: run.config.renderPart(item, plan.prompt, true), steps };
+}
+
+/** A step's folded parts under one toggle (P24). A native <details>: collapsed until opened, and a new card starts closed. */
+function foldNode(label, nodes) {
+  return nodes.length ? h('details', { class: 'review-fold' }, h('summary', null, label), nodes) : null;
 }
 
 function renderCard() {
@@ -119,8 +127,10 @@ function renderCard() {
   const done = run.revealed >= steps.length;
   const screen = $('screen-review');
 
-  const card = h('div', {
-    class: 'review-card', role: 'button', tabindex: '0', 'aria-label': done ? 'Card' : steps[run.revealed].button,
+  // Until fully revealed the card is one tap target, like the main button. Then it is plain text,
+  // so a fold's toggle is not a control nested inside a button, and its keys are not swallowed.
+  const card = h('div', done ? { class: 'review-card' } : {
+    class: 'review-card', role: 'button', tabindex: '0', 'aria-label': steps[run.revealed].button,
     onclick: () => revealNext(steps.length),
     onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); revealNext(steps.length); } }
   },

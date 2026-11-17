@@ -203,7 +203,14 @@ async function words() {
     $$('#word-view .word-fields > .part').every((p) => w.getComputedStyle(p).borderTopStyle === 'solid') &&
     $$('#word-view .track').every((t) => t.dataset.state === 'unseen' && !t.querySelector('.lit')) &&
     Boolean($('#btn-word-known')));
-  const lastField = $$('#word-view .word-fields > .part').pop();
+  const sheetFields = $$('#word-view .word-fields > .part');
+  const [meaningField, kanjiField] = sheetFields;
+  log('word sheet: meaning and kanji share the first row, the kanji column starting under the progress panel',
+    meaningField.querySelector('.part-label').textContent === 'Meaning' && kanjiField.querySelector('.part-label').textContent === 'Kanji' &&
+      meaningField.offsetTop === kanjiField.offsetTop &&
+      Math.abs(kanjiField.getBoundingClientRect().left - $('#word-view .progress-panel').getBoundingClientRect().left) < 1,
+    sheetFields.map((p) => p.querySelector('.part-label').textContent).join(', '));
+  const lastField = sheetFields.pop();
   log('word sheet: the example comes last, across the full width',
     lastField.classList.contains('wide') && lastField.querySelector('.part-label').textContent === 'Example' &&
       w.getComputedStyle(lastField).gridColumnStart === '1' && w.getComputedStyle(lastField).gridColumnEnd === '-1',
@@ -231,6 +238,7 @@ async function wordReviews() {
   await waitFor(() => visible('screen-review'));
   log('a word run starts with all 3 new words', $('#review-count').textContent === '1 / 3', $('#review-count').textContent);
   let stepsOk = true;
+  let folds = 0;
   for (let i = 0; i < 3; i++) {
     const prompt = $('.review-prompt').textContent;
     const word = Object.values(saved().words).find((x) => (x.writing || x.reading) === prompt);
@@ -240,14 +248,24 @@ async function wordReviews() {
     while ($('#btn-reveal') && presses < 5) { $('#btn-reveal').click(); presses += 1; await sleep(20); }
     if (presses !== (word.writing ? 2 : 1)) stepsOk = false;
     if (i === 0 && word.writing && !$('.review-step')) stepsOk = false;
+    const fold = $('#screen-review .review-step .review-fold');
+    if (word.example || word.notes) {
+      const closed = Boolean(fold) && !fold.open && !$('.review-card').hasAttribute('role');
+      if (fold) fold.querySelector('summary').click();
+      const exampleText = fold && Array.from(fold.querySelectorAll('.part'))
+        .find((p) => p.querySelector('.part-label').textContent === 'Example')?.querySelector('.part-text');
+      folds += closed && fold.open && (!word.example || (exampleText && exampleText.classList.contains('extra'))) ? 1 : -99;
+    } else if (fold) folds = -99;
     $('.rating.easy').click();
     await sleep(40);
   }
   log('Japanese → meaning reveals in the planned steps', stepsOk);
+  log('notes and example come folded and closed, the revealed card is no longer a button, the toggle opens them; the example is .extra (smaller on a phone)',
+    folds > 0, String(folds));
   await waitFor(() => visible('screen-review-summary'));
   log('summary counts three "Easy!"', $('.stat.easy .value').textContent === '3');
   const reviews = saved().reviews['words.read'];
-  log('a first "Easy!" makes a word learned (5)', Object.values(reviews).length === 3 && Object.values(reviews).every((e) => e.score === 5));
+  log('a first "Easy!" makes a word learned (6)', Object.values(reviews).length === 3 && Object.values(reviews).every((e) => e.score === 6));
   $('#btn-review-done').click();
   await waitFor(() => visible('screen-words'));
   log('done returns to the words tab', visible('screen-words'));
@@ -273,7 +291,7 @@ async function wordReviews() {
   await waitFor(() => visible('screen-review-summary'));
   const recall = saved().reviews['words.recall'];
   log('a first "Didn\'t know" scores 0 in its own track', Object.values(recall).length === 3 &&
-    Object.values(recall).every((e) => e.score === 0) && Object.values(saved().reviews['words.read']).every((e) => e.score === 5));
+    Object.values(recall).every((e) => e.score === 0) && Object.values(saved().reviews['words.read']).every((e) => e.score === 6));
   $('#btn-review-done').click();
   await waitFor(() => visible('screen-words'));
 
@@ -285,7 +303,7 @@ async function wordReviews() {
   $('#btn-word-known').click();
   await waitFor(() => !$('#btn-word-known'));
   log('mark as known: Meaning → Japanese rises to learned, Japanese → meaning stays',
-    store().reviewStats('words.read', tv.id).score === 5 && store().reviewStats('words.recall', tv.id).score === 5 &&
+    store().reviewStats('words.read', tv.id).score === 6 && store().reviewStats('words.recall', tv.id).score === 5 &&
     $$('#word-view .track').every((t) => t.dataset.state === 'learned') && visible('sheet-layer'));
   $('#word-view .sheet-head button').click();
   await waitFor(() => !visible('sheet-layer'));
@@ -629,7 +647,7 @@ async function sentences() {
   await waitFor(() => visible('screen-review-summary'));
   const sentenceRead = saved().reviews['sentences.read'] || {};
   log('the run scores its own track', Object.keys(sentenceRead).length === 2 &&
-    Object.values(sentenceRead).every((e) => e.score === 5), JSON.stringify(sentenceRead));
+    Object.values(sentenceRead).every((e) => e.score === 6), JSON.stringify(sentenceRead));
   $('#btn-review-done').click();
   await waitFor(() => visible('screen-sentences'));
 
@@ -657,7 +675,7 @@ async function sentences() {
   await waitFor(() => !$('#btn-sentence-known'));
   const listen = st.listSentences().find((x) => x.sentence.startsWith('もう一度'));
   log('mark as known: both directions learned, the sentence moves to Learned',
-    st.reviewStats('sentences.read', listen.id).score === 5 && st.reviewStats('sentences.recall', listen.id).score === 5 &&
+    st.reviewStats('sentences.read', listen.id).score >= 5 && st.reviewStats('sentences.recall', listen.id).score === 5 &&
       sentenceGroups() === 'unseen,learning,learned', sentenceGroups());
   $('#sentence-view .sheet-head button').click();
   await waitFor(() => !visible('sheet-layer'));

@@ -36,10 +36,12 @@ Two reviews, each with its own progress:
 
 | Review | Shows | Main button reveals |
 | --- | --- | --- |
-| Japanese → meaning | the kanji writing (or the reading when there is none) | reading → meaning, notes, example |
-| Meaning → Japanese | the meaning | reading → kanji writing, notes, example |
+| Japanese → meaning | the kanji writing (or the reading when there is none) | reading → meaning (notes and example folded) |
+| Meaning → Japanese | the meaning | reading → kanji writing (notes and example folded) |
 
-"Show all" reveals everything at once; tapping the card works like the main button. Then rate
+"Show all" reveals everything at once; tapping the card works like the main button. Notes and
+example come folded under one **Notes & example** toggle at the bottom of the card; tap it to
+open them (every new card starts folded). Then rate
 yourself: **Didn't know**, **Guessed**, **Knew it** or **Easy!** ("Which one do I press?" explains).
 A word's card shows how far each review has come; **Mark as known** puts a word you already know
 straight to learned in both, so it comes up only now and then. The list is grouped by progress,

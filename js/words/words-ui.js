@@ -91,10 +91,11 @@ function wordItems() {
 
 /**
  * Layout: hero (the word and its reading; the progress panel under it on a
- * phone, beside it on a wide sheet) -> meaning, notes, kanji as hairline rows
- * (two columns on a wide sheet), then the example across the full width ->
- * Edit / Delete on the right. See words.css. Re-opening replaces the sheet's
- * content in place.
+ * phone, beside it on a wide sheet) -> meaning and kanji as hairline rows
+ * (side by side on a wide sheet, the kanji under the progress panel; the
+ * meaning alone spans the row), then notes and example, each across the full
+ * width -> Edit / Delete on the right. See words.css. Re-opening replaces the
+ * sheet's content in place.
  */
 export function openWordView(id) {
   const word = store.getWord(id);
@@ -111,9 +112,10 @@ export function openWordView(id) {
       h('div', { class: 'hero' }, headlineNode(word, 'hero-word', 'span', true), word.writing ? readingNode(word, 'hero-reading', 'span', true) : null),
       progressPanel(word)),
     h('div', { class: 'word-fields' },
-      field('meaning'), field('notes'),
+      field('meaning', kanji.length ? 'part' : 'part wide'),
       kanji.length ? h('div', { class: 'part' }, h('div', { class: 'part-label' }, 'Kanji'),
         h('div', { class: 'chips' }, kanji.map((ch) => button(ja(ch), () => openKanjiCard(ch), 'chip glyph-chip')))) : null,
+      field('notes', 'part wide'),
       field('example', 'part wide')),
     h('div', { class: 'actions' },
       button('Edit', () => {
@@ -333,7 +335,8 @@ function renderWordPart(word, key, asPrompt) {
   if (key === 'writing') return part(W.FIELD_LABELS.writing, ja(value, 'part-ja big', 'div'));
   if (key === 'reading') return part(W.FIELD_LABELS.reading, readingNode(word, 'part-ja', 'div'));
   if (key === 'meaning') return part(W.FIELD_LABELS.meaning, h('div', { class: 'part-text pre' }, value));
-  return part(W.FIELD_LABELS[key], h('div', { class: 'part-text pre', lang: key === 'example' ? 'ja' : null }, value));
+  // Notes and example: the card's secondary text, a size smaller on a phone (review.css .extra)
+  return part(W.FIELD_LABELS[key], h('div', { class: 'part-text pre extra', lang: key === 'example' ? 'ja' : null }, value));
 }
 
 function startWordReview(track) {

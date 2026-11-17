@@ -1,4 +1,4 @@
-/* [MODULE] words-css | Words tab: progress-group grid (two columns from 720 px) and word rows, add/edit form with suggestions, the one-line Kanji field and the Parse bar (both forms), word sheet (hero with progress panel, field grid with a full-width example)
+/* [MODULE] words-css | Words tab: progress-group grid (two columns from 720 px) and word rows, add/edit form with suggestions, the one-line Kanji field and the Parse bar (both forms), word sheet (hero with progress panel, field grid: meaning beside kanji, then full-width notes and example)
    [IFACE] layer: presentation | in: classes set by words-ui.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -59,7 +59,8 @@
 /* Word sheet, owner's variant E (2026-11-05).
    Phone: the word centred, the progress panel stacked under it, capped and centred so it sits
    inset from the sheet's edges. Wide (>= 720 px, where app.css turns .sheet into a dialog): the
-   word left-aligned on the fields' 10 px inset, the panel at the trailing edge, 250 px wide. */
+   word left-aligned on the fields' 10 px inset, the panel at the trailing edge, --hero-panel wide. */
+.word-view { --hero-panel: 250px; }
 .word-hero { display: grid; gap: 14px; padding-bottom: 4px; }
 .word-hero .progress-panel { width: min(420px, 100% - 24px); justify-self: center; }
 
@@ -67,9 +68,11 @@
 .hero-word { font-size: 52px; line-height: 1.2; overflow-wrap: anywhere; }
 .hero-reading { display: block; font-size: 22px; color: var(--muted); }
 
-/* Meaning, notes, kanji, then the example: hairline rows, no boxes, inset 10 px from the sheet's edge.
-   One column on a phone, two on a wide sheet, where the example (.wide) spans both.
-   Grid gaps and padding replace .part's margin. */
+/* Meaning and kanji, then notes and the example: hairline rows, no boxes, inset 10 px from the
+   sheet's edge. One column on a phone. On a wide sheet meaning and kanji share the first row, the
+   kanji column starting where the progress panel does (the fields sit 10 px inside the panel's
+   trailing edge, hence the 10 px less); notes, the example and a meaning without kanji (.wide)
+   span both columns. Grid gaps and padding replace .part's margin. */
 .word-fields { display: grid; gap: 0 40px; margin: 22px 10px 0; }
 .word-fields > .part { margin-top: 0; min-width: 0; padding: 14px 0 18px; border-top: 1px solid var(--line); }
 .word-fields > .part.wide { grid-column: 1 / -1; }
@@ -80,6 +83,6 @@
   .word-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .word-hero { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 24px; }
   .word-hero .hero { text-align: left; padding-inline-start: 10px; }
-  .word-hero .progress-panel { width: 250px; justify-self: end; }
-  .word-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .word-hero .progress-panel { width: var(--hero-panel); justify-self: end; }
+  .word-fields { grid-template-columns: minmax(0, 1fr) calc(var(--hero-panel) - 10px); }
 }

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- [MODULE] scene | Screenshot helper: seeds sample data and drives the app (full-window iframe) to one named screen
-     [IFACE] layer: tooling | in: ?scene=words|word|word-form|review|kanji|card|kana|sentences|sentence|sentence-review|sentence-form|sentence-words|kanji-review|kanji-review-step|kanji-read-review[&theme=dark|light|kids] -> out: the app showing that screen | crosses: [browser DOM, localStorage]
+     [IFACE] layer: tooling | in: ?scene=words|word|word-form|review|review-full|review-open|kanji|card|kana|sentences|sentence|sentence-review|sentence-form|sentence-words|kanji-review|kanji-review-step|kanji-read-review[&theme=dark|light|kids] -> out: the app showing that screen | crosses: [browser DOM, localStorage]
      [GRAPH] needs: [index] | feeds: [check] | group: tooling
      [STATE] stateful | persists: overwrites hino_lite_v2 in this browser profile | raises: nothing
 
@@ -75,7 +75,7 @@ async function waitFor(fn, timeout = 20000) {
   }
   return null;
 }
-const hash = { words: 'words', word: 'words', 'word-form': 'words', review: 'words', kanji: 'kanji', card: 'kanji/学', kana: 'kana',
+const hash = { words: 'words', word: 'words', 'word-form': 'words', review: 'words', 'review-full': 'words', 'review-open': 'words', kanji: 'kanji', card: 'kanji/学', kana: 'kana',
   sentences: 'sentences', sentence: 'sentences', 'sentence-review': 'sentences', 'sentence-form': 'sentences',
   'sentence-words': 'sentences', 'kanji-review': 'kanji', 'kanji-review-step': 'kanji', 'kanji-read-review': 'kanji' }[scene] || 'kana';
 await new Promise((resolve) => { frame.onload = resolve; frame.src = '../index.html#' + hash; });
@@ -113,6 +113,19 @@ if (scene === 'word-form') {
   const prompt = d.querySelector('.review-prompt').textContent;
   d.getElementById('btn-reveal').click();
   if (prompt === 'テレビ') await sleep(10); else await sleep(50);
+} else if (scene === 'review-full' || scene === 'review-open') {
+  // A word review on 勉強 (it has notes and an example), fully revealed; review-open also opens the
+  // notes-and-example fold. Earlier cards are revealed and rated on the way.
+  const revealAll = async () => { while (d.getElementById('btn-reveal')) { d.getElementById('btn-reveal').click(); await sleep(30); } };
+  d.querySelector('.mode-row[data-track="words.read"] button.primary').click();
+  await sleep(150);
+  for (let i = 0; i < 10 && d.querySelector('.review-prompt').textContent !== '勉強'; i++) {
+    await revealAll();
+    d.querySelector('.rating.knew').click();
+    await sleep(100);
+  }
+  await revealAll();
+  if (scene === 'review-open') d.querySelector('.review-fold summary').click();
 } else if (scene === 'sentence') {
   d.querySelector('#sentence-list .sentence-row[data-id="s1"]').click();
   await waitFor(() => d.getElementById('sentence-view'));

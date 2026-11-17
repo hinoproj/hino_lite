@@ -130,7 +130,7 @@ confident); question building with look-alike distractors, homophone guard and m
 **File**: `js/review/review.js` · **Layer**: domain
 
 One scheduler for every self-rated review (words, kanji, sentences), on JLPT_coach's kanji scale: ratings
-Didn't know −3 / Guessed −1 / Knew it +1 / Easy! +2; an unseen card's first answer starts from
+Didn't know −3 / Guessed −1 / Knew it +1 / Easy! +3; an unseen card's first answer starts from
 `INITIAL_SCORE` 3; a miss on a learned card drops it to `DEMOTION_SCORE` 4 (a guess only erodes by
 1); scores 0–30. Labels per D56: unseen −1, unknown 0, learning 1–4, learned 5–14, confident 15+.
 `buildRun`: ≤`MAX_NEW_PER_RUN` (5, hard cap) unseen newest first, ≤`MAX_MAINTENANCE_PER_RUN` (3)
@@ -152,9 +152,9 @@ known first; `groupByProgress(items, scoresOf)` splits a list into them, empty g
 Word rules. `normalizeDraft` trims and converts leftover rōmaji in the reading to hiragana;
 `validate` requires a kana-only reading and a meaning; `duplicateKey` = writing|reading;
 `extractKanji` = library kanji in the writing, in order, once, 々 skipped. `cardPlan(word, track)`:
-Japanese → meaning = writing | reading | meaning+notes+example (no writing: reading | meaning…);
-Meaning → Japanese = meaning | reading | writing+notes+example (no writing: meaning | reading…);
-empty extras dropped. `matchesQuery` searches every field, and rōmaji/katakana queries match the reading.
+Japanese → meaning = writing | reading | meaning [notes, example] (no writing: reading | meaning…);
+Meaning → Japanese = meaning | reading | writing [notes, example] (no writing: meaning | reading…);
+notes and example are the last step's `fold` (P24: label "Notes & example" or the one field's name), empty ones dropped. `matchesQuery` searches every field, and rōmaji/katakana queries match the reading.
 `parsePaste` (P20) splits a pasted block in the AI chat's word format, empty lines skipped: line 1
 is the writing only when it holds a kanji (a kana word starts with its reading), then reading,
 meaning (bullets kept); after the meaning the last line is the example (`sentence - translation`
@@ -317,7 +317,8 @@ behaviour; navigation goes through the shell's back stack.
 
 The self-rated run shared by words, kanji and sentences: an adapter gives the run, `plan(item)` and
 `renderPart(item, key, asPrompt)`; the main button / card tap reveals the next step, "Show all"
-reveals the rest, then four rating buttons and the "Which one do I press?" help (no points). Kids
+reveals the rest; a step's `fold` keys render under one `<details class="review-fold">` toggle, closed
+on every new card (P24); a fully revealed card is no longer a button (no role, tap or keys), then four rating buttons and the "Which one do I press?" help (no points). Kids
 theme cheers a good rating. Summary: counts per rating, newly learned, per-item rows, "Run again"
 (accepts a promise). Also the `trackPanel` (run length + one row per track) and `stateDots` used
 by the three tabs, and `trackRow` (a direction's name, state and four steps lit up to the state, no
@@ -333,9 +334,11 @@ Words tab (review panel; a toolbar panel with the labelled search; the list in p
 New · Learning · Learned · Confident by `review.progressGroup`, empty groups hidden, newest first
 inside a group, two columns from 720 px), word sheet (hero: the word and its reading with a
 progress panel — both directions as lit steps and "Mark as known" until both are learned —
-under them on a phone, beside them from 720 px; then meaning, notes and kanji chips as
-hairline rows, two columns from 720 px, and the example last across the full width (`.part.wide`);
-Edit/Delete on the right),
+under them on a phone, beside them from 720 px; then meaning and kanji chips as hairline rows,
+side by side from 720 px with the kanji column starting under the progress panel (a meaning
+without kanji spans the row), then notes and the example, each across the full width (`.part.wide`);
+Edit/Delete on the right), the word review's notes and example as `.part-text.extra` (a size
+smaller on a phone),
 add/edit form (Kanji, Reading, Meaning | Notes in a grid, two columns from 900 px where Notes stretch
 to the column's height; Example below the grid at full width, still a textarea because words made
 from a sentence keep sentence and translation on two lines; the Kanji field is a one-line textarea via `dom.pasteBlockField`, so a pasted block
@@ -429,8 +432,8 @@ KANA_DATA, library} for tests and debugging.
 
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
 controls, among them the list toolbar `.filters` and the titled list sections `.list-group`, a reading's accent (`.accent-mora` bold, coloured `--muted-accent` only in the list's and sheet's grey readings; the `.accent-flat` label and its `.tip`); kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
-review card, ratings, help, summary; the kanji review's glyph beside its stroke order — side by side
-via `:has()`, stacked and centred without it — and the `.use-row`s of words and sentences), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field and Notes stretched beside Reading and Meaning from 900 px, the Parse bar both forms use, word sheet with its hero row and a full-width example row;
+review card, ratings, help, summary; a word's notes and example (`.part-text.extra`) a size smaller on a phone; the `.review-fold` toggle (a part label in the accent colour with a turning chevron; one folded part hides its own label); the kanji review's glyph beside its stroke order — side by side
+via `:has()`, stacked and centred without it — and the `.use-row`s of words and sentences), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field and Notes stretched beside Reading and Meaning from 900 px, the Parse bar both forms use, word sheet with its hero row, meaning beside kanji (the kanji column as wide as the progress panel, `--hero-panel`), notes and example as full-width rows;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
 `css/sentences.css` (progress-group rows with state bars, one column; form; sheet with
 the progress panel under the sentence on a phone, beside it from 720 px; word-card prompt rows and their collapsible notes;
@@ -460,7 +463,7 @@ stroke colour → `currentColor`); writes `data/library/<level>.json` + `.stroke
 
 `uv run tools/check.py [all|selftest|smoke|serve|shots OUT]`. Serves the repo, runs the test pages
 in headless Chrome/Edge (throwaway profile), collects their POSTed reports; `serve` is the dev
-server; `shots` screenshots `scene.html` scenes (including the word sheet, the word form at both sizes and the kanji reviews) at 390×844 and 1280×800.
+server; `shots` screenshots `scene.html` scenes (including the word sheet, the word form at both sizes, a fully revealed word review and the kanji reviews) at 390×844 and 1280×800.
 
 ## selftest-page, selftest
 
@@ -476,7 +479,7 @@ normalisation.
 **Files**: `tools/browser-smoke.html`, `tools/browser-smoke.js` · **Layer**: tooling
 
 Drives the real app in an iframe: kana runs and themes, word add/validate/duplicate/edit/search,
-both word reviews and the rating help, both sentence reviews (only translated sentences, the reveal
+both word reviews (notes and example folded and closed, the revealed card not a button, the toggle opening them, the example `.extra`) and the rating help, the word sheet's meaning and kanji row with the kanji under the progress panel, both sentence reviews (only translated sentences, the reveal
 steps, own tracks), the sentence list's groups, the sentence sheet's panel and Mark as known, an
 untranslated sentence's hint, scores dropped with a deleted sentence, the word list's progress groups (New, then Learning /
 Learned after reviews and Mark as known; two columns at tablet width), library download, Mine/All/levels/search and the labelled
@@ -497,4 +500,5 @@ another tab's save taken over and newer-version keys kept, Android back, service
 **File**: `tools/scene.html` · **Layer**: tooling
 
 Seeds sample data and drives the app (iframe sized to the requested width) to one screen for
-`check.py shots` (the kanji-review scenes walk the run to 学's card, which has a word and a sentence); holds its load event on `/__delay` so the screenshot waits for real work.
+`check.py shots` (the kanji-review scenes walk the run to 学's card, which has a word and a sentence;
+`review-full` walks the word run to 勉強, which has notes and an example, and reveals it all; `review-open` also opens the fold); holds its load event on `/__delay` so the screenshot waits for real work.

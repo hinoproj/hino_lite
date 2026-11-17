@@ -1,5 +1,36 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-17] Review: "Easy!" is now +3
+
+Owner's call. `RATING_EASY` 2 → 3 in `review.js`, so a first "Easy!" starts from 3 and lands on 6
+(was 5); the learned (5) and confident (15) thresholds, demotion and cap are unchanged. Selftest
+and smoke assertions that expected 5 after an "Easy!" now expect 6 (a marked-known word keeps its
+6 in the read track). `code_index.md` scale line updated. Settings and README never print points
+(contract 9), so they stay as they are. No storage shape change; existing scores are untouched.
+`sw.js` → `hino-lite-app-v20` (`review.js` is precached). `ALL CHECKS PASSED`.
+
+## [2026-11-17] Word review: notes and example folded under one toggle (P24)
+
+Owner's calls: the toggle lives inside the card (an exception to P21's "nothing on a review card
+is tappable"), one toggle for both fields, closed again on every new card, words only. The fold
+is part of the reveal plan: `words.cardPlan`'s last step carries `fold: {label, keys}` ("Notes &
+example", or the one field's name), and `review-ui` renders any step's fold as a native
+`<details class="review-fold">`, so sentence and kanji plans are untouched. A fully revealed card
+drops its button role, tap and key handler: the toggle is not a control nested in a button, and
+Enter/Space reach it. New `review-open` screenshot scene. Recorded as P24 in `current_task.md`,
+together with the word-sheet order and the 17 px phone size from the entry below. Ships in the
+same `hino-lite-app-v19` (v19 was not released yet). `ALL CHECKS PASSED` (182 + 154).
+
+## [2026-11-17] Word sheet: meaning beside kanji; smaller notes and example in phone reviews
+
+Word sheet order is now meaning, kanji, notes, example. On a wide sheet meaning and kanji share
+the first row; notes and example each run full width, so long notes no longer wrap in a half
+column. Owner's calls: the kanji column is as wide as the progress panel above it (it starts
+under the panel; `--hero-panel` in `words.css` sizes both), and a meaning without kanji spans
+the row. In the word review, notes and example are `.part-text.extra`: 17 px instead of 19 px at
+≤ 520 px. Owner: words only; sentence notes keep their size. New `review-full` screenshot scene
+(勉強 fully revealed at phone size). `sw.js` → `hino-lite-app-v19`. `ALL CHECKS PASSED`.
+
 ## [2026-11-17] Pitch accent: FLAT label with a tip, `--muted-accent` (P23)
 
 Owner added `--muted-accent` (dark `#a3aabd`, a step lighter than `--muted`); defined for light

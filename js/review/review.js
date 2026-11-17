@@ -7,9 +7,9 @@
  * One scheduler for every self-rated review in the app. It is JLPT_coach's
  * kanji scale, which the platform names as its reference:
  *
- *   rating         Didn't know -3 | Guessed -1 | Knew it +1 | Easy! +2
+ *   rating         Didn't know -3 | Guessed -1 | Knew it +1 | Easy! +3
  *   score          0..30; the first answer starts from INITIAL_SCORE (3), so
- *                  a word you already know costs one sighting ("Easy!" -> 5),
+ *                  a word you already know costs one sighting ("Easy!" -> 6),
  *                  and one miss cancels the credit exactly (-> 0)
  *   demotion       "Didn't know" on a learned card drops it to 4 -- a lapse is
  *                  the signal, not a reason to bury the card. "Guessed" is
@@ -35,7 +35,7 @@ export const DEMOTION_SCORE = 4;
 export const RATING_MISSED = -3;
 export const RATING_GUESSED = -1;
 export const RATING_KNEW = 1;
-export const RATING_EASY = 2;
+export const RATING_EASY = 3;
 
 // Order is the button order, lowest first.
 export const RATINGS = [

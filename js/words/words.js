@@ -1,4 +1,4 @@
-// [MODULE] words | Pure word rules: input cleanup and validation, pitch-accent notation in the reading (P23), morae, pasted-block split (P20), kanji extraction, duplicate key, reveal plan per mode, search
+// [MODULE] words | Pure word rules: input cleanup and validation, pitch-accent notation in the reading (P23), morae, pasted-block split (P20), kanji extraction, duplicate key, reveal plan per mode (notes and example folded, P24), search
 // [IFACE] layer: domain | in: word drafts, pasted blocks, query strings, a library-membership test -> out: clean words with their accent, accent splits, filled fields, errors, kanji lists, card plans | crosses: []
 // [GRAPH] needs: [romaji] | feeds: [words-ui, sentences-ui, kanji-card, kanji-ui, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
@@ -181,27 +181,32 @@ export function headline(word) {
  * each press of the main button reveals. Fields that are empty are dropped,
  * so a word without notes simply reveals less.
  *
- *   Japanese → meaning   writing | reading | meaning, notes, example
- *                        (no writing: reading | meaning, notes, example)
- *   Meaning → Japanese   meaning | reading | writing, notes, example
- *                        (no writing: meaning | reading, notes, example)
+ *   Japanese → meaning   writing | reading | meaning [notes, example]
+ *                        (no writing: reading | meaning [notes, example])
+ *   Meaning → Japanese   meaning | reading | writing [notes, example]
+ *                        (no writing: meaning | reading [notes, example])
+ *
+ * [ ] marks the fold.
  *
  * Notes and example always come last: they contain the word, so earlier they
- * would give the answer away in the second mode.
+ * would give the answer away in the second mode. They come folded (P24): the
+ * last step's `fold` names them and the toggle's label, and the card shows
+ * them only when the learner opens it.
  */
 export function cardPlan(word, track) {
   const has = (f) => Boolean(clean(word[f]));
   const extras = ['notes', 'example'].filter(has);
+  const last = (button, keys) => (extras.length
+    ? { button, keys, fold: { label: extras.length > 1 ? 'Notes & example' : FIELD_LABELS[extras[0]], keys: extras } }
+    : { button, keys });
   if (track === TRACK_RECALL) {
     return has('writing')
-      ? { prompt: 'meaning', steps: [{ button: 'Show reading', keys: ['reading'] },
-        { button: 'Show kanji', keys: ['writing'].concat(extras) }] }
-      : { prompt: 'meaning', steps: [{ button: 'Show reading', keys: ['reading'].concat(extras) }] };
+      ? { prompt: 'meaning', steps: [{ button: 'Show reading', keys: ['reading'] }, last('Show kanji', ['writing'])] }
+      : { prompt: 'meaning', steps: [last('Show reading', ['reading'])] };
   }
   return has('writing')
-    ? { prompt: 'writing', steps: [{ button: 'Show reading', keys: ['reading'] },
-      { button: 'Show meaning', keys: ['meaning'].concat(extras) }] }
-    : { prompt: 'reading', steps: [{ button: 'Show meaning', keys: ['meaning'].concat(extras) }] };
+    ? { prompt: 'writing', steps: [{ button: 'Show reading', keys: ['reading'] }, last('Show meaning', ['meaning'])] }
+    : { prompt: 'reading', steps: [last('Show meaning', ['meaning'])] };
 }
 
 /** Search across every field; a rōmaji or katakana query also matches the reading it spells. */

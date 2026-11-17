@@ -188,13 +188,14 @@ check('labels follow D56 thresholds',
   R.stateOf(-1) === 'unseen' && R.stateOf(0) === 'unknown' && R.stateOf(1) === 'learning' &&
   R.stateOf(4) === 'learning' && R.stateOf(5) === 'learned' && R.stateOf(14) === 'learned' &&
   R.stateOf(15) === 'confident');
-check('first answer starts from 3: Easy! -> 5 (learned in one sighting)', R.applyRating(-1, R.RATING_EASY) === 5);
+check('first answer starts from 3: Easy! -> 6 (learned in one sighting)', R.applyRating(-1, R.RATING_EASY) === 6);
+check('Easy! adds 3 to a card in progress', R.applyRating(10, R.RATING_EASY) === 13);
 check('first answer: Knew it -> 4, Guessed -> 2, Didn\'t know -> 0',
   R.applyRating(-1, R.RATING_KNEW) === 4 && R.applyRating(-1, R.RATING_GUESSED) === 2 && R.applyRating(-1, R.RATING_MISSED) === 0);
 check('a miss on a learned card drops it to 4', R.applyRating(10, R.RATING_MISSED) === 4 && R.applyRating(20, R.RATING_MISSED) === 4);
 check('a guess on a learned card only erodes by one', R.applyRating(10, R.RATING_GUESSED) === 9);
 check('a miss below learned subtracts 3, floor 0', R.applyRating(4, R.RATING_MISSED) === 1 && R.applyRating(0, R.RATING_MISSED) === 0);
-check('score caps at 30', R.applyRating(29, R.RATING_EASY) === 30);
+check('score caps at 30', R.applyRating(29, R.RATING_EASY) === 30 && R.applyRating(28, R.RATING_EASY) === 30);
 check('mark as known lifts to 5 but never lowers', R.knownScore(-1) === 5 && R.knownScore(2) === 5 && R.knownScore(20) === 20);
 check('known means every direction at least learned', R.isKnown([5, 15]) && !R.isKnown([5, 4]) && !R.isKnown([-1, 20]) && !R.isKnown([]));
 check('progress group: new only if never answered, learned/confident only if every direction is',
@@ -205,7 +206,7 @@ const grouped = R.groupByProgress(['a', 'b', 'c', 'd'], (id) => ({ a: [5, 5], b:
 check('groupByProgress: least known first, empty groups left out, order kept inside a group',
   grouped.map((g) => g.id + ':' + g.items.join('')).join() === 'unseen:b,learning:d,learned:ac',
   grouped.map((g) => g.id + ':' + g.items.join('')).join());
-check('ratings are four, lowest first', R.RATINGS.map((r) => r.value).join() === '-3,-1,1,2');
+check('ratings are four, lowest first', R.RATINGS.map((r) => r.value).join() === '-3,-1,1,3');
 
 const items = (n, offset = 0) => Array.from({ length: n }, (_, i) => ({ id: 'w' + (i + offset), addedAt: i + offset }));
 const now = 100 * 86400000;
@@ -263,15 +264,19 @@ check('extractKanji skips kanji outside the library', W.extractKanji('𠀋学', 
 check('extractKanji of a kana word is empty', W.extractKanji('テレビ', isLib).length === 0);
 const full = { writing: '勉強', reading: 'べんきょう', meaning: 'study', example: '毎日勉強します。', notes: '' };
 const bare = { writing: '', reading: 'テレビ', meaning: 'TV', example: '', notes: 'loanword' };
-const steps = (plan) => plan.prompt + ' | ' + plan.steps.map((s) => s.keys.join(',')).join(' | ');
-check('Japanese → meaning with kanji', steps(W.cardPlan(full, W.TRACK_READ)) === 'writing | reading | meaning,example', steps(W.cardPlan(full, W.TRACK_READ)));
-check('Japanese → meaning without kanji', steps(W.cardPlan(bare, W.TRACK_READ)) === 'reading | meaning,notes', steps(W.cardPlan(bare, W.TRACK_READ)));
-check('Meaning → Japanese with kanji', steps(W.cardPlan(full, W.TRACK_RECALL)) === 'meaning | reading | writing,example', steps(W.cardPlan(full, W.TRACK_RECALL)));
-check('Meaning → Japanese without kanji', steps(W.cardPlan(bare, W.TRACK_RECALL)) === 'meaning | reading,notes', steps(W.cardPlan(bare, W.TRACK_RECALL)));
+// A step's fold shows as "[label: keys]" after its keys
+const steps = (plan) => plan.prompt + ' | ' + plan.steps
+  .map((s) => s.keys.join(',') + (s.fold ? ' [' + s.fold.label + ': ' + s.fold.keys.join(',') + ']' : '')).join(' | ');
+check('Japanese → meaning with kanji', steps(W.cardPlan(full, W.TRACK_READ)) === 'writing | reading | meaning [Example: example]', steps(W.cardPlan(full, W.TRACK_READ)));
+check('Japanese → meaning without kanji', steps(W.cardPlan(bare, W.TRACK_READ)) === 'reading | meaning [Notes: notes]', steps(W.cardPlan(bare, W.TRACK_READ)));
+check('Meaning → Japanese with kanji', steps(W.cardPlan(full, W.TRACK_RECALL)) === 'meaning | reading | writing [Example: example]', steps(W.cardPlan(full, W.TRACK_RECALL)));
+check('Meaning → Japanese without kanji', steps(W.cardPlan(bare, W.TRACK_RECALL)) === 'meaning | reading [Notes: notes]', steps(W.cardPlan(bare, W.TRACK_RECALL)));
 const both = { ...full, notes: 'A noun.' };
-check('notes come before the example, both in the last step',
-  steps(W.cardPlan(both, W.TRACK_READ)) === 'writing | reading | meaning,notes,example' &&
-    steps(W.cardPlan(both, W.TRACK_RECALL)) === 'meaning | reading | writing,notes,example', steps(W.cardPlan(both, W.TRACK_READ)));
+check('notes come before the example, folded together in the last step (P24)',
+  steps(W.cardPlan(both, W.TRACK_READ)) === 'writing | reading | meaning [Notes & example: notes,example]' &&
+    steps(W.cardPlan(both, W.TRACK_RECALL)) === 'meaning | reading | writing [Notes & example: notes,example]', steps(W.cardPlan(both, W.TRACK_READ)));
+check('a word without notes or example has no fold',
+  W.cardPlan({ ...full, example: '' }, W.TRACK_READ).steps.every((s) => !s.fold));
 check('search by meaning, rōmaji and katakana',
   W.matchesQuery(full, 'stud') && W.matchesQuery(full, 'benkyou') && W.matchesQuery(bare, 'terebi') && W.matchesQuery(bare, 'てれび'));
 check('search misses what is not there', !W.matchesQuery(full, 'xyz') && !W.matchesQuery(bare, 'gakkou'));
