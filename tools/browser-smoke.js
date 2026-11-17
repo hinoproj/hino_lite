@@ -1,4 +1,4 @@
-// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji and both kanji reviews, backup, sentences, pasted blocks and back navigation
+// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji and both kanji reviews, backup, sentences, pasted blocks, pitch accent in readings and back navigation
 // [IFACE] layer: tooling | in: nothing -> out: report in #out and POSTed to /__report, ending SMOKE PASSED/FAILED | crosses: [browser DOM, localStorage, Cache Storage API, local HTTP server]
 // [GRAPH] needs: [index] | feeds: [browser-smoke-page] | group: tooling
 // [STATE] stateful | persists: clears hino_lite_v2 and the library cache before running | raises: nothing
@@ -750,6 +750,48 @@ async function pastedBlocks() {
   await waitFor(() => visible('screen-words'));
   log('the pasted word saves', st.listWords().some((x) => x.writing === '' && x.reading === 'ゆっくり' &&
     x.notes === 'An adverb.\nSaid of pace.' && x.example === 'ゆっくり歩く。 - Walk slowly.'));
+
+  // Pitch accent in the reading (P23)
+  $('#btn-add-word').click();
+  await waitFor(() => visible('screen-word-form'));
+  $('#word-writing').focus();
+  type($('#word-writing'), '今日\n[きょ]う\ntoday\n[noun] Irregular reading.\n今日は暑い。 - It is hot today.');
+  log('a pasted accent stays in the reading, and the preview shows its mora in bold',
+    $('#word-reading').value === '[きょ]う' && $('#accent-preview .accent-mora') !== null &&
+      $('#accent-preview .accent-mora').textContent === 'きょ', $('#accent-preview').textContent);
+  $('#btn-save-word').click();
+  await waitFor(() => visible('screen-words'));
+  const today = st.listWords().find((x) => x.writing === '今日');
+  log('the word saves its reading as kana and the accent beside it', today && today.reading === 'きょう' && today.accent === 1,
+    today && JSON.stringify([today.reading, today.accent]));
+  const row = $('.word-row[data-id="' + today.id + '"]');
+  const bold = row && row.querySelector('.word-reading .accent-mora');
+  log('the list shows the accented mora in bold', Boolean(bold) && bold.textContent === 'きょ' &&
+    Number(w.getComputedStyle(bold).fontWeight) >= 700 && row.querySelector('.word-reading').textContent === 'きょう');
+  row.click();
+  await waitFor(() => $('#word-view'));
+  log('the sheet shows it too', $('#word-view .hero-reading .accent-mora') !== null &&
+    $('#word-view .hero-reading .accent-mora').textContent === 'きょ');
+  $('#btn-edit-word').click();
+  await waitFor(() => visible('screen-word-form'));
+  log('edit shows the accent as notation', $('#word-reading').value === '[きょ]う');
+  type($('#word-reading'), 'kyou [flat]');
+  log('rōmaji suggestions keep the [flat] mark', $$('#reading-suggestions .suggestion').length === 2 &&
+    /flat/.test($('#accent-preview').textContent));
+  $$('#reading-suggestions .suggestion')[0].click();
+  log('a picked suggestion keeps the mark', $('#word-reading').value === 'きょう [flat]', $('#word-reading').value);
+  type($('#word-reading'), '[きょ]う [flat]');
+  $('#btn-save-word').click();
+  await sleep(50);
+  log('a bracket left over is refused and stays in the field', visible('screen-word-form') &&
+    /\[ \]/.test($('#word-reading-error').textContent) && $('#word-reading').value === '[きょ]う [flat]');
+  type($('#word-reading'), 'とけい');
+  $('#btn-save-word').click();
+  await waitFor(() => visible('screen-words'));
+  const plain = st.getWord(today.id);
+  log('a reading without brackets saves the accent as not known; nothing in bold',
+    plain.reading === 'とけい' && plain.accent === null &&
+      !$('.word-row[data-id="' + today.id + '"] .accent-mora'), JSON.stringify([plain.reading, plain.accent]));
 
   await tab('sentences');
   $('#btn-add-sentence').click();

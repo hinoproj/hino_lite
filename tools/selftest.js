@@ -294,6 +294,45 @@ check('pasted word: a kana word starts with its reading',
   pasted('ゆっくり\n• slowly\nAn adverb.\nゆっくり歩く。 - Walk slowly.'));
 check('pasted word: blank lines and CRLF are skipped; one line is not a block',
   W.parsePaste('\r\n少し\r\n\r\n  すこし  \r\n').reading === 'すこし' && W.parsePaste('少し\n') === null && W.parsePaste('') === null);
+check('pasted word: the reading line keeps its accent notation for the form',
+  W.parsePaste('時計\nとけい [flat]\nclock; watch\n[noun] One word for both.\n時計を見る。 - Look at the clock.').reading === 'とけい [flat]');
+
+// Pitch accent in the reading (P23)
+const accentOf = (text) => JSON.stringify(W.splitAccent(text));
+check('morae: small kana join the kana before them; っ, ん and ー stand alone',
+  W.morae('きょう').join('/') === 'きょ/う' && W.morae('いっしょ').join('/') === 'い/っ/しょ' &&
+    W.morae('コーヒー').join('/') === 'コ/ー/ヒ/ー' && W.morae('ファン').join('/') === 'ファ/ン', W.morae('いっしょ').join('/'));
+check('accent: a bracket marks the mora, counted from 1',
+  accentOf('[きょ]う') === JSON.stringify({ reading: 'きょう', accent: 1 }) &&
+    accentOf('たま[ご]') === JSON.stringify({ reading: 'たまご', accent: 3 }) &&
+    accentOf('いっ[しょ]') === JSON.stringify({ reading: 'いっしょ', accent: 3 }), accentOf('いっ[しょ]'));
+check('accent: [flat] is 0, no bracket is not known (null)',
+  accentOf('とけい [flat]') === JSON.stringify({ reading: 'とけい', accent: 0 }) &&
+    accentOf('とけい［FLAT］') === JSON.stringify({ reading: 'とけい', accent: 0 }) &&
+    accentOf('ひとつ') === JSON.stringify({ reading: 'ひとつ', accent: null }), accentOf('とけい［FLAT］'));
+check('accent: a bracket around several morae marks the last; half a mora marks its mora',
+  W.splitAccent('べ[んと]う').accent === 3 && W.splitAccent('き[ょ]う').accent === 1);
+check('accent: rōmaji converts around the brackets and before [flat]',
+  accentOf('[kyo]u') === JSON.stringify({ reading: 'きょう', accent: 1 }) &&
+    accentOf('tokei [flat]') === JSON.stringify({ reading: 'とけい', accent: 0 }), accentOf('[kyo]u'));
+check('accent: a draft saves the reading without the notation and the accent beside it',
+  JSON.stringify((({ reading, accent }) => ({ reading, accent }))(W.normalizeDraft({ reading: ' [きょ]う ' }))) ===
+    JSON.stringify({ reading: 'きょう', accent: 1 }) && W.normalizeDraft({ reading: 'きょう' }).accent === null);
+check('accent: a bracket left over is refused',
+  ['[きょ][う]', '[きょう', 'きょ]う', '[きょ]う [flat]', '[]きょう'].every((r) =>
+    Boolean(W.validate(W.normalizeDraft({ reading: r, meaning: 'x' })).reading)) &&
+    !Object.keys(W.validate(W.normalizeDraft({ reading: '[きょ]う', meaning: 'today' }))).length);
+check('accent: the split around the marked mora; nothing for flat, not known or out of range',
+  JSON.stringify(W.accentSplit('きょう', 1)) === JSON.stringify({ before: '', mora: 'きょ', after: 'う' }) &&
+    JSON.stringify(W.accentSplit('いっしょ', 3)) === JSON.stringify({ before: 'いっ', mora: 'しょ', after: '' }) &&
+    W.accentSplit('とけい', 0) === null && W.accentSplit('とけい', null) === null && W.accentSplit('とけい', 4) === null);
+check('accent: the form shows the notation back, and it reads the same again',
+  W.formatAccent('きょう', 1) === '[きょ]う' && W.formatAccent('とけい', 0) === 'とけい [flat]' &&
+    W.formatAccent('ひとつ', null) === 'ひとつ' && W.formatAccent('ひとつ', undefined) === 'ひとつ' &&
+    [['いっしょ', 3], ['とけい', 0], ['たまご', 2]].every(([r, a]) => W.splitAccent(W.formatAccent(r, a)).accent === a));
+check('accent: rōmaji suggestions see the reading without its [flat] mark',
+  JSON.stringify(W.splitFlatMark('tokei [flat]')) === JSON.stringify({ body: 'tokei', flat: true }) &&
+    W.splitFlatMark('tokei').flat === false);
 
 // --- Sentences --------------------------------------------------------------
 
@@ -404,7 +443,8 @@ section('Storage normalize');
 const restored = normalize({
   app: 'hino_lite', version: 2,
   settings: { theme: 'neon', runSize: 12 },
-  words: { a: { id: 'a', reading: 'あ', meaning: 'a', writing: 3 }, b: { reading: 'no id' } },
+  words: { a: { id: 'a', reading: 'あ', meaning: 'a', writing: 3 }, b: { reading: 'no id' },
+    c: { id: 'c', reading: 'きょう', meaning: 'today', accent: 1 }, d: { id: 'd', reading: 'x', meaning: 'x', accent: '2' } },
   kanji: { 学: { addedAt: 5, removed: 'yes' } },
   reviews: { 'words.read': { a: { score: 4, seen: 2 }, z: { score: -1 } } },
   kana: { mcq_k2r: { か: { score: -3 } } },
@@ -412,7 +452,9 @@ const restored = normalize({
 });
 check('unknown theme and run size fall back', restored.settings.theme === 'dark' && restored.settings.runSize === 15);
 check('words without an id are dropped; bad fields become empty',
-  Object.keys(restored.words).join() === 'a' && restored.words.a.writing === '');
+  Object.keys(restored.words).join() === 'a,c,d' && restored.words.a.writing === '');
+check('a word\'s accent is a whole number from 0 or null; words saved before it load as not known (P23)',
+  restored.words.c.accent === 1 && restored.words.d.accent === null && restored.words.a.accent === null);
 check('removed is strictly boolean', restored.kanji['学'].removed === false);
 check('never-answered review entries are absent (D56)', !restored.reviews['words.read'].z && restored.reviews['words.read'].a.score === 4);
 check('kana scores floor at 0', restored.kana.mcq_k2r['か'].score === 0);

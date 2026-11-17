@@ -1,4 +1,4 @@
-/* [MODULE] app-css | Visual layer: dark/light/kids themes, shell (tabs, sheet, banner, toast), shared controls (incl. the list toolbar and titled list sections), kana screens
+/* [MODULE] app-css | Visual layer: dark/light/kids themes, shell (tabs, sheet, banner, toast), shared controls (incl. the list toolbar and titled list sections), the accented mora in bold, kana screens
    [IFACE] layer: presentation | in: class names and data-* attributes set by the UI modules -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -103,6 +103,9 @@ body {
   font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Noto Sans CJK JP",
     "Yu Gothic UI", "Yu Gothic", Meiryo, system-ui, sans-serif;
 }
+
+/* The accented mora of a word's reading (P23: words.accentSplit, dom.jaMarked). Japanese faces carry a real bold. */
+.accent-mora { font-weight: 800; }
 
 .muted { color: var(--muted); }
 .sub { color: var(--muted); font-size: 14px; font-weight: 400; }

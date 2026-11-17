@@ -1,5 +1,24 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-17] Words: pitch accent in the reading, shown in bold (P23)
+
+The gem now writes the reading line with its accent: `[きょ]う` marks the accented mora,
+`とけい [flat]` says there is none, a plain reading means not known (or not applicable, as for
+counters). Owner's calls: the marked mora is highlighted, flat shows nothing, one accent per word,
+shown in every reading, bold first, Sentences untouched. Stored as `accent` beside the plain kana
+reading (mora position from 1, 0 flat, null not known; additive under v2, `normalize` defaults it),
+so search, duplicate keys and kanji enrollment did not change. Rules in `words.js`: `morae`,
+`splitAccent` (via `normalizeDraft`; `[flat]` is read before rōmaji conversion, which would turn
+"flat" into kana; a bracket around several morae marks the last), `formatAccent`, `accentSplit`,
+`splitFlatMark`; `validate` refuses a leftover bracket. `dom.jaMarked` renders the bold mora
+(`.accent-mora`, weight 800); used by the word list, sheet, review part and prompt, run summary
+and the kanji review's word rows (`kanji-ui` now imports `words`). The form's Reading field takes
+the notation, shows a saved accent that way, previews the bold mora (`#accent-preview`), and
+rōmaji suggestions keep a `[flat]` mark. `sw.js` → `hino-lite-app-v16`. `scene.html` words carry
+accents and the form scene types `tabe[mo]no`. Selftest +12, smoke +9: `ALL CHECKS PASSED` (180 + 147).
+Finding: the bold is clear on the review card (30 px) and the sheet hero, but faint in the 14 px
+muted reading under a list row; the owner judges on the device.
+
 ## [2026-11-16] Words: notes before example (P22)
 
 Owner's call: notes come before the example everywhere, and the example is last. The gem will

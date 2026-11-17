@@ -20,8 +20,9 @@ on their own. It shares nothing with the platform at run time; findings move to 
 - **Kana**: six decks (hiragana/katakana × basic 46 / dakuten 25 / yōon 36); Read and Recall
   (timed multiple choice), Type (hiragana only); per-kana-per-mode scores; mistake replay.
 - **Words**: the learner types a word — kanji writing (optional), reading (kana; rōmaji is offered
-  as hiragana/katakana suggestions), meaning, notes, example (any text) — or pastes it one field
-  per line, as the owner's AI chat gem writes it (P20). One flat list. Two
+  as hiragana/katakana suggestions; optionally its pitch accent, shown as the accented mora in
+  bold — P23), meaning, notes, example (any text) — or pastes it one field per line, as the
+  owner's AI chat gem writes it (P20, P22). One flat list. Two
   reviews with separate scores: Japanese → meaning and Meaning → Japanese, revealed step by step.
 - **Kanji**: library of all 2,099 kanji grouped by JLPT level, downloaded once; library kanji in a
   word's writing join the kanji list; add any kanji, remove one (progress kept), mark as known.

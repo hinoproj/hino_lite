@@ -1,4 +1,4 @@
-// [MODULE] dom | Tiny DOM helpers: element builder, Japanese-text spans, toast, segmented control, labelled parts, list toolbar groups, titled list sections, one-line field that takes a pasted block, confirm seam
+// [MODULE] dom | Tiny DOM helpers: element builder, Japanese-text spans (one part in bold for an accented mora), toast, segmented control, labelled parts, list toolbar groups, titled list sections, one-line field that takes a pasted block, confirm seam
 // [IFACE] layer: presentation | in: tag names, props, children -> out: DOM nodes | crosses: [browser DOM]
 // [GRAPH] needs: [] | feeds: [shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui] | group: presentation
 // [STATE] stateless | persists: nothing | raises: nothing
@@ -42,6 +42,15 @@ function append(el, children) {
 /** A span (or other tag) of Japanese text. */
 export function ja(text, className, tag = 'span') {
   return h(tag, { lang: 'ja', class: className, text });
+}
+
+/**
+ * Japanese text with one part in bold: `marked` is {before, mora, after} (a
+ * reading around its accented mora, from words.accentSplit), or null for plain text.
+ */
+export function jaMarked(text, marked, className, tag = 'span') {
+  if (!marked) return ja(text, className, tag);
+  return h(tag, { lang: 'ja', class: className }, marked.before, h('b', { class: 'accent-mora' }, marked.mora), marked.after);
 }
 
 export function button(label, onClick, className, extra) {

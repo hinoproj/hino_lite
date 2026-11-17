@@ -1,6 +1,6 @@
-// [MODULE] words | Pure word rules: input cleanup and validation, pasted-block split (P20), kanji extraction, duplicate key, reveal plan per mode, search
-// [IFACE] layer: domain | in: word drafts, pasted blocks, query strings, a library-membership test -> out: clean words, filled fields, errors, kanji lists, card plans | crosses: []
-// [GRAPH] needs: [romaji] | feeds: [words-ui, sentences-ui, kanji-card, selftest] | group: domain
+// [MODULE] words | Pure word rules: input cleanup and validation, pitch-accent notation in the reading (P23), morae, pasted-block split (P20), kanji extraction, duplicate key, reveal plan per mode, search
+// [IFACE] layer: domain | in: word drafts, pasted blocks, query strings, a library-membership test -> out: clean words with their accent, accent splits, filled fields, errors, kanji lists, card plans | crosses: []
+// [GRAPH] needs: [romaji] | feeds: [words-ui, sentences-ui, kanji-card, kanji-ui, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
 
 import { toHiragana, katakanaToHiragana, hasLatin, isKana } from '../core/romaji.js';
@@ -23,8 +23,82 @@ export const FIELD_LABELS = {
 const ITERATION_MARK = '々';
 const HAN_RE = /\p{Script=Han}/u;
 
+// Small kana that share a mora with the kana before them (きょ, ファ). っ, ん and ー are morae of their own.
+const SMALL_KANA = 'ぁぃぅぇぉゃゅょゎァィゥェォャュョヮ';
+// "とけい [flat]": the word has no accented mora. Matched before rōmaji conversion turns "flat" into kana.
+const FLAT_RE = /\s*[[［]\s*flat\s*[\]］]\s*$/i;
+// "[きょ]う": the bracket marks the accented mora; one pair, kana inside.
+const MARK_RE = /^([^[\]［］]*)[[［]([^[\]［］]+)[\]］]([^[\]［］]*)$/;
+const BRACKET_RE = /[[\]［］]/;
+export const FLAT_MARK = '[flat]';
+
 function clean(value) {
   return String(value == null ? '' : value).trim();
+}
+
+/** The morae of a kana string: きょう -> きょ, う; いっしょ -> い, っ, しょ. */
+export function morae(kana) {
+  const out = [];
+  Array.from(String(kana || '')).forEach((ch) => {
+    if (SMALL_KANA.includes(ch) && out.length) out[out.length - 1] += ch;
+    else out.push(ch);
+  });
+  return out;
+}
+
+/**
+ * The reading field's pitch-accent notation (P23), as the AI chat gem writes it:
+ *
+ *   とけい [flat]   no accented mora           -> accent 0
+ *   [きょ]う        the bracket marks a mora   -> accent 1 (its position, from 1)
+ *   とけい          not known (or no accent)   -> accent null
+ *
+ * A bracket around more than one mora marks the last of them. Rōmaji is
+ * converted as in any reading ("[kyo]u"). A reading with a bracket left over
+ * (two pairs, one unclosed, [flat] after a mark) keeps it, so `validate` refuses it.
+ */
+export function splitAccent(text) {
+  const raw = clean(text);
+  const flat = FLAT_RE.test(raw);
+  const body = toHiragana(raw.replace(FLAT_RE, '')).replace(/\s+/g, ' ').trim();
+  if (flat) return { reading: body, accent: 0 };
+  const m = MARK_RE.exec(body);
+  if (!m || !m[2].trim()) return { reading: body, accent: null };
+  const reading = (m[1] + m[2].trim() + m[3]).trim();
+  const end = Array.from((m[1] + m[2].trim()).trimStart()).length;
+  const units = morae(reading);
+  let seen = 0;
+  for (let i = 0; i < units.length; i++) {
+    seen += Array.from(units[i]).length;
+    if (seen >= end) return { reading, accent: i + 1 };
+  }
+  return { reading, accent: null };
+}
+
+/** Back to the notation, for the form: what `splitAccent` reads gives the same accent again. */
+export function formatAccent(reading, accent) {
+  const text = clean(reading);
+  if (accent === 0 && text) return text + ' ' + FLAT_MARK;
+  const split = accentSplit(text, accent);
+  return split ? split.before + '[' + split.mora + ']' + split.after : text;
+}
+
+/**
+ * The reading around its accented mora, for showing it highlighted:
+ * {before, mora, after}; null when there is nothing to highlight (flat, not
+ * known, or a position the reading does not have).
+ */
+export function accentSplit(reading, accent) {
+  if (!Number.isInteger(accent) || accent < 1) return null;
+  const units = morae(clean(reading));
+  if (accent > units.length) return null;
+  return { before: units.slice(0, accent - 1).join(''), mora: units[accent - 1], after: units.slice(accent).join('') };
+}
+
+/** The text of a reading without its [flat] mark, and whether it had one (rōmaji suggestions work on the rest). */
+export function splitFlatMark(text) {
+  const value = String(text == null ? '' : text);
+  return FLAT_RE.test(value) ? { body: value.replace(FLAT_RE, ''), flat: true } : { body: value, flat: false };
 }
 
 /**
@@ -48,13 +122,16 @@ export function parsePaste(text) {
 }
 
 /**
- * Tidy a draft before saving: trims every field and turns any rōmaji left in
- * the reading into hiragana (the learner may not have tapped a suggestion).
+ * Tidy a draft before saving: trims every field, turns any rōmaji left in the
+ * reading into hiragana (the learner may not have tapped a suggestion) and
+ * takes the accent notation out of the reading into `accent`.
  */
 export function normalizeDraft(draft) {
   const out = {};
   FIELDS.forEach((f) => { out[f] = clean(draft[f]); });
-  out.reading = toHiragana(out.reading).replace(/\s+/g, ' ');
+  const { reading, accent } = splitAccent(out.reading);
+  out.reading = reading;
+  out.accent = accent;
   return out;
 }
 
@@ -62,6 +139,7 @@ export function normalizeDraft(draft) {
 export function validate(word) {
   const errors = {};
   if (!word.reading) errors.reading = 'Type how the word reads.';
+  else if (BRACKET_RE.test(word.reading)) errors.reading = 'Put [ ] around one part of the reading, or end it with ' + FLAT_MARK + '.';
   else if (hasLatin(word.reading) || !isKana(word.reading)) errors.reading = 'Use kana only — tap a suggestion.';
   if (!word.meaning) errors.meaning = 'Write what the word means.';
   return errors;

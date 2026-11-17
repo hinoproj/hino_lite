@@ -1,15 +1,16 @@
-// [MODULE] kanji-ui | Kanji tab: one-time library download, review panel, labelled library toolbar (Show / JLPT level / Search) in one row, level sections of tiles, kanji review adapter (glyph beside its stroke order; readings, components, the learner's words and sentences as plain rows)
+// [MODULE] kanji-ui | Kanji tab: one-time library download, review panel, labelled library toolbar (Show / JLPT level / Search) in one row, level sections of tiles, kanji review adapter (glyph beside its stroke order; readings, components, the learner's words, readings with their accented mora, and sentences as plain rows)
 // [IFACE] layer: presentation | in: DOM events, library readiness -> out: rendered kanji screen, started kanji reviews | crosses: [browser DOM]
-// [GRAPH] needs: [kanji, library, review, review-ui, storage, shell, dom, kanji-card] | feeds: [main] | group: presentation
+// [GRAPH] needs: [kanji, words, library, review, review-ui, storage, shell, dom, kanji-card] | feeds: [main] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
 
 import * as K from './kanji.js';
+import * as W from '../words/words.js';
 import * as library from './library.js';
 import * as R from '../review/review.js';
 import { startReview, trackPanel, stateDots } from '../review/review-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, ja, button, segmented, toast, filterGroup, listGroup, part } from '../core/dom.js';
+import { $, h, ja, jaMarked, button, segmented, toast, filterGroup, listGroup, part } from '../core/dom.js';
 import { openKanjiCard, readingsNode, partsList, markKanji } from './kanji-card.js';
 
 const REVIEW_WORDS = 4;       // the learner's words and sentences on a review card: it must fit a phone
@@ -225,7 +226,7 @@ function renderKanjiPart(item, key, asPrompt, strokesWithGlyph) {
     const words = K.wordsUsing(ch, store.listWords()).slice(0, REVIEW_WORDS);
     return words.length ? part('Your words', h('div', { class: 'use-rows' }, words.map((w) =>
       h('div', { class: 'use-row', dataset: { wordId: w.id } },
-        h('div', { class: 'use-ja', lang: 'ja' }, markKanji(w.writing, ch), w.reading ? ja(w.reading, 'use-reading') : null),
+        h('div', { class: 'use-ja', lang: 'ja' }, markKanji(w.writing, ch), w.reading ? jaMarked(w.reading, W.accentSplit(w.reading, w.accent), 'use-reading') : null),
         w.meaning ? h('div', { class: 'use-meaning clamp' }, w.meaning) : null)))) : null;
   }
   if (key === 'sentences') {

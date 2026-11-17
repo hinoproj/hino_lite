@@ -23,7 +23,14 @@ An adverb or noun indicating a small quantity or degree.
 The first line is the kanji writing only when it has a kanji (a kana word starts with its reading),
 then the reading and the meaning; the last line becomes the example (the sentence and its
 translation on one line), and any line between the meaning and the last becomes the notes.
-**Undo** puts the form back as it was before the paste. Two reviews, each with its own progress:
+**Undo** puts the form back as it was before the paste.
+
+The reading may carry its pitch accent: `[きょ]う` marks the accented mora, `とけい [flat]` says there
+is none, and a reading without brackets means the accent is not known. The accented mora shows in
+**bold** wherever the word's reading appears; flat and unknown readings show no bold. Type the same
+notation in the Reading field (rōmaji works: `[kyo]u`); a word being edited shows its accent that way.
+
+Two reviews, each with its own progress:
 
 | Review | Shows | Main button reveals |
 | --- | --- | --- |

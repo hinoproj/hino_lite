@@ -27,14 +27,14 @@ const params = new URLSearchParams(location.search);
 const scene = params.get('scene') || 'words';
 const day = 86400000;
 const now = Date.now();
-const word = (id, writing, reading, meaning, example, notes, age) =>
-  ({ id, writing, reading, meaning, example, notes, createdAt: now - age * day, updatedAt: now - age * day });
+const word = (id, writing, reading, meaning, example, notes, age, accent = null) =>
+  ({ id, writing, reading, accent, meaning, example, notes, createdAt: now - age * day, updatedAt: now - age * day });
 const words = [
-  word('w1', '勉強', 'べんきょう', 'study', '毎日日本語を勉強します。 - I study Japanese every day.', 'A noun; with する it is a verb.\n勉 = exertion, 強 = strong.', 9),
-  word('w2', '', 'テレビ', 'TV, television', '', 'loanword', 7),
+  word('w1', '勉強', 'べんきょう', 'study', '毎日日本語を勉強します。 - I study Japanese every day.', 'A noun; with する it is a verb.\n勉 = exertion, 強 = strong.', 9, 0),
+  word('w2', '', 'テレビ', 'TV, television', '', 'loanword', 7, 1),
   word('w3', '学校', 'がっこう', 'school', '学校に行きます。', '', 5),
-  word('w4', '先生', 'せんせい', 'teacher', '', 'also used for doctors', 3),
-  word('w5', '食べる', 'たべる', 'to eat', 'りんごを食べる。', '', 1)
+  word('w4', '先生', 'せんせい', 'teacher', '', 'also used for doctors', 3, 3),
+  word('w5', '食べる', 'たべる', 'to eat', 'りんごを食べる。', '', 1, 2)
 ];
 const kanji = {};
 ['勉', '強', '学', '校', '先', '生', '食'].forEach((ch, i) => { kanji[ch] = { addedAt: now - (9 - i) * day, removed: false }; });
@@ -87,7 +87,7 @@ if (scene === 'word-form') {
   await sleep(100);
   const set = (id, v) => { const el = d.getElementById(id); el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
   set('word-writing', '食べ物');
-  set('word-reading', 'tabemono');
+  set('word-reading', 'tabe[mo]no');
 } else if (scene === 'sentence-form' || scene === 'sentence-words') {
   const set = (el, v) => { el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
   d.getElementById('btn-add-sentence').click();

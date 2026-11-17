@@ -10,7 +10,7 @@
  *   { app: 'hino_lite', version: 2, updatedAt, unsavedSince,
  *     settings: { runSize, theme, lastBackupAt },
  *     kana:    { <kana mode>: { <kana>: {score, seen, right, lastSeen, misses} } },
- *     words:   { <id>: {id, writing, reading, meaning, example, notes, createdAt, updatedAt} },
+ *     words:   { <id>: {id, writing, reading, accent, meaning, example, notes, createdAt, updatedAt} },
  *     sentences: { <id>: {id, sentence, reading, translation, notes, createdAt, updatedAt} },
  *     kanji:   { <kanji>: {addedAt, removed} },
  *     reviews: { <track>: { <word id | sentence id | kanji>: {score, seen, lastSeen} } } }
@@ -21,7 +21,8 @@
  * keeps its review entries, so adding it back restores its progress.
  *
  * `sentences` was added under v2 (normalize() defaults it to {}), so earlier
- * v2 data and backups load unchanged.
+ * v2 data and backups load unchanged. So was a word's `accent` (P23: the
+ * accented mora's position from 1, 0 flat, null not known; defaults to null).
  *
  * Older copies of the app must not destroy what a newer one saved:
  *   - normalize() keeps keys it does not know (top level, settings, each word
@@ -51,6 +52,7 @@ export const BACKUP_NUDGE_MS = 7 * 24 * 60 * 60 * 1000;
 const WORD_FIELDS = ['writing', 'reading', 'meaning', 'example', 'notes'];
 const SENTENCE_FIELDS = ['sentence', 'reading', 'translation', 'notes'];
 const RECORD_KEYS = ['id', 'createdAt', 'updatedAt'];
+const WORD_KEYS = RECORD_KEYS.concat(WORD_FIELDS, ['accent']);
 const EMPTY_KANA = Object.freeze({ score: 0, seen: 0, right: 0, lastSeen: 0, misses: Object.freeze([]) });
 const UNSEEN_REVIEW = Object.freeze({ score: -1, seen: 0, lastSeen: 0 });
 
@@ -77,6 +79,11 @@ const str = (v) => (typeof v === 'string' ? v : '');
 const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
 
 /** The keys of `src` that `known` does not list, as they are: data a newer version added. */
+/** A word's accent as stored: a whole number from 0, or null (not known). */
+function accentOf(value) {
+  return Number.isInteger(value) && value >= 0 ? value : null;
+}
+
 function extras(src, known) {
   const out = {};
   Object.keys(src).forEach((key) => {
@@ -115,8 +122,9 @@ export function normalize(raw) {
   Object.values(obj(src.words)).forEach((w) => {
     const word = obj(w);
     if (!str(word.id)) return;
-    const clean = { ...extras(word, RECORD_KEYS.concat(WORD_FIELDS)), id: word.id, createdAt: num(word.createdAt), updatedAt: num(word.updatedAt) };
+    const clean = { ...extras(word, WORD_KEYS), id: word.id, createdAt: num(word.createdAt), updatedAt: num(word.updatedAt) };
     WORD_FIELDS.forEach((f) => { clean[f] = str(word[f]); });
+    clean.accent = accentOf(word.accent);
     next.words[word.id] = clean;
   });
 
@@ -295,6 +303,7 @@ export function saveWord(fields, id) {
   const existing = id ? state.words[id] : null;
   const word = existing ? { ...existing } : { id: newId(), createdAt: now };
   WORD_FIELDS.forEach((f) => { word[f] = str(fields[f]); });
+  word.accent = accentOf(fields.accent);
   word.updatedAt = now;
   state.words[word.id] = word;
   touch();

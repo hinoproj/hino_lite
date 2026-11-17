@@ -12,7 +12,7 @@ boundaries and `group:` values: on any conflict with an `AGENTS.md`, this file w
 | romaji | js/core/romaji.js | domain | — | words, words-ui, sentences, sentences-ui, kanji, selftest | domain | — |
 | kana-srs | js/kana/kana-srs.js | domain | kana-data | kana-ui, selftest | domain | — |
 | review | js/review/review.js | domain | — | review-ui, words-ui, sentences-ui, kanji-ui, kanji-card, selftest | domain | — |
-| words | js/words/words.js | domain | romaji | words-ui, sentences-ui, kanji-card, selftest | domain | — |
+| words | js/words/words.js | domain | romaji | words-ui, sentences-ui, kanji-card, kanji-ui, selftest | domain | — |
 | sentences | js/sentences/sentences.js | domain | romaji | sentences-ui, selftest | domain | — |
 | kanji | js/kanji/kanji.js | domain | kanji-index, romaji | kanji-ui, kanji-card, words-ui, sentences-ui, library, selftest | domain | — |
 | storage | js/core/storage.js | infrastructure | — | main, theme, backup, shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui, selftest | infrastructure | browser localStorage, StorageManager |
@@ -27,7 +27,7 @@ boundaries and `group:` values: on any conflict with an `AGENTS.md`, this file w
 | words-ui | js/words/words-ui.js | presentation | words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card | main, kanji-card | presentation | browser DOM |
 | sentences-ui | js/sentences/sentences-ui.js | presentation | sentences, words, kanji, romaji, review, review-ui, storage, shell, dom | main, kanji-card | presentation | browser DOM |
 | kanji-card | js/kanji/kanji-card.js | presentation | kanji, library, words, review, review-ui, storage, shell, dom, words-ui, sentences-ui | kanji-ui, words-ui | presentation | browser DOM |
-| kanji-ui | js/kanji/kanji-ui.js | presentation | kanji, library, review, review-ui, storage, shell, dom, kanji-card | main | presentation | browser DOM |
+| kanji-ui | js/kanji/kanji-ui.js | presentation | kanji, words, library, review, review-ui, storage, shell, dom, kanji-card | main | presentation | browser DOM |
 | settings-ui | js/settings/settings-ui.js | presentation | storage, theme, backup, shell, dom | main | presentation | browser DOM |
 | main | js/main.js | presentation | storage, theme, shell, kana-ui, words-ui, sentences-ui, kanji-ui, settings-ui, kana-data, library, sw | index | presentation | browser DOM, service worker |
 | app-css | css/app.css | presentation | — | index | presentation | — |
@@ -160,9 +160,17 @@ is the writing only when it holds a kanji (a kana word starts with its reading),
 meaning (bullets kept); after the meaning the last line is the example (`sentence - translation`
 on one line) and every line between is the notes (2026-11-16; before, the order was the reverse);
 null for fewer than two lines. `FIELDS` lists the fields in display order: notes before example.
+Pitch accent (P23): the reading field takes the gem's notation — `[きょ]う` (the bracket marks the
+accented mora; around several morae, the last), `とけい [flat]` (no accented mora), or nothing (not
+known). `splitAccent` (called by `normalizeDraft`, so a draft carries `accent`: the mora's position
+from 1, 0 flat, null not known) reads `[flat]` before rōmaji conversion, converts the rest with its
+brackets, and counts `morae` (small ゃゅょぁ… join the kana before; っ, ん, ー stand alone); a bracket
+left over stays in the reading and `validate` refuses it. `formatAccent` writes the notation back
+for the form; `accentSplit` gives `{before, mora, after}` for display, null when nothing is
+highlighted; `splitFlatMark` lets rōmaji suggestions work on the reading without its mark.
 
-**Exposes**: `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`, `FIELDS`, `FIELD_LABELS`,
-`parsePaste`, `normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `matchesQuery`, `sortForList`
+**Exposes**: `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`, `FIELDS`, `FIELD_LABELS`, `FLAT_MARK`,
+`morae`, `splitAccent`, `formatAccent`, `accentSplit`, `splitFlatMark`, `parsePaste`, `normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `matchesQuery`, `sortForList`
 
 ## sentences
 
@@ -216,7 +224,8 @@ drops its `sentences.*` review scores and leaves the words made from it. Older c
 (top level, settings, each word and sentence) as they are, and `load` starts listening for the
 `storage` event, so another tab's save replaces this tab's copy instead of being overwritten by it. A missing
 review entry means unseen (−1). Removing a kanji keeps its review entries; deleting a word drops
-its own. `normalize` rebuilds any untrusted JSON; `importText` refuses files without
+its own. A word's `accent` (P23, additive under v2) is a whole number from 0 or null; words saved
+before it load as null. `normalize` rebuilds any untrusted JSON; `importText` refuses files without
 `app: 'hino_lite'`, v2 (old Kana SRS backups). `backupStatus().due` after 7 days of unsaved changes.
 Stores values computed by the rule modules and applies no rule itself.
 
@@ -260,7 +269,9 @@ paste event; the block goes to a callback with the value from before the paste, 
 loses its breaks), `toast`, `formatDaysAgo`, and `confirmAction`/`notify` — the single seams the
 smoke test answers.
 
-**Exposes**: `$`, `h`, `ja`, `button`, `segmented`, `part`, `filterGroup`, `listGroup`, `pasteBlockField`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
+`jaMarked` is `ja` with one part in bold (`.accent-mora`): a reading around its accented mora.
+
+**Exposes**: `$`, `h`, `ja`, `jaMarked`, `button`, `segmented`, `part`, `filterGroup`, `listGroup`, `pasteBlockField`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
 
 ## theme
 
@@ -331,7 +342,11 @@ from a sentence keep sentence and translation on two lines; the Kanji field is a
 fills the form through `W.parsePaste` — it overwrites the fields the block fills, the Kanji field
 always — with "Filled from the pasted lines" and an Undo that restores the fields as they were
 before the paste; rōmaji suggestions as hiragana/katakana chips, live "Adds to your kanji" preview,
-duplicate refusal with "Open it"), save → `storage.saveWord` + `enrollKanji`; the word review adapter.
+duplicate refusal with "Open it"; the Reading field holds the accent notation, shows a word's accent
+that way when editing (`W.formatAccent`) with an "Accent:" preview under it, and rōmaji suggestions keep
+a `[flat]` mark), save → `storage.saveWord` + `enrollKanji`; the word review adapter. Every reading it
+shows — list row, sheet hero, a kana word's headline, the review's reading part and prompt, the run
+summary — puts the accented mora in bold (`readingNode` → `dom.jaMarked` with `W.accentSplit`).
 
 **Exposes**: `renderWords`, `openWordView`, `openWordForm`
 
@@ -388,7 +403,7 @@ sections of tiles with state dots under hairline headings (`dom.listGroup`); the
 and strokes). Review parts: a revealed glyph (`.reveal-glyph`) sits beside its stroke order
 (`.reveal-strokes`) without labels when the plan reveals both in one step, otherwise stroke order is a
 labelled part; components as plain chips; the learner's words (≤ 4: writing with the kanji marked,
-reading, meaning clamped to two lines) and sentences (≤ 2: sentence, reading, translation) as plain
+reading with its accented mora in bold via `words.accentSplit`, meaning clamped to two lines) and sentences (≤ 2: sentence, reading, translation) as plain
 `.use-row`s — nothing on the card is a button, since the card is one tap target.
 
 **Exposes**: `renderKanji`
@@ -413,7 +428,7 @@ KANA_DATA, library} for tests and debugging.
 ## app-css, review-css, words-css, sentences-css, kanji-css
 
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
-controls, among them the list toolbar `.filters` and the titled list sections `.list-group`; kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
+controls, among them the list toolbar `.filters` and the titled list sections `.list-group`, the accented mora `.accent-mora` in bold; kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
 review card, ratings, help, summary; the kanji review's glyph beside its stroke order — side by side
 via `:has()`, stacked and centred without it — and the `.use-row`s of words and sentences), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field and Notes stretched beside Reading and Meaning from 900 px, the Parse bar both forms use, word sheet with its hero row and a full-width example row;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
