@@ -1,5 +1,15 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-18] Pasted kana word: writing line + reading line (P25)
+
+Bug: a kana word pasted in the new gem format (`とても` / `とても [flat]` / …) filled every field
+one line off, because `words.parsePaste` took line 1 as the writing only when it held a kanji.
+Now line 1 is also the writing when line 2 is a kana reading (accent mark ignored); the older
+block that starts with its reading still parses. A writing equal to its reading is dropped, so
+kana words keep an empty writing (duplicate key and review plans unchanged); a kana writing that
+differs is kept. An example line of dashes only (`-`, `---`) parses as no example. Three selftest
+cases added; README and code_index updated. `sw.js` → `hino-lite-app-v22`. `ALL CHECKS PASSED`.
+
 ## [2026-11-17] Word review: kanji, reading and meaning centred on a phone (P24)
 
 Owner's call after trying v20 on the phone: under the centred prompt, left-aligned answer parts

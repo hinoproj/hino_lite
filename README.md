@@ -20,9 +20,11 @@ An adverb or noun indicating a small quantity or degree.
 少し待ってください。 - Please wait a little.
 ```
 
-The first line is the kanji writing only when it has a kanji (a kana word starts with its reading),
-then the reading and the meaning; the last line becomes the example (the sentence and its
-translation on one line), and any line between the meaning and the last becomes the notes.
+The first line is the writing (a kana word repeats its kana there, and is saved without a writing),
+then the reading with its accent mark and the meaning; the last line becomes the example (the
+sentence and its translation on one line, or dashes only — `-`, `---` — for no example), and any
+line between the meaning and the last becomes the notes. An older kana block that starts with its
+reading still works.
 **Undo** puts the form back as it was before the paste.
 
 The reading may carry its pitch accent: `[きょ]う` marks the accented mora, `とけい [flat]` says there

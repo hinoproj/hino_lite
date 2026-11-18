@@ -293,7 +293,17 @@ check('pasted word: with four lines the fourth is the example',
     JSON.stringify({ writing: '勉強', reading: 'べんきょう', meaning: 'study', notes: '', example: '毎日勉強します。 - I study every day.' }));
 check('pasted word: every line between the meaning and the last joins the notes',
   W.parsePaste('勉強\nべんきょう\nstudy\nA noun.\nAlso a suru-verb.\n毎日勉強します。 - I study every day.').notes === 'A noun.\nAlso a suru-verb.');
-check('pasted word: a kana word starts with its reading',
+check('pasted word: a kana word repeats its kana as the writing, stored without one',
+  pasted('とても\nとても [flat]\nvery, really\n[adverb] The everyday "very".\n[origin] From totemo kakutemo.\n今日はとても寒いです。 - It is very cold today.') ===
+    JSON.stringify({ writing: '', reading: 'とても [flat]', meaning: 'very, really',
+      notes: '[adverb] The everyday "very".\n[origin] From totemo kakutemo.', example: '今日はとても寒いです。 - It is very cold today.' }),
+  pasted('とても\nとても [flat]\nvery, really\n[adverb] The everyday "very".\n[origin] From totemo kakutemo.\n今日はとても寒いです。 - It is very cold today.'));
+check('pasted word: a kana writing that differs from its reading is kept; an accent mark is not a difference',
+  W.parsePaste('ソフト\nそふと\nsoft\n-').writing === 'ソフト' && W.parsePaste('ゆっくり\n[ゆ]っくり\nslowly\n-').writing === '');
+check('pasted word: an example line of dashes only means no example',
+  ['-', '--', '---'].every((d) => JSON.stringify(W.parsePaste('時計\nとけい\nclock\nA noun.\n' + d)) ===
+    JSON.stringify({ writing: '時計', reading: 'とけい', meaning: 'clock', notes: 'A noun.', example: '' })));
+check('pasted word: the older kana block starts with its reading',
   pasted('ゆっくり\n• slowly\nAn adverb.\nゆっくり歩く。 - Walk slowly.') ===
     JSON.stringify({ writing: '', reading: 'ゆっくり', meaning: '• slowly', notes: 'An adverb.', example: 'ゆっくり歩く。 - Walk slowly.' }),
   pasted('ゆっくり\n• slowly\nAn adverb.\nゆっくり歩く。 - Walk slowly.'));

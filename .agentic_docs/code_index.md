@@ -156,9 +156,11 @@ Japanese → meaning = writing | reading | meaning [notes, example] (no writing:
 Meaning → Japanese = meaning | reading | writing [notes, example] (no writing: meaning | reading…);
 notes and example are the last step's `fold` (P24: label "Notes & example" or the one field's name), empty ones dropped. `matchesQuery` searches every field, and rōmaji/katakana queries match the reading.
 `parsePaste` (P20) splits a pasted block in the AI chat's word format, empty lines skipped: line 1
-is the writing only when it holds a kanji (a kana word starts with its reading), then reading,
-meaning (bullets kept); after the meaning the last line is the example (`sentence - translation`
-on one line) and every line between is the notes (2026-11-16; before, the order was the reverse);
+is the writing when it holds a kanji or line 2 is a kana reading (P25: a kana word repeats its
+kana; a writing equal to the reading is dropped; otherwise the older block that starts with its
+reading), then reading, meaning (bullets kept); after the meaning the last line is the example
+(`sentence - translation` on one line; dashes only = no example) and every line between is the
+notes (2026-11-16; before, the order was the reverse);
 null for fewer than two lines. `FIELDS` lists the fields in display order: notes before example.
 Pitch accent (P23): the reading field takes the gem's notation — `[きょ]う` (the bracket marks the
 accented mora; around several morae, the last), `とけい [flat]` (no accented mora), or nothing (not

@@ -110,23 +110,33 @@ export function splitFlatMark(text) {
   return FLAT_RE.test(value) ? { body: value.replace(FLAT_RE, ''), flat: true } : { body: value, flat: false };
 }
 
+// A pasted example line of dashes only ("-", "---") stands for "no example".
+const NO_EXAMPLE_RE = /^-+$/;
+
 /**
  * A pasted block in the AI chat's word format (P20), one field per line, empty lines skipped:
  *
- *   少し                                   writing (only when the line holds a kanji;
- *   すこし                                  reading   a kana word starts with its reading)
+ *   少し                                   writing (a kana word repeats its kana here)
+ *   すこし                                  reading, with its accent notation (P23)
  *   • a little • a small amount • slightly  meaning (bullets kept)
  *   An adverb or noun …                     notes (every line between the meaning and the last)
- *   少し待ってください。 - Wait a little.     example (the last line: sentence - translation)
+ *   少し待ってください。 - Wait a little.     example (the last line: sentence - translation;
+ *                                            dashes only, "-" or "---", mean no example)
  *
+ * The first line is the writing when it holds a kanji or when the second line is a kana
+ * reading; otherwise the block is the older kana format that starts with the reading. A
+ * writing equal to its reading is dropped: a kana word is stored without a writing.
  * Null when the text holds fewer than two lines: then it is not a block.
  */
 export function parsePaste(text) {
   const rows = String(text == null ? '' : text).split(/\r\n?|\n/).map((line) => line.trim()).filter(Boolean);
   if (rows.length < 2) return null;
-  const writing = HAN_RE.test(rows[0]) ? rows.shift() : '';
+  const hasWriting = HAN_RE.test(rows[0]) || isKana(splitAccent(rows[1]).reading);
+  let writing = hasWriting ? rows.shift() : '';
   const [reading = '', meaning = '', ...rest] = rows;
-  const example = rest.length ? rest.pop() : '';
+  if (writing === splitAccent(reading).reading) writing = '';
+  let example = rest.length ? rest.pop() : '';
+  if (NO_EXAMPLE_RE.test(example)) example = '';
   return { writing, reading, meaning, notes: rest.join('\n'), example };
 }
 
