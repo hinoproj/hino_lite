@@ -18,6 +18,21 @@ looked off. At ≤ 520 px a word review's kanji, reading and meaning (`.part.mai
 left-aligned. Tablet and wide screens unchanged; sentence and kanji reviews untouched. Added to
 P24. `sw.js` → `hino-lite-app-v21`. `ALL CHECKS PASSED`.
 
+## [2026-11-19] Run selection by strict tiers; unknown 0–1, learned 7 (P26)
+
+Owner's call after the unknown list outgrew the run while new and learned cards still took seats.
+`buildRun` now fills unknown, then learning, then (room permitting) new cards (cap 5) and learned/
+confident ones; `MAX_MAINTENANCE_PER_RUN` removed. Unknown ranks by a new per-entry `unknownSince`
+(set by `storage.recordReview(…, unknown)`, cleared on leaving unknown and by "Mark as known"), oldest
+first, so a crowded unknown list repeats the same oldest cards each run. Thresholds: `LEARNING_AT` 2,
+`LEARNED_AT` 7. Same day, owner: `INITIAL_SCORE` 3 → 4 (a first "Easy!" is 7, learned again; a first
+miss is 1, unknown) and `DEMOTION_SCORE` 4 → `LEARNED_AT − 1` = 6 (a first lapse on a learned card
+lands just under learned; a second in a row pays points, 6 → 3). `unknownSince` is additive under v2;
+older entries rank by `lastSeen`. Existing scores keep their numbers, so cards at 1 are now unknown and
+5–6 are now learning. Selftest: tier, first-answer and lapse assertions; smoke expects 7/1/5. Settings
+and README text rewritten; `sw.js` → `hino-lite-app-v23`. The platform records the same system as its
+D73. `ALL CHECKS PASSED`.
+
 ## [2026-11-17] Review: "Easy!" is now +3
 
 Owner's call. `RATING_EASY` 2 → 3 in `review.js`, so a first "Easy!" starts from 3 and lands on 6

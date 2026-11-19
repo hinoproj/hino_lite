@@ -131,18 +131,19 @@ confident); question building with look-alike distractors, homophone guard and m
 
 One scheduler for every self-rated review (words, kanji, sentences), on JLPT_coach's kanji scale: ratings
 Didn't know −3 / Guessed −1 / Knew it +1 / Easy! +3; an unseen card's first answer starts from
-`INITIAL_SCORE` 3; a miss on a learned card drops it to `DEMOTION_SCORE` 4 (a guess only erodes by
-1); scores 0–30. Labels per D56: unseen −1, unknown 0, learning 1–4, learned 5–14, confident 15+.
-`buildRun`: ≤`MAX_NEW_PER_RUN` (5, hard cap) unseen newest first, ≤`MAX_MAINTENANCE_PER_RUN` (3)
-learned/confident sampled by staleness (`(1 + days, cap 30) × 0.2 if confident`), the rest in
-progress stalest first; short runs backfill with known cards only; shuffled. `progressGroup`
+`INITIAL_SCORE` 4 (a first "Easy!" is 7, learned); a miss on a learned card drops it to `DEMOTION_SCORE`
+6 (`LEARNED_AT − 1`), so a second miss in a row pays points (a guess only erodes by 1); scores 0–30. Labels (D56's shape, Hino Lite's thresholds, P26): unseen −1, unknown 0–1, learning
+2–6, learned 7–14, confident 15+. `buildRun` (P26) fills strict tiers: unknown (oldest `unknownSince`
+first, never rested; `lastSeen` stands in for older stats), learning (stalest first), then with room
+left new cards (≤`MAX_NEW_PER_RUN` 5, hard cap, newest first) and learned/confident sampled by staleness
+(`(1 + days, cap 30) × 0.2 if confident`); shuffled. `progressGroup`
 (P18): an item reviewed in several directions is New only if never answered in any, Learned /
 Confident only when every direction is, otherwise Learning; `PROGRESS_GROUPS` lists them least
 known first; `groupByProgress(items, scoresOf)` splits a list into them, empty groups left out.
 
-**Exposes**: `UNSEEN`, `SCORE_MIN`, `SCORE_MAX`, `INITIAL_SCORE`, `LEARNED_AT`, `CONFIDENT_AT`,
+**Exposes**: `UNSEEN`, `SCORE_MIN`, `SCORE_MAX`, `INITIAL_SCORE`, `LEARNING_AT`, `LEARNED_AT`, `CONFIDENT_AT`,
 `DEMOTION_SCORE`, `RATING_*`, `RATINGS`, `STATE_*`, `STATES`, `RUN_SIZES`, `MAX_NEW_PER_RUN`,
-`MAX_MAINTENANCE_PER_RUN`, `STALE_CAP_DAYS`, `CONFIDENT_FACTOR`, `stateOf`, `isRating`,
+`STALE_CAP_DAYS`, `CONFIDENT_FACTOR`, `stateOf`, `isUnknown`, `isRating`,
 `applyRating`, `knownScore`, `isKnown`, `PROGRESS_GROUPS`, `progressGroup`, `groupByProgress`, `shuffle`, `maintenanceWeight`, `buildRun`, `countStates`
 
 ## words
@@ -219,7 +220,7 @@ learner's words (writing) and sentences (sentence text only) that contain a kanj
 
 The only `localStorage` user; key `hino_lite_v2`, which is also the backup format
 `{app: 'hino_lite', version: 2, updatedAt, unsavedSince, settings{runSize, theme, lastBackupAt},
-kana, words, sentences, kanji{addedAt, removed}, reviews{track: {id: {score, seen, lastSeen}}}}`.
+kana, words, sentences, kanji{addedAt, removed}, reviews{track: {id: {score, seen, lastSeen, unknownSince}}}}` (`unknownSince`, P26, is additive under v2).
 `sentences` (`{id, sentence, reading, translation, notes, createdAt, updatedAt}`) is additive under
 v2: `normalize` defaults it to `{}`, so older v2 data and backups load unchanged. Deleting a sentence
 drops its `sentences.*` review scores and leaves the words made from it. Older copies never destroy newer data: `normalize` keeps unknown keys

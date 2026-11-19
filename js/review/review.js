@@ -8,17 +8,20 @@
  * kanji scale, which the platform names as its reference:
  *
  *   rating         Didn't know -3 | Guessed -1 | Knew it +1 | Easy! +3
- *   score          0..30; the first answer starts from INITIAL_SCORE (3), so
- *                  a word you already know costs one sighting ("Easy!" -> 6),
- *                  and one miss cancels the credit exactly (-> 0)
- *   demotion       "Didn't know" on a learned card drops it to 4 -- a lapse is
- *                  the signal, not a reason to bury the card. "Guessed" is
- *                  exempt: a lucky hit erodes by one instead.
+ *   score          0..30; the first answer starts from INITIAL_SCORE (4), so a
+ *                  card you already know is learned in one sighting ("Easy!"
+ *                  -> 7) and a first miss lands in unknown (-> 1)
+ *   demotion       "Didn't know" on a learned card drops it to DEMOTION_SCORE,
+ *                  just under learned (6) -- a lapse is the signal, not a reason
+ *                  to bury the card. A second miss in a row finds it at 6, which
+ *                  is not learned, so it pays points like any other (-> 3).
+ *                  "Guessed" is exempt: a lucky hit erodes by one instead.
  *
- * Scores follow the platform's D56: -1 means never answered, and the labels
- * are derived here and nowhere else:
+ * Scores follow the platform's D56 in shape: -1 means never answered, and the
+ * labels are derived here and nowhere else. The thresholds are Hino Lite's own
+ * (owner, 2026-11-19, P26; the platform takes the same scale as D73):
  *
- *   unseen -1 | unknown 0 | learning 1-4 | learned 5-14 | confident 15+
+ *   unseen -1 | unknown 0-1 | learning 2-6 | learned 7-14 | confident 15+
  *
  * The rating help shown to the learner describes the experience of answering,
  * never these numbers: a learner who knows the maths rates for points.
@@ -27,10 +30,11 @@
 export const UNSEEN = -1;
 export const SCORE_MIN = 0;
 export const SCORE_MAX = 30;
-export const INITIAL_SCORE = 3;
-export const LEARNED_AT = 5;
+export const INITIAL_SCORE = 4;
+export const LEARNING_AT = 2;          // below this a card is "unknown" (0-1)
+export const LEARNED_AT = 7;
 export const CONFIDENT_AT = 15;
-export const DEMOTION_SCORE = 4;
+export const DEMOTION_SCORE = LEARNED_AT - 1;
 
 export const RATING_MISSED = -3;
 export const RATING_GUESSED = -1;
@@ -54,7 +58,6 @@ export const STATES = [STATE_UNSEEN, STATE_UNKNOWN, STATE_LEARNING, STATE_LEARNE
 
 export const RUN_SIZES = [10, 15, 20];
 export const MAX_NEW_PER_RUN = 5;
-export const MAX_MAINTENANCE_PER_RUN = 3;
 export const STALE_CAP_DAYS = 30;
 export const CONFIDENT_FACTOR = 0.2;   // confident cards come back 5x less often than learned
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -63,8 +66,12 @@ export function stateOf(score) {
   if (typeof score !== 'number' || score < 0) return STATE_UNSEEN;
   if (score >= CONFIDENT_AT) return STATE_CONFIDENT;
   if (score >= LEARNED_AT) return STATE_LEARNED;
-  if (score > 0) return STATE_LEARNING;
+  if (score >= LEARNING_AT) return STATE_LEARNING;
   return STATE_UNKNOWN;
+}
+
+export function isUnknown(score) {
+  return stateOf(score) === STATE_UNKNOWN;
 }
 
 export function isRating(value) {
@@ -149,41 +156,37 @@ function weightedSample(pool, weightOf, count, rng) {
 }
 
 /**
- * Compose one run.
+ * Compose one run: strict priority tiers, each filled before the next gets a seat.
  *
- * `items` are {id, addedAt}; `statsOf(id)` returns {score, lastSeen}. The run takes
- *   - up to MAX_NEW_PER_RUN unseen cards, newest first (what was just added is fresh),
- *   - up to MAX_MAINTENANCE_PER_RUN learned/confident cards, stale ones likelier,
- *   - and fills the rest with cards in progress (unknown/learning), stalest first.
- * When that leaves the run short, it backfills with more maintenance -- a run
- * should not shrink just because the learner is doing well. The new-card cap
- * is hard, though: a fresh list of 30 words gives a first run of 5, not 10 new
- * words at once. The result is shuffled so new cards do not all come first.
+ * `items` are {id, addedAt}; `statsOf(id)` returns {score, lastSeen, unknownSince}.
+ *   1. unknown (0-1), oldest `unknownSince` first. They are never rested: every run
+ *      shows them again until they are promoted. When there are more than a run
+ *      holds, the same oldest ones come back each time (older stats without
+ *      `unknownSince` rank by `lastSeen`).
+ *   2. learning (2-6), stalest first, lowest score on a tie.
+ *   3. only with room left: new cards (at most MAX_NEW_PER_RUN, newest first --
+ *      a fresh list of 30 words gives a first run of 5), then learned/confident
+ *      cards, stale ones likelier.
+ * The run is shorter than `size` only when every tier is spent. The result is
+ * shuffled so the tiers do not show in blocks.
  */
 export function buildRun(items, statsOf, size, { now = Date.now(), rng = Math.random } = {}) {
-  const fresh = [];
-  const inProgress = [];
-  const known = [];
+  const tiers = { [STATE_UNSEEN]: [], [STATE_UNKNOWN]: [], [STATE_LEARNING]: [], known: [] };
   items.forEach((item) => {
-    const st = statsOf(item.id);
-    const state = stateOf(st.score);
-    if (state === STATE_UNSEEN) fresh.push(item);
-    else if (state === STATE_LEARNED || state === STATE_CONFIDENT) known.push(item);
-    else inProgress.push(item);
+    const state = stateOf(statsOf(item.id).score);
+    tiers[state === STATE_LEARNED || state === STATE_CONFIDENT ? 'known' : state].push(item);
   });
-  fresh.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
-  inProgress.sort((a, b) => (statsOf(a.id).lastSeen || 0) - (statsOf(b.id).lastSeen || 0));
+  const since = (item) => { const st = statsOf(item.id); return st.unknownSince || st.lastSeen || 0; };
+  const added = (item) => item.addedAt || 0;
+  const unknown = tiers[STATE_UNKNOWN].sort((a, b) => since(a) - since(b) || added(a) - added(b));
+  const learning = tiers[STATE_LEARNING].sort((a, b) =>
+    (statsOf(a.id).lastSeen || 0) - (statsOf(b.id).lastSeen || 0) || statsOf(a.id).score - statsOf(b.id).score);
+  const fresh = tiers[STATE_UNSEEN].sort((a, b) => added(b) - added(a));
 
-  const weightOf = (item) => maintenanceWeight(statsOf(item.id), now);
-  const takeNew = fresh.slice(0, Math.min(MAX_NEW_PER_RUN, size));
-  const maintenance = weightedSample(known, weightOf, Math.min(MAX_MAINTENANCE_PER_RUN, size - takeNew.length), rng);
-  let picked = takeNew.concat(maintenance);
-  picked = picked.concat(inProgress.slice(0, Math.max(0, size - picked.length)));
-
-  if (picked.length < size) {
-    const chosen = new Set(picked.map((i) => i.id));
-    picked = picked.concat(weightedSample(known.filter((i) => !chosen.has(i.id)), weightOf, size - picked.length, rng));
-  }
+  let picked = unknown.slice(0, size);
+  picked = picked.concat(learning.slice(0, size - picked.length));
+  picked = picked.concat(fresh.slice(0, Math.min(MAX_NEW_PER_RUN, size - picked.length)));
+  picked = picked.concat(weightedSample(tiers.known, (item) => maintenanceWeight(statsOf(item.id), now), size - picked.length, rng));
   return shuffle(picked, rng);
 }
 

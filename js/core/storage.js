@@ -13,7 +13,8 @@
  *     words:   { <id>: {id, writing, reading, accent, meaning, example, notes, createdAt, updatedAt} },
  *     sentences: { <id>: {id, sentence, reading, translation, notes, createdAt, updatedAt} },
  *     kanji:   { <kanji>: {addedAt, removed} },
- *     reviews: { <track>: { <word id | sentence id | kanji>: {score, seen, lastSeen} } } }
+ *     reviews: { <track>: { <word id | sentence id | kanji>: {score, seen, lastSeen, unknownSince} } } }
+ *       (unknownSince: when the card entered the "unknown" state, 0 when it is not in it; additive in v2)
  *
  * Review tracks are 'words.read', 'words.recall', 'kanji.read', 'kanji.recall',
  * 'sentences.read', 'sentences.recall' (sentences: additive under v2, no migration).
@@ -54,7 +55,7 @@ const SENTENCE_FIELDS = ['sentence', 'reading', 'translation', 'notes'];
 const RECORD_KEYS = ['id', 'createdAt', 'updatedAt'];
 const WORD_KEYS = RECORD_KEYS.concat(WORD_FIELDS, ['accent']);
 const EMPTY_KANA = Object.freeze({ score: 0, seen: 0, right: 0, lastSeen: 0, misses: Object.freeze([]) });
-const UNSEEN_REVIEW = Object.freeze({ score: -1, seen: 0, lastSeen: 0 });
+const UNSEEN_REVIEW = Object.freeze({ score: -1, seen: 0, lastSeen: 0, unknownSince: 0 });
 
 let available = false;
 let state = blankState();
@@ -147,7 +148,7 @@ export function normalize(raw) {
       const entry = obj(e);
       const score = num(entry.score, -1);
       if (score < 0) return;      // never answered: absent, as D56 has it
-      next.reviews[track][id] = { score, seen: num(entry.seen), lastSeen: num(entry.lastSeen) };
+      next.reviews[track][id] = { score, seen: num(entry.seen), lastSeen: num(entry.lastSeen), unknownSince: num(entry.unknownSince) };
     });
   });
   return next;
@@ -402,23 +403,29 @@ export function reviewStats(track, id) {
   return (entries && entries[id]) || UNSEEN_REVIEW;
 }
 
-/** Store one rated answer: the new score, as computed by review.applyRating. */
-export function recordReview(track, id, score) {
+/**
+ * Store one rated answer: the new score, as computed by review.applyRating, and whether that
+ * score is "unknown" (review.isUnknown). `unknownSince` keeps the moment the card entered
+ * unknown, so the run can rank those cards by it; it resets when the card leaves.
+ */
+export function recordReview(track, id, score, unknown = false) {
   if (!state.reviews[track]) state.reviews[track] = {};
-  const entry = state.reviews[track][id] || { score: -1, seen: 0, lastSeen: 0 };
+  const entry = state.reviews[track][id] || { score: -1, seen: 0, lastSeen: 0, unknownSince: 0 };
   entry.score = score;
   entry.seen += 1;
   entry.lastSeen = Date.now();
+  entry.unknownSince = unknown ? (entry.unknownSince || entry.lastSeen) : 0;
   state.reviews[track][id] = entry;
   touch();
 }
 
-/** Set a score without counting an answer ("Mark as known", computed by review.knownScore). */
+/** Set a score without counting an answer ("Mark as known", computed by review.knownScore: never unknown). */
 export function setReviewScore(track, id, score) {
   if (!state.reviews[track]) state.reviews[track] = {};
-  const entry = state.reviews[track][id] || { score: -1, seen: 0, lastSeen: 0 };
+  const entry = state.reviews[track][id] || { score: -1, seen: 0, lastSeen: 0, unknownSince: 0 };
   entry.score = score;
   entry.lastSeen = Date.now();
+  entry.unknownSince = 0;
   state.reviews[track][id] = entry;
   touch();
 }

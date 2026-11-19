@@ -269,7 +269,7 @@ async function wordReviews() {
   await waitFor(() => visible('screen-review-summary'));
   log('summary counts three "Easy!"', $('.stat.easy .value').textContent === '3');
   const reviews = saved().reviews['words.read'];
-  log('a first "Easy!" makes a word learned (6)', Object.values(reviews).length === 3 && Object.values(reviews).every((e) => e.score === 6));
+  log('a first "Easy!" makes a word learned (7)', Object.values(reviews).length === 3 && Object.values(reviews).every((e) => e.score === 7));
   $('#btn-review-done').click();
   await waitFor(() => visible('screen-words'));
   log('done returns to the words tab', visible('screen-words'));
@@ -294,8 +294,8 @@ async function wordReviews() {
   }
   await waitFor(() => visible('screen-review-summary'));
   const recall = saved().reviews['words.recall'];
-  log('a first "Didn\'t know" scores 0 in its own track', Object.values(recall).length === 3 &&
-    Object.values(recall).every((e) => e.score === 0) && Object.values(saved().reviews['words.read']).every((e) => e.score === 6));
+  log('a first "Didn\'t know" scores 1 (unknown) in its own track', Object.values(recall).length === 3 &&
+    Object.values(recall).every((e) => e.score === 1 && e.unknownSince > 0) && Object.values(saved().reviews['words.read']).every((e) => e.score === 7));
   $('#btn-review-done').click();
   await waitFor(() => visible('screen-words'));
 
@@ -306,8 +306,8 @@ async function wordReviews() {
   log('word sheet: steps light up to the state (learned 3, unknown 1)', lit(0) === 3 && lit(1) === 1, lit(0) + ',' + lit(1));
   $('#btn-word-known').click();
   await waitFor(() => !$('#btn-word-known'));
-  log('mark as known: Meaning → Japanese rises to learned, Japanese → meaning stays',
-    store().reviewStats('words.read', tv.id).score === 6 && store().reviewStats('words.recall', tv.id).score === 5 &&
+  log('mark as known: both directions rise to learned (7)',
+    store().reviewStats('words.read', tv.id).score === 7 && store().reviewStats('words.recall', tv.id).score === 7 &&
     $$('#word-view .track').every((t) => t.dataset.state === 'learned') && visible('sheet-layer'));
   $('#word-view .sheet-head button').click();
   await waitFor(() => !visible('sheet-layer'));
@@ -410,7 +410,7 @@ async function kanji() {
   $('#btn-kanji-known').click();
   await waitFor(() => !$('#btn-kanji-known'));
   log('add + mark as known: 一 is learned in both directions', store().isEnrolled('一') &&
-    store().reviewStats('kanji.read', '一').score === 5 && store().reviewStats('kanji.recall', '一').score === 5);
+    store().reviewStats('kanji.read', '一').score === 7 && store().reviewStats('kanji.recall', '一').score === 7);
   await closeCard();
 
   await openTile('休');
@@ -440,7 +440,7 @@ async function kanji() {
   }
   log('Kanji → meaning: glyph, then meaning, then readings with stroke order', ok);
   await waitFor(() => visible('screen-review-summary'));
-  log('a first "Knew it" scores 4', store().reviewStats('kanji.read', '学').score === 4);
+  log('a first "Knew it" scores 5', store().reviewStats('kanji.read', '学').score === 5);
   $('#btn-review-done').click();
   await waitFor(() => visible('screen-kanji'));
   await kanjiRecallRun();
@@ -651,7 +651,7 @@ async function sentences() {
   await waitFor(() => visible('screen-review-summary'));
   const sentenceRead = saved().reviews['sentences.read'] || {};
   log('the run scores its own track', Object.keys(sentenceRead).length === 2 &&
-    Object.values(sentenceRead).every((e) => e.score === 6), JSON.stringify(sentenceRead));
+    Object.values(sentenceRead).every((e) => e.score === 7), JSON.stringify(sentenceRead));
   $('#btn-review-done').click();
   await waitFor(() => visible('screen-sentences'));
 
@@ -679,7 +679,7 @@ async function sentences() {
   await waitFor(() => !$('#btn-sentence-known'));
   const listen = st.listSentences().find((x) => x.sentence.startsWith('もう一度'));
   log('mark as known: both directions learned, the sentence moves to Learned',
-    st.reviewStats('sentences.read', listen.id).score >= 5 && st.reviewStats('sentences.recall', listen.id).score === 5 &&
+    st.reviewStats('sentences.read', listen.id).score >= 7 && st.reviewStats('sentences.recall', listen.id).score === 7 &&
       sentenceGroups() === 'unseen,learning,learned', sentenceGroups());
   $('#sentence-view .sheet-head button').click();
   await waitFor(() => !visible('sheet-layer'));

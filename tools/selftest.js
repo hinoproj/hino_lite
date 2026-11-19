@@ -184,25 +184,31 @@ check('katakana -> hiragana', RJ.katakanaToHiragana('テレビ') === 'てれび'
 
 section('Review rules');
 
-check('labels follow D56 thresholds',
-  R.stateOf(-1) === 'unseen' && R.stateOf(0) === 'unknown' && R.stateOf(1) === 'learning' &&
-  R.stateOf(4) === 'learning' && R.stateOf(5) === 'learned' && R.stateOf(14) === 'learned' &&
-  R.stateOf(15) === 'confident');
-check('first answer starts from 3: Easy! -> 6 (learned in one sighting)', R.applyRating(-1, R.RATING_EASY) === 6);
+check('labels: unknown 0-1, learning 2-6, learned 7-14, confident 15+',
+  R.stateOf(-1) === 'unseen' && R.stateOf(0) === 'unknown' && R.stateOf(1) === 'unknown' &&
+  R.stateOf(2) === 'learning' && R.stateOf(6) === 'learning' && R.stateOf(7) === 'learned' &&
+  R.stateOf(14) === 'learned' && R.stateOf(15) === 'confident');
+check('isUnknown is the 0-1 band only', R.isUnknown(0) && R.isUnknown(1) && !R.isUnknown(2) && !R.isUnknown(-1));
+check('first answer starts from 4: Easy! -> 7 (learned in one sighting)', R.applyRating(-1, R.RATING_EASY) === 7 && R.stateOf(7) === 'learned');
 check('Easy! adds 3 to a card in progress', R.applyRating(10, R.RATING_EASY) === 13);
-check('first answer: Knew it -> 4, Guessed -> 2, Didn\'t know -> 0',
-  R.applyRating(-1, R.RATING_KNEW) === 4 && R.applyRating(-1, R.RATING_GUESSED) === 2 && R.applyRating(-1, R.RATING_MISSED) === 0);
-check('a miss on a learned card drops it to 4', R.applyRating(10, R.RATING_MISSED) === 4 && R.applyRating(20, R.RATING_MISSED) === 4);
+check('first answer: Knew it -> 5, Guessed -> 3, Didn\'t know -> 1 (unknown)',
+  R.applyRating(-1, R.RATING_KNEW) === 5 && R.applyRating(-1, R.RATING_GUESSED) === 3 &&
+  R.applyRating(-1, R.RATING_MISSED) === 1 && R.isUnknown(1));
+check('a first lapse on a learned card drops it to 6, just under learned',
+  R.applyRating(7, R.RATING_MISSED) === 6 && R.applyRating(10, R.RATING_MISSED) === 6 && R.applyRating(20, R.RATING_MISSED) === 6 &&
+  R.stateOf(6) === 'learning');
+check('a second lapse in a row pays points: 6 -> 3, then 0',
+  R.applyRating(R.applyRating(20, R.RATING_MISSED), R.RATING_MISSED) === 3 && R.applyRating(3, R.RATING_MISSED) === 0);
 check('a guess on a learned card only erodes by one', R.applyRating(10, R.RATING_GUESSED) === 9);
 check('a miss below learned subtracts 3, floor 0', R.applyRating(4, R.RATING_MISSED) === 1 && R.applyRating(0, R.RATING_MISSED) === 0);
 check('score caps at 30', R.applyRating(29, R.RATING_EASY) === 30 && R.applyRating(28, R.RATING_EASY) === 30);
-check('mark as known lifts to 5 but never lowers', R.knownScore(-1) === 5 && R.knownScore(2) === 5 && R.knownScore(20) === 20);
-check('known means every direction at least learned', R.isKnown([5, 15]) && !R.isKnown([5, 4]) && !R.isKnown([-1, 20]) && !R.isKnown([]));
+check('mark as known lifts to 7 but never lowers', R.knownScore(-1) === 7 && R.knownScore(2) === 7 && R.knownScore(20) === 20);
+check('known means every direction at least learned', R.isKnown([7, 15]) && !R.isKnown([7, 6]) && !R.isKnown([-1, 20]) && !R.isKnown([]));
 check('progress group: new only if never answered, learned/confident only if every direction is',
-  R.progressGroup([-1, -1]) === 'unseen' && R.progressGroup([5, -1]) === 'learning' && R.progressGroup([0, 0]) === 'learning' &&
-  R.progressGroup([5, 4]) === 'learning' && R.progressGroup([5, 20]) === 'learned' && R.progressGroup([15, 30]) === 'confident' &&
+  R.progressGroup([-1, -1]) === 'unseen' && R.progressGroup([7, -1]) === 'learning' && R.progressGroup([0, 0]) === 'learning' &&
+  R.progressGroup([7, 6]) === 'learning' && R.progressGroup([7, 20]) === 'learned' && R.progressGroup([15, 30]) === 'confident' &&
   R.PROGRESS_GROUPS.map((g) => g.id).join() === 'unseen,learning,learned,confident');
-const grouped = R.groupByProgress(['a', 'b', 'c', 'd'], (id) => ({ a: [5, 5], b: [-1, -1], c: [5, 5], d: [2, -1] })[id]);
+const grouped = R.groupByProgress(['a', 'b', 'c', 'd'], (id) => ({ a: [7, 7], b: [-1, -1], c: [7, 7], d: [2, -1] })[id]);
 check('groupByProgress: least known first, empty groups left out, order kept inside a group',
   grouped.map((g) => g.id + ':' + g.items.join('')).join() === 'unseen:b,learning:d,learned:ac',
   grouped.map((g) => g.id + ':' + g.items.join('')).join());
@@ -215,24 +221,53 @@ check('only new cards: a run holds at most 5', unseenOnly.length === 5, 'got ' +
 check('new cards come newest first', unseenOnly.map((i) => i.id).sort().join() === ['w15', 'w16', 'w17', 'w18', 'w19'].sort().join(),
   unseenOnly.map((i) => i.id).join());
 
-const pool = items(10, 0).concat(items(10, 10), items(10, 20));
-const scoreOf = (id) => {
-  const n = Number(id.slice(1));
-  if (n < 10) return { score: 2, lastSeen: n * 86400000 };          // in progress, w0 stalest
-  if (n < 20) return { score: 8, lastSeen: (n - 10) * 86400000 };   // learned
-  return { score: -1, lastSeen: 0 };                               // new
+// Run composition: strict tiers -- unknown, then learning, then (room permitting) new, then learned/confident.
+const day = 86400000;
+const ids = (run) => run.map((i) => i.id).sort((x, y) => Number(x.slice(1)) - Number(y.slice(1))).join();
+const tierRun = (specs, size, seed) => {
+  const all = [];
+  const stats = {};
+  specs.forEach(([count, make]) => {
+    for (let k = 0; k < count; k++) {
+      const id = 'w' + all.length;
+      all.push({ id, addedAt: all.length });
+      stats[id] = make(k);
+    }
+  });
+  return R.buildRun(all, (id) => stats[id], size, { now, rng: seeded(seed) });
 };
-const mixedWords = R.buildRun(pool, scoreOf, 15, { now, rng: seeded(2) });
-const kinds = { fresh: 0, prog: 0, known: 0 };
-mixedWords.forEach((i) => {
-  const s = R.stateOf(scoreOf(i.id).score);
-  if (s === 'unseen') kinds.fresh += 1; else if (s === 'learned') kinds.known += 1; else kinds.prog += 1;
-});
-check('mixed run: 5 new, 3 maintenance, 7 in progress',
-  mixedWords.length === 15 && kinds.fresh === 5 && kinds.known === 3 && kinds.prog === 7, JSON.stringify(kinds));
-check('in-progress cards are the stalest ones',
-  mixedWords.filter((i) => Number(i.id.slice(1)) < 10).every((i) => Number(i.id.slice(1)) < 7));
-check('no card twice in a run', new Set(mixedWords.map((i) => i.id)).size === mixedWords.length);
+const unknownAt = (k) => ({ score: k % 2, lastSeen: 50 * day, unknownSince: (10 + k) * day });   // 0 and 1 mixed, w0 entered first
+const learningAt = (k) => ({ score: 2 + (k % 5), lastSeen: (20 + k) * day });                  // stalest first
+const newCard = () => ({ score: -1, lastSeen: 0 });
+const learnedCard = () => ({ score: 9, lastSeen: 10 * day });
+
+const crowded = tierRun([[12, unknownAt], [5, learningAt], [5, newCard], [5, learnedCard]], 10, 1);
+check('many unknown cards own the whole run: no learning, new or learned card gets in',
+  crowded.length === 10 && crowded.every((i) => Number(i.id.slice(1)) < 12), ids(crowded));
+check('unknown cards rank by when they became unknown: the oldest ten, run after run',
+  ids(crowded) === 'w0,w1,w2,w3,w4,w5,w6,w7,w8,w9', ids(crowded));
+
+const promoted = tierRun([[12, (k) => (k === 0 ? { score: 3, lastSeen: 60 * day } : unknownAt(k))], [5, learningAt]], 10, 2);
+check('a promoted card leaves unknown and the next oldest takes its seat',
+  ids(promoted) === 'w1,w2,w3,w4,w5,w6,w7,w8,w9,w10', ids(promoted));
+
+const legacy = tierRun([[12, (k) => ({ score: 0, lastSeen: (30 - k) * day })]], 10, 3);
+check('unknown cards without unknownSince rank by lastSeen (stalest first)',
+  ids(legacy) === 'w2,w3,w4,w5,w6,w7,w8,w9,w10,w11', ids(legacy));
+
+const unknownThenLearning = tierRun([[4, unknownAt], [8, learningAt], [10, newCard], [10, learnedCard]], 10, 4);
+check('learning fills what unknown leaves: the stalest first, nothing new or learned yet',
+  ids(unknownThenLearning) === 'w0,w1,w2,w3,w4,w5,w6,w7,w8,w9', ids(unknownThenLearning));
+
+const roomy = tierRun([[2, unknownAt], [2, learningAt], [20, newCard], [10, learnedCard]], 15, 5);
+const roomyNew = roomy.filter((i) => Number(i.id.slice(1)) >= 4 && Number(i.id.slice(1)) < 24).length;
+check('room left after unknown and learning goes to new cards first (at most 5), then learned',
+  roomy.length === 15 && roomyNew === 5 && roomy.filter((i) => Number(i.id.slice(1)) >= 24).length === 6,
+  roomy.length + ' cards, ' + roomyNew + ' new');
+
+const capped = tierRun([[2, unknownAt], [2, learningAt], [20, newCard]], 12, 6);
+check('the new-card cap is hard: the run stays short rather than add a sixth new card', capped.length === 9, 'got ' + capped.length);
+check('no card twice in a run', new Set(roomy.map((i) => i.id)).size === roomy.length);
 
 const knownOnly = R.buildRun(items(20), () => ({ score: 8, lastSeen: 0 }), 10, { now, rng: seeded(3) });
 check('all learned: the run still fills from maintenance', knownOnly.length === 10, 'got ' + knownOnly.length);

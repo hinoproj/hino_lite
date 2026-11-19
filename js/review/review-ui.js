@@ -172,7 +172,7 @@ function rate(value) {
   const item = current();
   const before = store.reviewStats(run.config.track, item.id).score;
   const after = R.applyRating(before, value);
-  store.recordReview(run.config.track, item.id, after);
+  store.recordReview(run.config.track, item.id, after, R.isUnknown(after));
   run.results.push({ item, rating: value, before, after });
 
   const good = value >= R.RATING_KNEW;
