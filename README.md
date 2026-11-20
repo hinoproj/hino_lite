@@ -111,11 +111,14 @@ meaning or translation, since nothing on the card opens.
 
 A run (10, 15 or 20 cards) fills in strict order, each group before the next gets a seat:
 **unknown** cards first (the ones you keep missing — they are in every run, the longest-waiting
-first, until you get them), then **learning** cards (the ones you haven't seen for longest first),
-and only if there is room left, **new** cards (at most 5, newest first) and then cards you already
-know so they stay fresh (ones you haven't seen for longest come up more often; confident ones
-rarely). With more unknown cards than a run holds, the same longest-waiting ones repeat each run
-until they move up. Progress labels: unseen · unknown · learning · learned · confident.
+first, until you get them), then **learning** cards (the ones you haven't seen for longest first).
+Only if there is room left come cards you already **know** (rechecked so they stay fresh — ones
+you haven't seen for longest come up more often, confident ones rarely) and **new** cards (at most
+5 a run, newest first). Which of those two goes first depends on the unknown group: while any card
+is unknown, nothing new is taught unless there are too few known cards to fill the run; with
+nothing unknown, new cards come first. With more unknown cards than a run holds, the same
+longest-waiting ones repeat each run until they move up. Progress labels: unseen · unknown ·
+learning · learned · confident.
 
 ## Kana drill
 

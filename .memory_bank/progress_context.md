@@ -1,5 +1,16 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-20] Review scale and run fill amended (P26)
+
+Owner's calls. `RATING_KNEW` 1 → 2, `RATING_EASY` 3 → 4 (from 4, a first "Easy!" is 8, "Knew it" 6);
+`CONFIDENT_AT` 15 → 14; `DEMOTION_SCORE` → `LEARNED_AT − 2` = 5 (a second lapse in a row → 2, then 0).
+`buildRun`: after unknown and learning, the room left goes to learned/confident rechecks first while
+any card is unknown — new cards only fill what they leave (≤5) — and to new cards first (≤5) when
+nothing is unknown. Existing scores keep their numbers (cards at 14 are now confident). Selftest:
+scale, lapse and three fill-order cases; smoke expects 8 after a first "Easy!" and 6 after "Knew it".
+Settings and README run text rewritten (no points); `sw.js` → `hino-lite-app-v24`. Platform D73
+amended to match. `ALL CHECKS PASSED`.
+
 ## [2026-11-18] Pasted kana word: writing line + reading line (P25)
 
 Bug: a kana word pasted in the new gem format (`とても` / `とても [flat]` / …) filled every field

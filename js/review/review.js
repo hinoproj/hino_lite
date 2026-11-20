@@ -7,21 +7,22 @@
  * One scheduler for every self-rated review in the app. It is JLPT_coach's
  * kanji scale, which the platform names as its reference:
  *
- *   rating         Didn't know -3 | Guessed -1 | Knew it +1 | Easy! +3
+ *   rating         Didn't know -3 | Guessed -1 | Knew it +2 | Easy! +4
  *   score          0..30; the first answer starts from INITIAL_SCORE (4), so a
  *                  card you already know is learned in one sighting ("Easy!"
- *                  -> 7) and a first miss lands in unknown (-> 1)
- *   demotion       "Didn't know" on a learned card drops it to DEMOTION_SCORE,
- *                  just under learned (6) -- a lapse is the signal, not a reason
- *                  to bury the card. A second miss in a row finds it at 6, which
- *                  is not learned, so it pays points like any other (-> 3).
+ *                  -> 8) and a first miss lands in unknown (-> 1)
+ *   demotion       "Didn't know" on a learned card drops it to DEMOTION_SCORE (5),
+ *                  two under learned -- a lapse is the signal, not a reason to
+ *                  bury the card ("Knew it" -> 7, "Easy!" -> 9 earn it back). A
+ *                  second miss in a row finds it at 5, which is not learned, so
+ *                  it pays points like any other (-> 2, then 0).
  *                  "Guessed" is exempt: a lucky hit erodes by one instead.
  *
  * Scores follow the platform's D56 in shape: -1 means never answered, and the
  * labels are derived here and nowhere else. The thresholds are Hino Lite's own
- * (owner, 2026-11-19, P26; the platform takes the same scale as D73):
+ * (owner, 2026-11-19/20, P26; the platform takes the same scale as D73):
  *
- *   unseen -1 | unknown 0-1 | learning 2-6 | learned 7-14 | confident 15+
+ *   unseen -1 | unknown 0-1 | learning 2-6 | learned 7-13 | confident 14+
  *
  * The rating help shown to the learner describes the experience of answering,
  * never these numbers: a learner who knows the maths rates for points.
@@ -33,13 +34,13 @@ export const SCORE_MAX = 30;
 export const INITIAL_SCORE = 4;
 export const LEARNING_AT = 2;          // below this a card is "unknown" (0-1)
 export const LEARNED_AT = 7;
-export const CONFIDENT_AT = 15;
-export const DEMOTION_SCORE = LEARNED_AT - 1;
+export const CONFIDENT_AT = 14;
+export const DEMOTION_SCORE = LEARNED_AT - 2;
 
 export const RATING_MISSED = -3;
 export const RATING_GUESSED = -1;
-export const RATING_KNEW = 1;
-export const RATING_EASY = 3;
+export const RATING_KNEW = 2;
+export const RATING_EASY = 4;
 
 // Order is the button order, lowest first.
 export const RATINGS = [
@@ -164,11 +165,15 @@ function weightedSample(pool, weightOf, count, rng) {
  *      holds, the same oldest ones come back each time (older stats without
  *      `unknownSince` rank by `lastSeen`).
  *   2. learning (2-6), stalest first, lowest score on a tie.
- *   3. only with room left: new cards (at most MAX_NEW_PER_RUN, newest first --
- *      a fresh list of 30 words gives a first run of 5), then learned/confident
- *      cards, stale ones likelier.
- * The run is shorter than `size` only when every tier is spent. The result is
- * shuffled so the tiers do not show in blocks.
+ *   3. only with room left, in an order set by the unknown tier:
+ *      - with any unknown card, learned/confident cards are rechecked first
+ *        (stale ones likelier) and new cards only fill what they leave --
+ *        nothing new is taught while something is still unknown;
+ *      - with none, new cards come first, then learned/confident ones.
+ *      New cards are at most MAX_NEW_PER_RUN, newest first -- a fresh list of
+ *      30 words gives a first run of 5.
+ * The run is shorter than `size` only when every tier is spent or the cap holds.
+ * The result is shuffled so the tiers do not show in blocks.
  */
 export function buildRun(items, statsOf, size, { now = Date.now(), rng = Math.random } = {}) {
   const tiers = { [STATE_UNSEEN]: [], [STATE_UNKNOWN]: [], [STATE_LEARNING]: [], known: [] };
@@ -185,8 +190,10 @@ export function buildRun(items, statsOf, size, { now = Date.now(), rng = Math.ra
 
   let picked = unknown.slice(0, size);
   picked = picked.concat(learning.slice(0, size - picked.length));
-  picked = picked.concat(fresh.slice(0, Math.min(MAX_NEW_PER_RUN, size - picked.length)));
-  picked = picked.concat(weightedSample(tiers.known, (item) => maintenanceWeight(statsOf(item.id), now), size - picked.length, rng));
+  const newCards = (room) => fresh.slice(0, Math.min(MAX_NEW_PER_RUN, room));
+  const recheck = (room) => weightedSample(tiers.known, (item) => maintenanceWeight(statsOf(item.id), now), room, rng);
+  (unknown.length ? [recheck, newCards] : [newCards, recheck])
+    .forEach((fill) => { picked = picked.concat(fill(size - picked.length)); });
   return shuffle(picked, rng);
 }
 

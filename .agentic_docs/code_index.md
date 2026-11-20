@@ -130,13 +130,14 @@ confident); question building with look-alike distractors, homophone guard and m
 **File**: `js/review/review.js` · **Layer**: domain
 
 One scheduler for every self-rated review (words, kanji, sentences), on JLPT_coach's kanji scale: ratings
-Didn't know −3 / Guessed −1 / Knew it +1 / Easy! +3; an unseen card's first answer starts from
-`INITIAL_SCORE` 4 (a first "Easy!" is 7, learned); a miss on a learned card drops it to `DEMOTION_SCORE`
-6 (`LEARNED_AT − 1`), so a second miss in a row pays points (a guess only erodes by 1); scores 0–30. Labels (D56's shape, Hino Lite's thresholds, P26): unseen −1, unknown 0–1, learning
-2–6, learned 7–14, confident 15+. `buildRun` (P26) fills strict tiers: unknown (oldest `unknownSince`
-first, never rested; `lastSeen` stands in for older stats), learning (stalest first), then with room
-left new cards (≤`MAX_NEW_PER_RUN` 5, hard cap, newest first) and learned/confident sampled by staleness
-(`(1 + days, cap 30) × 0.2 if confident`); shuffled. `progressGroup`
+Didn't know −3 / Guessed −1 / Knew it +2 / Easy! +4; an unseen card's first answer starts from
+`INITIAL_SCORE` 4 (a first "Easy!" is 8, learned; "Knew it" 6); a miss on a learned card drops it to `DEMOTION_SCORE`
+5 (`LEARNED_AT − 2`), so a second miss in a row pays points (a guess only erodes by 1); scores 0–30. Labels (D56's shape, Hino Lite's thresholds, P26): unseen −1, unknown 0–1, learning
+2–6, learned 7–13, confident 14+. `buildRun` (P26) fills strict tiers: unknown (oldest `unknownSince`
+first, never rested; `lastSeen` stands in for older stats), learning (stalest first), then the room
+left goes to learned/confident sampled by staleness (`(1 + days, cap 30) × 0.2 if confident`) and new
+cards (≤`MAX_NEW_PER_RUN` 5, hard cap, newest first) — rechecks first while any card is unknown (new
+cards only fill the gap), new cards first when none is; shuffled. `progressGroup`
 (P18): an item reviewed in several directions is New only if never answered in any, Learned /
 Confident only when every direction is, otherwise Learning; `PROGRESS_GROUPS` lists them least
 known first; `groupByProgress(items, scoresOf)` splits a list into them, empty groups left out.
