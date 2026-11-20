@@ -1,4 +1,4 @@
-// [MODULE] review-ui | Self-rated review run for words and kanji: step-by-step reveal (a step's folded parts under one toggle), four rating buttons, help sheet, summary; shared track panel, state dots and progress rows
+// [MODULE] review-ui | Self-rated review run for words, kanji and sentences: score dots beside the prompt, step-by-step reveal (a step's folded parts under one toggle), four rating buttons, help sheet, summary; shared track panel, state dots and progress rows
 // [IFACE] layer: presentation | in: a composed run + an adapter (card plan, part renderers) -> out: rendered run/summary, recorded ratings | crosses: [browser DOM]
 // [GRAPH] needs: [review, storage, theme, shell, dom] | feeds: [words-ui, sentences-ui, kanji-ui, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -116,6 +116,20 @@ function stepsOf(item) {
   return { prompt: run.config.renderPart(item, plan.prompt, true), steps };
 }
 
+/**
+ * The card's score beside its prompt (P27): one dot per point, filling bottom-up, the left column
+ * up to learned and the right one up to confident, lit in the state's colour; a card never
+ * answered shows empty rings. It is the score from before the answer and it never moves after a
+ * rating: the dots may show where a card stands, never what one rating pays (contract 9).
+ */
+function scoreDots(score) {
+  const lit = score > 0 ? Math.min(score, R.CONFIDENT_AT) : 0;
+  const column = (from, to) => h('span', { class: 'dot-col' },
+    Array.from({ length: to - from }, (_, i) => h('i', { class: from + i < lit ? 'lit' : null })));
+  return h('span', { class: 'score-dots', dataset: { state: R.stateOf(score) }, 'aria-hidden': 'true' },
+    column(0, R.LEARNED_AT), column(R.LEARNED_AT, R.CONFIDENT_AT));
+}
+
 /** A step's folded parts under one toggle (P24). A native <details>: collapsed until opened, and a new card starts closed. */
 function foldNode(label, nodes) {
   return nodes.length ? h('details', { class: 'review-fold' }, h('summary', null, label), nodes) : null;
@@ -134,7 +148,7 @@ function renderCard() {
     onclick: () => revealNext(steps.length),
     onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); revealNext(steps.length); } }
   },
-  h('div', { class: 'review-prompt' }, prompt),
+  h('div', { class: 'review-prompt' }, scoreDots(store.reviewStats(run.config.track, item.id).score), prompt),
   steps.slice(0, run.revealed).map((s) => h('div', { class: 'review-step' }, s.nodes)));
 
   const controls = done

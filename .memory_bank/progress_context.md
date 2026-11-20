@@ -1,5 +1,21 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-20] Score dots on every review card (P27)
+
+Owner's request, decided after a mock with three dot sizes (picked A: 6 px dots, 6 px gap).
+`review-ui.scoreDots`: two columns of 7 dots in the card's side padding beside the prompt, one per
+point, bottom-up: left up to `LEARNED_AT`, right up to `CONFIDENT_AT`; lit in the state colour,
+neutral tint unlit, hollow rings on a card never answered. Words, kanji and sentences alike.
+Contract 9 amended rather than broken: the dots show the score from before the answer and are
+never re-rendered by a rating, so a rating's payout is not visible (a card comes once per run).
+The owner saw the first mock's dots ride high on short prompts (a meaning, a long word): the
+card's 140 px minimum height moved onto `.review-prompt` (94 px, flex-centred), so every
+unrevealed card centres its prompt and its dots line up; they still do not move on reveal.
+Smoke: rings and 7 + 7 on new cards; lit count = score on a scored card, unchanged through the
+Kids cheer. Also: `review.js` header comment no longer calls the scale JLPT_coach's (P26 values).
+`sw.js` → `hino-lite-app-v25`. `ALL CHECKS PASSED` (selftest 196, smoke 157); shots reviewed
+(word, sentence and kanji reviews, phone and tablet).
+
 ## [2026-11-20] Review scale and run fill amended (P26)
 
 Owner's calls. `RATING_KNEW` 1 → 2, `RATING_EASY` 3 → 4 (from 4, a first "Easy!" is 8, "Knew it" 6);

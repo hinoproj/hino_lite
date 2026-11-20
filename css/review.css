@@ -1,4 +1,4 @@
-/* [MODULE] review-css | Self-rated review run: card with step-by-step reveal (a word's notes and example folded under one toggle, a size smaller on a phone; its kanji, reading and meaning centred there), reveal buttons, rating row, help sheet, summary; the kanji review's glyph beside its stroke order and the learner's word and sentence rows; the progress panel on the word sheet and kanji card
+/* [MODULE] review-css | Self-rated review run: card with score dots in its side padding beside a centred prompt, step-by-step reveal (a word's notes and example folded under one toggle, a size smaller on a phone; its kanji, reading and meaning centred there), reveal buttons, rating row, help sheet, summary; the kanji review's glyph beside its stroke order and the learner's word and sentence rows; the progress panel on the word sheet and kanji card
    [IFACE] layer: presentation | in: classes and data-* set by review-ui.js, the words/kanji adapters, words-ui.js and kanji-card.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -32,12 +32,12 @@
 .review-panel .meter { background: var(--bg); }
 
 .review-card {
+  --card-pad-x: 18px;              /* the side padding the score dots sit in */
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 22px 18px;
+  padding: 22px var(--card-pad-x);
   margin-top: 10px;
-  min-height: 140px;
   -webkit-user-select: text;
   user-select: text;
 }
@@ -47,7 +47,36 @@
 
 .review-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.review-prompt { text-align: center; padding: 8px 0 14px; }
+/* The card's minimum height lives on the prompt zone (a 140 px card: 94 + 44 padding + 2 border),
+   which centres its prompt: a short prompt and its dots sit mid-card, and stay put as steps reveal. */
+.review-prompt {
+  position: relative;
+  min-height: 94px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  padding: 8px 0 14px;
+}
+
+/* Score dots (review-ui.js scoreDots, P27): two columns of 6 px dots out in the card's side
+   padding, centred on the prompt text (inset by the prompt's own padding), filling bottom-up. Unlit
+   dots take the progress panel's neutral tint; a card never answered shows rings. */
+.score-dots {
+  position: absolute;
+  top: 8px;
+  bottom: 14px;
+  left: calc(-1 * var(--card-pad-x));
+  right: calc(-1 * var(--card-pad-x));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+.dot-col { width: var(--card-pad-x); display: flex; flex-direction: column-reverse; align-items: center; gap: 6px; }
+.dot-col i { width: 6px; height: 6px; border-radius: 50%; background: color-mix(in srgb, var(--muted) 22%, transparent); }
+.dot-col i.lit { background: var(--state); }
+.score-dots[data-state="unseen"] i { background: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--muted) 60%, transparent); }
 .review-step { border-top: 1px dashed var(--line); padding-top: 4px; margin-top: 10px; }
 
 .prompt-ja { font-size: 64px; line-height: 1.15; font-weight: 500; overflow-wrap: anywhere; }

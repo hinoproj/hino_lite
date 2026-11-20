@@ -36,6 +36,12 @@ const $$ = (sel) => Array.from(d.querySelectorAll(sel));
 const visible = (id) => { const el = d.getElementById(id); return Boolean(el && !el.hidden); };
 const saved = () => JSON.parse(w.localStorage.getItem(KEY));
 const store = () => w.HinoLite.store;
+// The review card's score dots (P27): their state, how many are lit, and the dots per column.
+const dotsOf = () => {
+  const box = $('.review-prompt > .score-dots');
+  return box && { state: box.dataset.state, lit: box.querySelectorAll('i.lit').length,
+    cols: Array.from(box.querySelectorAll('.dot-col')).map((c) => c.children.length).join('+') };
+};
 
 function type(el, value) {
   el.value = value;
@@ -240,10 +246,13 @@ async function wordReviews() {
   let stepsOk = true;
   let folds = 0;
   let mainOk = true;
+  let newDotsOk = true;
   for (let i = 0; i < 3; i++) {
     const prompt = $('.review-prompt').textContent;
     const word = Object.values(saved().words).find((x) => (x.writing || x.reading) === prompt);
     if (!word) { stepsOk = false; break; }
+    const dots = dotsOf();
+    if (!dots || dots.state !== 'unseen' || dots.lit !== 0 || dots.cols !== '7+7') newDotsOk = false;
     let presses = 0;
     if (i === 0) { $('.review-card').click(); presses += 1; await sleep(20); }   // tapping the card = main button
     while ($('#btn-reveal') && presses < 5) { $('#btn-reveal').click(); presses += 1; await sleep(20); }
@@ -262,6 +271,7 @@ async function wordReviews() {
     $('.rating.easy').click();
     await sleep(40);
   }
+  log('a new card shows 7 + 7 score dots as empty rings', newDotsOk, JSON.stringify(dotsOf()));
   log('Japanese → meaning reveals in the planned steps', stepsOk);
   log('reading and meaning are the card\'s main parts (.part.main, centred on a phone); notes and example are not', mainOk);
   log('notes and example come folded and closed, the revealed card is no longer a button, the toggle opens them; the example is .extra (smaller on a phone)',
@@ -527,11 +537,18 @@ async function backup() {
   await tab('words');
   $('.mode-row[data-track="words.read"] button.primary').click();
   await waitFor(() => visible('screen-review'));
+  const kidsWord = Object.values(saved().words).find((x) => (x.writing || x.reading) === $('.review-prompt').textContent);
+  const kidsScore = kidsWord && (saved().reviews['words.read'][kidsWord.id] || { score: -1 }).score;
+  const dotsBefore = dotsOf();
   if ($('#btn-reveal-all')) $('#btn-reveal-all').click(); else $('#btn-reveal').click();
   await sleep(20);
   $('.rating.knew').click();
   await sleep(30);
   log('kids theme cheers a good rating', /[✨🌟🎉🙌]/u.test($('#review-verdict').textContent), $('#review-verdict').textContent);
+  log('a scored card lights one dot per point up to confident and keeps them through the rating (what a rating pays stays hidden)',
+    kidsScore > 0 && Boolean(dotsBefore) && dotsBefore.state !== 'unseen' && dotsBefore.lit === Math.min(kidsScore, 14) &&
+      JSON.stringify(dotsOf()) === JSON.stringify(dotsBefore),
+    JSON.stringify({ kidsScore, dotsBefore, after: dotsOf() }));
   await sleep(800);
   $('#btn-review-quit').click();
   await waitFor(() => visible('screen-words'));

@@ -4,8 +4,8 @@
 // [STATE] stateless | persists: nothing | raises: nothing
 
 /**
- * One scheduler for every self-rated review in the app. It is JLPT_coach's
- * kanji scale, which the platform names as its reference:
+ * One scheduler for every self-rated review in the app. It started as
+ * JLPT_coach's kanji scale; P26 replaced the values with Hino Lite's own:
  *
  *   rating         Didn't know -3 | Guessed -1 | Knew it +2 | Easy! +4
  *   score          0..30; the first answer starts from INITIAL_SCORE (4), so a

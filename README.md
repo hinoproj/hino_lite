@@ -120,6 +120,11 @@ nothing unknown, new cards come first. With more unknown cards than a run holds,
 longest-waiting ones repeat each run until they move up. Progress labels: unseen · unknown ·
 learning · learned · confident.
 
+Every review card (words, kanji, sentences) shows where it stands as two columns of dots beside
+the prompt, filling from the bottom: the left column fills up to **learned**, the right one up
+to **confident**, in the colour of the card's label; a card never answered shows empty rings. The
+dots show the card as it was before you answered and do not change when you rate it.
+
 ## Kana drill
 
 | Deck | Kana | Modes |

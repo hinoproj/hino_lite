@@ -320,7 +320,10 @@ behaviour; navigation goes through the shell's back stack.
 **File**: `js/review/review-ui.js` · **Layer**: presentation
 
 The self-rated run shared by words, kanji and sentences: an adapter gives the run, `plan(item)` and
-`renderPart(item, key, asPrompt)`; the main button / card tap reveals the next step, "Show all"
+`renderPart(item, key, asPrompt)`; beside the prompt, the card's score as two columns of dots (P27:
+one per point, the left column up to `LEARNED_AT`, the right up to `CONFIDENT_AT`, lit in the
+state's colour, rings on a card never answered; the score from before the answer, unchanged by a
+rating — contract 9); the main button / card tap reveals the next step, "Show all"
 reveals the rest; a step's `fold` keys render under one `<details class="review-fold">` toggle, closed
 on every new card (P24); a fully revealed card is no longer a button (no role, tap or keys), then four rating buttons and the "Which one do I press?" help (no points). Kids
 theme cheers a good rating. Summary: counts per rating, newly learned, per-item rows, "Run again"
@@ -436,7 +439,7 @@ KANA_DATA, library} for tests and debugging.
 
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
 controls, among them the list toolbar `.filters` and the titled list sections `.list-group`, a reading's accent (`.accent-mora` bold, coloured `--muted-accent` only in the list's and sheet's grey readings; the `.accent-flat` label and its `.tip`); kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
-review card, ratings, help, summary; a word's notes and example (`.part-text.extra`) a size smaller on a phone, its kanji, reading and meaning (`.part.main`) centred there; the `.review-fold` toggle (a part label in the accent colour with a turning chevron; one folded part hides its own label); the kanji review's glyph beside its stroke order — side by side
+review card (its minimum height on the prompt zone, which centres the prompt; the `.score-dots` columns out in the card's side padding, `--card-pad-x`), ratings, help, summary; a word's notes and example (`.part-text.extra`) a size smaller on a phone, its kanji, reading and meaning (`.part.main`) centred there; the `.review-fold` toggle (a part label in the accent colour with a turning chevron; one folded part hides its own label); the kanji review's glyph beside its stroke order — side by side
 via `:has()`, stacked and centred without it — and the `.use-row`s of words and sentences), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field and Notes stretched beside Reading and Meaning from 900 px, the Parse bar both forms use, word sheet with its hero row, meaning beside kanji (the kanji column as wide as the progress panel, `--hero-panel`), notes and example as full-width rows;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
 `css/sentences.css` (progress-group rows with state bars, one column; form; sheet with
