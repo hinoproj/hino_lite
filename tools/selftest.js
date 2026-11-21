@@ -218,9 +218,9 @@ check('ratings are four, lowest first', R.RATINGS.map((r) => r.value).join() ===
 
 const items = (n, offset = 0) => Array.from({ length: n }, (_, i) => ({ id: 'w' + (i + offset), addedAt: i + offset }));
 const now = 100 * 86400000;
-const unseenOnly = R.buildRun(items(20), () => ({ score: -1, lastSeen: 0 }), 10, { now, rng: seeded(1) });
-check('only new cards: a run holds at most 5', unseenOnly.length === 5, 'got ' + unseenOnly.length);
-check('new cards come newest first', unseenOnly.map((i) => i.id).sort().join() === ['w15', 'w16', 'w17', 'w18', 'w19'].sort().join(),
+const unseenOnly = R.buildRun(items(20), () => ({ score: -1, lastSeen: 0 }), 15, { now, rng: seeded(1) });
+check('only new cards: a run of 15 holds at most 10', unseenOnly.length === 10, 'got ' + unseenOnly.length);
+check('new cards come newest first', unseenOnly.map((i) => i.id).sort().join() === Array.from({ length: 10 }, (_, i) => 'w' + (10 + i)).sort().join(),
   unseenOnly.map((i) => i.id).join());
 
 // Run composition: strict tiers -- unknown, then learning; leftover room goes to learned/confident first while
@@ -262,28 +262,29 @@ const unknownThenLearning = tierRun([[4, unknownAt], [8, learningAt], [10, newCa
 check('learning fills what unknown leaves: the stalest first, nothing new or learned yet',
   ids(unknownThenLearning) === 'w0,w1,w2,w3,w4,w5,w6,w7,w8,w9', ids(unknownThenLearning));
 
-// w0-w1 unknown (when present), then learning, 20 new, 10 learned; ids shift by tier sizes.
+// Ids run tier by tier in the order given, so a range of ids is one tier.
 const count = (run, from, to) => run.filter((i) => Number(i.id.slice(1)) >= from && Number(i.id.slice(1)) < to).length;
 
-const withUnknown = tierRun([[2, unknownAt], [2, learningAt], [20, newCard], [10, learnedCard]], 14, 5);
-check('with something unknown, leftover room rechecks learned cards and teaches nothing new',
-  withUnknown.length === 14 && count(withUnknown, 0, 4) === 4 && count(withUnknown, 4, 24) === 0 && count(withUnknown, 24, 34) === 10,
-  withUnknown.length + ' cards, ' + count(withUnknown, 4, 24) + ' new');
+// The owner's case: 1 unknown (w0), 5 learning (w1-w5), 20 new (w6-w25), 10 learned (w26-w35).
+const ownerRun = (size, seed) => tierRun([[1, unknownAt], [5, learningAt], [20, newCard], [10, learnedCard]], size, seed);
+const fill = (run) => count(run, 0, 6) + ' old, ' + count(run, 6, 26) + ' new, ' + count(run, 26, 36) + ' known';
+const mixed10 = ownerRun(10, 5);
+check('an unknown card does not block new ones: 10 cards = 6 unknown/learning + 4 new',
+  mixed10.length === 10 && count(mixed10, 0, 6) === 6 && count(mixed10, 6, 26) === 4, fill(mixed10));
+const mixed15 = ownerRun(15, 6);
+check('new before known: 15 cards = 6 + 5 new + 3 known + 1 more new',
+  mixed15.length === 15 && count(mixed15, 6, 26) === 6 && count(mixed15, 26, 36) === 3, fill(mixed15));
+const mixed20 = ownerRun(20, 7);
+check('new cards stop at 10 a run, known ones fill the rest: 20 cards = 6 + 10 new + 4 known',
+  mixed20.length === 20 && count(mixed20, 6, 26) === 10 && count(mixed20, 26, 36) === 4, fill(mixed20));
 
-const gapFill = tierRun([[1, unknownAt], [2, learningAt], [20, newCard], [3, learnedCard]], 15, 6);
-check('with something unknown and too few learned cards, new cards fill the gap (at most 5)',
-  gapFill.length === 11 && count(gapFill, 3, 23) === 5 && count(gapFill, 23, 26) === 3,
-  gapFill.length + ' cards, ' + count(gapFill, 3, 23) + ' new');
+const fewNew = tierRun([[2, learningAt], [3, newCard], [10, learnedCard]], 15, 8);
+check('when new cards run out, known ones fill the run',
+  fewNew.length === 15 && count(fewNew, 2, 5) === 3 && count(fewNew, 5, 15) === 10, fewNew.length + ' cards');
 
-const noUnknown = tierRun([[2, learningAt], [20, newCard], [10, learnedCard]], 15, 7);
-check('with nothing unknown, leftover room goes to new cards first (at most 5), then learned',
-  noUnknown.length === 15 && count(noUnknown, 2, 22) === 5 && count(noUnknown, 22, 32) === 8,
-  noUnknown.length + ' cards, ' + count(noUnknown, 2, 22) + ' new');
-
-const capped = tierRun([[2, learningAt], [20, newCard]], 12, 8);
-check('the new-card cap is hard: the run stays short rather than add a sixth new card', capped.length === 7, 'got ' + capped.length);
-check('no card twice in a run', new Set(withUnknown.map((i) => i.id)).size === withUnknown.length &&
-  new Set(noUnknown.map((i) => i.id)).size === noUnknown.length);
+const freshList = tierRun([[30, newCard]], 20, 9);
+check('the new-card cap is hard: a fresh list of 30 gives a first run of 10, not 20', freshList.length === 10, 'got ' + freshList.length);
+check('no card twice in a run', [mixed15, mixed20, fewNew].every((run) => new Set(run.map((i) => i.id)).size === run.length));
 
 const knownOnly = R.buildRun(items(20), () => ({ score: 8, lastSeen: 0 }), 10, { now, rng: seeded(3) });
 check('all learned: the run still fills from maintenance', knownOnly.length === 10, 'got ' + knownOnly.length);

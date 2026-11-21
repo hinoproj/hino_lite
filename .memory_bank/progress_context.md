@@ -1,5 +1,18 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-21] Run fill: new and known cards take turns (P26 amended again)
+
+Owner tried the 2026-11-20 rule: with 1 unknown and 5 learning cards no new card ever came, since
+any unknown card sent the spare room to rechecks. Dropped. `buildRun` now fills from a list of
+steps, each a pool and a cumulative cap: unknown, learning, new ≤ `NEW_FIRST` 5, known ≤
+`RECHECK_FIRST` 3, new up to `MAX_NEW_TOTAL` 10 (replaces `MAX_NEW_PER_RUN` 5), known for the rest.
+Known cards are weighted-sampled once (up to the run size) and taken in that order. The owner's case
+gives 6 + 4 new (size 10), 6 + 6 new + 3 known (15), 6 + 10 new + 4 known (20); a fresh list's
+first run is 10 new. Selftest: three cases for that mix, known cards filling when new run out,
+the hard cap of 10; the two "at most 5" checks now expect 10. Settings and README text rewritten
+(no points); `AGENTS.md` co-edit row names the new constants. `sw.js` → `hino-lite-app-v26`.
+`ALL CHECKS PASSED`. Platform D73 amended in place.
+
 ## [2026-11-20] Score dots on every review card (P27)
 
 Owner's request, decided after a mock with three dot sizes (picked A: 6 px dots, 6 px gap).

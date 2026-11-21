@@ -135,15 +135,16 @@ Didn't know −3 / Guessed −1 / Knew it +2 / Easy! +4; an unseen card's first 
 5 (`LEARNED_AT − 2`), so a second miss in a row pays points (a guess only erodes by 1); scores 0–30. Labels (D56's shape, Hino Lite's thresholds, P26): unseen −1, unknown 0–1, learning
 2–6, learned 7–13, confident 14+. `buildRun` (P26) fills strict tiers: unknown (oldest `unknownSince`
 first, never rested; `lastSeen` stands in for older stats), learning (stalest first), then the room
-left goes to learned/confident sampled by staleness (`(1 + days, cap 30) × 0.2 if confident`) and new
-cards (≤`MAX_NEW_PER_RUN` 5, hard cap, newest first) — rechecks first while any card is unknown (new
-cards only fill the gap), new cards first when none is; shuffled. `progressGroup`
+left goes to new cards (newest first) and learned/confident ones (sampled by staleness:
+`(1 + days, cap 30) × 0.2 if confident`) in turns — `NEW_FIRST` 5 new, `RECHECK_FIRST` 3 known,
+more new up to `MAX_NEW_TOTAL` 10 (hard cap), then known; each step is a pool and a cumulative cap;
+shuffled. `progressGroup`
 (P18): an item reviewed in several directions is New only if never answered in any, Learned /
 Confident only when every direction is, otherwise Learning; `PROGRESS_GROUPS` lists them least
 known first; `groupByProgress(items, scoresOf)` splits a list into them, empty groups left out.
 
 **Exposes**: `UNSEEN`, `SCORE_MIN`, `SCORE_MAX`, `INITIAL_SCORE`, `LEARNING_AT`, `LEARNED_AT`, `CONFIDENT_AT`,
-`DEMOTION_SCORE`, `RATING_*`, `RATINGS`, `STATE_*`, `STATES`, `RUN_SIZES`, `MAX_NEW_PER_RUN`,
+`DEMOTION_SCORE`, `RATING_*`, `RATINGS`, `STATE_*`, `STATES`, `RUN_SIZES`, `NEW_FIRST`, `RECHECK_FIRST`, `MAX_NEW_TOTAL`,
 `STALE_CAP_DAYS`, `CONFIDENT_FACTOR`, `stateOf`, `isUnknown`, `isRating`,
 `applyRating`, `knownScore`, `isKnown`, `PROGRESS_GROUPS`, `progressGroup`, `groupByProgress`, `shuffle`, `maintenanceWeight`, `buildRun`, `countStates`
 

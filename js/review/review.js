@@ -58,7 +58,9 @@ export const STATE_CONFIDENT = 'confident';
 export const STATES = [STATE_UNSEEN, STATE_UNKNOWN, STATE_LEARNING, STATE_LEARNED, STATE_CONFIDENT];
 
 export const RUN_SIZES = [10, 15, 20];
-export const MAX_NEW_PER_RUN = 5;
+export const NEW_FIRST = 5;            // new cards that come before any recheck
+export const RECHECK_FIRST = 3;        // rechecks that come before more new cards
+export const MAX_NEW_TOTAL = 10;       // hard cap: never more new cards than this in one run
 export const STALE_CAP_DAYS = 30;
 export const CONFIDENT_FACTOR = 0.2;   // confident cards come back 5x less often than learned
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -165,15 +167,14 @@ function weightedSample(pool, weightOf, count, rng) {
  *      holds, the same oldest ones come back each time (older stats without
  *      `unknownSince` rank by `lastSeen`).
  *   2. learning (2-6), stalest first, lowest score on a tie.
- *   3. only with room left, in an order set by the unknown tier:
- *      - with any unknown card, learned/confident cards are rechecked first
- *        (stale ones likelier) and new cards only fill what they leave --
- *        nothing new is taught while something is still unknown;
- *      - with none, new cards come first, then learned/confident ones.
- *      New cards are at most MAX_NEW_PER_RUN, newest first -- a fresh list of
- *      30 words gives a first run of 5.
- * The run is shorter than `size` only when every tier is spent or the cap holds.
- * The result is shuffled so the tiers do not show in blocks.
+ *   3. only with room left, new and known (learned/confident) cards take turns:
+ *      NEW_FIRST new, then RECHECK_FIRST known, then more new up to
+ *      MAX_NEW_TOTAL in all, then known for whatever is left. New cards come
+ *      newest first; known ones are sampled, stale ones likelier.
+ * Each step is a pool and a cap on how many the run takes from that pool in
+ * all. The run is shorter than `size` only when every pool is spent or new
+ * cards hit their cap with nothing known left. The result is shuffled so the
+ * tiers do not show in blocks.
  */
 export function buildRun(items, statsOf, size, { now = Date.now(), rng = Math.random } = {}) {
   const tiers = { [STATE_UNSEEN]: [], [STATE_UNKNOWN]: [], [STATE_LEARNING]: [], known: [] };
@@ -188,12 +189,18 @@ export function buildRun(items, statsOf, size, { now = Date.now(), rng = Math.ra
     (statsOf(a.id).lastSeen || 0) - (statsOf(b.id).lastSeen || 0) || statsOf(a.id).score - statsOf(b.id).score);
   const fresh = tiers[STATE_UNSEEN].sort((a, b) => added(b) - added(a));
 
-  let picked = unknown.slice(0, size);
-  picked = picked.concat(learning.slice(0, size - picked.length));
-  const newCards = (room) => fresh.slice(0, Math.min(MAX_NEW_PER_RUN, room));
-  const recheck = (room) => weightedSample(tiers.known, (item) => maintenanceWeight(statsOf(item.id), now), room, rng);
-  (unknown.length ? [recheck, newCards] : [newCards, recheck])
-    .forEach((fill) => { picked = picked.concat(fill(size - picked.length)); });
+  const known = weightedSample(tiers.known, (item) => maintenanceWeight(statsOf(item.id), now), size, rng);
+
+  const steps = [[unknown, size], [learning, size], [fresh, NEW_FIRST], [known, RECHECK_FIRST],
+    [fresh, MAX_NEW_TOTAL], [known, size]];
+  const taken = new Map();
+  let picked = [];
+  steps.forEach(([pool, cap]) => {
+    const from = taken.get(pool) || 0;
+    const to = Math.max(from, Math.min(pool.length, cap, from + size - picked.length));
+    picked = picked.concat(pool.slice(from, to));
+    taken.set(pool, to);
+  });
   return shuffle(picked, rng);
 }
 
