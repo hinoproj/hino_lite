@@ -1,4 +1,4 @@
-// [MODULE] words-ui | Words tab: review panel, labelled search toolbar, list grouped by progress (two columns when wide), add/edit form with rōmaji suggestions, accent preview and pasted-block fill with Undo, word sheet with progress panel, word review adapter; every reading shows its accented mora in bold
+// [MODULE] words-ui | Words tab: review panel, labelled search toolbar, list with a Least known copy above the progress groups (two columns when wide), add/edit form with rōmaji suggestions, accent preview and pasted-block fill with Undo, word sheet with progress panel, word review adapter; every reading shows its accented mora in bold
 // [IFACE] layer: presentation | in: DOM events, prefilled drafts (from the kanji card) -> out: rendered words screens, saved words, enrolled kanji, words marked as known | crosses: [browser DOM]
 // [GRAPH] needs: [words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card] | feeds: [main, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -15,8 +15,12 @@ import { openKanjiCard } from '../kanji/kanji-card.js';
 
 let query = '';
 
+function wordStats(word) {
+  return W.TRACKS.map((t) => store.reviewStats(t, word.id));
+}
+
 function wordScores(word) {
-  return W.TRACKS.map((t) => store.reviewStats(t, word.id).score);
+  return wordStats(word).map((st) => st.score);
 }
 
 function wordStates(word) {
@@ -64,9 +68,14 @@ export function renderWords() {
   shell.showScreen('screen-words');
 }
 
-/** The matching words in progress groups, least known first (P18); newest first inside a group. */
+/**
+ * The matching words: first a copy of the ones unknown in either direction, longest unknown
+ * first (P28), then the progress groups, least known first (P18); newest first inside a group.
+ */
 function fillList(list, words) {
-  const groups = R.groupByProgress(words.filter((w) => W.matchesQuery(w, query)), wordScores).map((g) =>
+  const matches = words.filter((w) => W.matchesQuery(w, query));
+  const least = R.leastKnown(matches, wordStats);
+  const groups = [...(least.length ? [{ ...R.LEAST_KNOWN, items: least }] : []), ...R.groupByProgress(matches, wordScores)].map((g) =>
     listGroup(g.label, g.items.length, h('div', { class: 'word-grid' }, g.items.map(wordRow)),
       { className: 'word-group', dataset: { group: g.id } }));
   list.replaceChildren(...groups);

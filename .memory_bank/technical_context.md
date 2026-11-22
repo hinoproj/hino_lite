@@ -46,7 +46,9 @@ Full graph, boundaries and per-module notes: `.agentic_docs/code_index.md`. Rule
   sentence with a translation is reviewed (`sentences.isReviewable`), the others stay in the list.
 - **List progress groups** (`review.progressGroup` / `groupByProgress`, used by the word and sentence lists): with two directions,
   New only if neither was ever answered, Learned/Confident only when both are, otherwise
-  Learning; `isKnown`'s "both learned" bar, so the list and "Mark as known" agree.
+  Learning; `isKnown`'s "both learned" bar, so the list and "Mark as known" agree. Above them
+  sits **Least known** (`review.leastKnown`, P28): a copy of the items unknown (0–1) in either
+  direction, longest unknown first (the run's tier-1 order); search filters it like the rest.
 - **Reveal plans are rules** (`words.cardPlan`, `kanji.cardPlan`); the shared `review-ui` renders
   any plan through an adapter's part renderers. Notes, then the example, always come last (they contain the word).
   An adapter may lay parts out from the plan (the kanji adapter puts stroke order beside the glyph when

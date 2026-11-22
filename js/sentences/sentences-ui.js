@@ -1,4 +1,4 @@
-// [MODULE] sentences-ui | Sentences tab: review panel, labelled search toolbar, list grouped by progress, add/edit form with Parse and pasted-block fill (one Undo), its kanji enrolled on every save, sentence sheet with progress panel, word-card prompt after a new sentence (notes collapsed per row), sentence review adapter
+// [MODULE] sentences-ui | Sentences tab: review panel, labelled search toolbar, list with a Least known copy above the progress groups, add/edit form with Parse and pasted-block fill (one Undo), its kanji enrolled on every save, sentence sheet with progress panel, word-card prompt after a new sentence (notes collapsed per row), sentence review adapter
 // [IFACE] layer: presentation | in: DOM events -> out: rendered sentence screens, saved sentences, saved words, enrolled kanji, started sentence reviews, sentences marked as known | crosses: [browser DOM]
 // [GRAPH] needs: [sentences, words, kanji, romaji, review, review-ui, storage, shell, dom] | feeds: [main, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -15,8 +15,12 @@ import { $, h, ja, button, confirmAction, toast, filterGroup, listGroup, part, p
 
 let query = '';
 
+function sentenceStats(sentence) {
+  return S.TRACKS.map((t) => store.reviewStats(t, sentence.id));
+}
+
 function sentenceScores(sentence) {
-  return S.TRACKS.map((t) => store.reviewStats(t, sentence.id).score);
+  return sentenceStats(sentence).map((st) => st.score);
 }
 
 // --- Sentences tab --------------------------------------------------------
@@ -51,9 +55,14 @@ export function renderSentences() {
   shell.showScreen('screen-sentences');
 }
 
-/** The matching sentences in progress groups, least known first (P19); one column, newest first inside a group. */
+/**
+ * The matching sentences: first a copy of the ones unknown in either direction, longest unknown
+ * first (P28), then the progress groups, least known first (P19); one column, newest first inside a group.
+ */
 function fillList(list, sentences) {
-  const groups = R.groupByProgress(sentences.filter((s) => S.matchesQuery(s, query)), sentenceScores).map((g) =>
+  const matches = sentences.filter((s) => S.matchesQuery(s, query));
+  const least = R.leastKnown(matches, sentenceStats);
+  const groups = [...(least.length ? [{ ...R.LEAST_KNOWN, items: least }] : []), ...R.groupByProgress(matches, sentenceScores)].map((g) =>
     listGroup(g.label, g.items.length, h('div', { class: 'sentence-list' }, g.items.map(sentenceRow)),
       { className: 'sentence-group', dataset: { group: g.id } }));
   list.replaceChildren(...groups);

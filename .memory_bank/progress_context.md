@@ -1,5 +1,15 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-22] Least known group on the Words and Sentences lists (P28)
+
+Owner asked for the unknown items in one place, to copy onto paper for writing drills. New pure
+rule `review.leastKnown(items, statsOf)` + `LEAST_KNOWN` (`least-known`, "Least known"): items
+unknown in any direction, longest unknown first (`unknownSince`, else `lastSeen`; ties keep list
+order). `words-ui` and `sentences-ui` `fillList` put it above the progress groups as a copy (items
+stay in Learning); search filters it; no data change. Kanji untouched. `sw.js` cache v27.
+Selftest +1 (`leastKnown`); smoke: the words list's Least known order and copy, the sentence
+list's group order with it, search emptying it. `uv run tools/check.py`: ALL CHECKS PASSED.
+
 ## [2026-11-21] Run fill: new and known cards take turns (P26 amended again)
 
 Owner tried the 2026-11-20 rule: with 1 unknown and 5 learning cards no new card ever came, since

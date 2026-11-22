@@ -308,6 +308,11 @@ async function wordReviews() {
     Object.values(recall).every((e) => e.score === 1 && e.unknownSince > 0) && Object.values(saved().reviews['words.read']).every((e) => e.score === 8));
   $('#btn-review-done').click();
   await waitFor(() => visible('screen-words'));
+  const leastIds = () => $$('#word-list .word-group[data-group="least-known"] .word-row').map((r) => r.dataset.id);
+  const byUnknown = Object.entries(recall).sort((a, b) => a[1].unknownSince - b[1].unknownSince).map(([id]) => id);
+  log('Least known heads the list: the unknown words, longest unknown first, also kept in Learning (P28)',
+    $('#word-list .word-group').dataset.group === 'least-known' && leastIds().join() === byUnknown.join() &&
+      byUnknown.every((id) => $('#word-list .word-group[data-group="learning"] .word-row[data-id="' + id + '"]')), leastIds().join());
 
   const tv = Object.values(saved().words).find((x) => x.reading === 'テレビ');
   $('#word-list .word-row[data-id="' + tv.id + '"]').click();
@@ -324,7 +329,8 @@ async function wordReviews() {
   await waitFor(() => $('#word-list .word-group[data-group="learned"]'));
   const groups = $$('#word-list .word-group').map((g) => g.dataset.group).join();
   log('the list regroups by progress, least known first, in two columns when wide',
-    groups === 'learning,learned' && Boolean($('.word-group[data-group="learned"] .word-row[data-id="' + tv.id + '"]')) &&
+    groups === 'least-known,learning,learned' && Boolean($('.word-group[data-group="learned"] .word-row[data-id="' + tv.id + '"]')) &&
+      !leastIds().includes(tv.id) && leastIds().length === 2 &&
       w.getComputedStyle($('#word-list .word-grid')).gridTemplateColumns.split(' ').length === 2, groups);
 }
 
@@ -687,7 +693,8 @@ async function sentences() {
   $('#btn-review-done').click();
   await waitFor(() => visible('screen-sentences'));
   const sentenceGroups = () => $$('#sentence-list .sentence-group').map((g) => g.dataset.group).join();
-  log('the list groups sentences by progress, least known first', sentenceGroups() === 'unseen,learning', sentenceGroups());
+  log('the list groups sentences by progress, least known first, under a Least known copy', sentenceGroups() === 'least-known,unseen,learning' &&
+    $$('#sentence-list .sentence-group[data-group="least-known"] .sentence-row').length === 2, sentenceGroups());
 
   await open('もう一度');
   log('the sentence sheet shows both directions and Mark as known',
@@ -697,7 +704,8 @@ async function sentences() {
   const listen = st.listSentences().find((x) => x.sentence.startsWith('もう一度'));
   log('mark as known: both directions learned, the sentence moves to Learned',
     st.reviewStats('sentences.read', listen.id).score >= 7 && st.reviewStats('sentences.recall', listen.id).score === 7 &&
-      sentenceGroups() === 'unseen,learning,learned', sentenceGroups());
+      sentenceGroups() === 'least-known,unseen,learning,learned' &&
+      $$('#sentence-list .sentence-group[data-group="least-known"] .sentence-row').length === 1, sentenceGroups());
   $('#sentence-view .sheet-head button').click();
   await waitFor(() => !visible('sheet-layer'));
   await open('毎日');
@@ -707,7 +715,10 @@ async function sentences() {
   await waitFor(() => !visible('sheet-layer'));
 
   type($('#sentences-search'), 'question');
-  log('search finds a sentence by its translation', $$('#sentence-list .sentence-row').length === 1);
+  const searched = () => $$('#sentence-list .sentence-group:not([data-group="least-known"]) .sentence-row').length;
+  log('search finds a sentence by its translation', searched() === 1, String(searched()));
+  type($('#sentences-search'), 'zzz');
+  log('search filters Least known too', !$('#sentence-list .sentence-group'));
   type($('#sentences-search'), '');
 
   await open('毎日');

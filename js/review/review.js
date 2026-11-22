@@ -1,4 +1,4 @@
-// [MODULE] review | Pure rules for self-rated reviews (words, kanji, sentences): ratings, scores, knowledge labels, progress groups for lists, run composition
+// [MODULE] review | Pure rules for self-rated reviews (words, kanji, sentences): ratings, scores, knowledge labels, progress groups and the least-known group for lists, run composition
 // [IFACE] layer: domain | in: scores, ratings, item lists with stats -> out: new scores, state labels, run item lists | crosses: []
 // [GRAPH] needs: [] | feeds: [review-ui, words-ui, sentences-ui, kanji-ui, kanji-card, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
@@ -123,6 +123,26 @@ export function groupByProgress(items, scoresOf) {
   const byGroup = new Map(PROGRESS_GROUPS.map((g) => [g.id, []]));
   items.forEach((item) => byGroup.get(progressGroup(scoresOf(item))).push(item));
   return PROGRESS_GROUPS.filter((g) => byGroup.get(g.id).length).map((g) => ({ ...g, items: byGroup.get(g.id) }));
+}
+
+/** The list's "Least known" group (owner, P28): a copy above the progress groups, not one of them. */
+export const LEAST_KNOWN = { id: 'least-known', label: 'Least known' };
+
+/**
+ * Items unknown (0-1) in at least one direction, longest unknown first -- the order a run takes
+ * them (`buildRun` tier 1; older stats without `unknownSince` rank by `lastSeen`). They stay in
+ * their own progress group too. `statsOf(item)` returns one {score, lastSeen, unknownSince} per
+ * direction; an item counts from the direction that has been unknown longest. Ties keep the
+ * items' order.
+ */
+export function leastKnown(items, statsOf) {
+  const since = (st) => st.unknownSince || st.lastSeen || 0;
+  return items
+    .map((item) => ({ item, unknown: statsOf(item).filter((st) => isUnknown(st.score)) }))
+    .filter((e) => e.unknown.length)
+    .map((e) => ({ item: e.item, since: Math.min(...e.unknown.map(since)) }))
+    .sort((a, b) => a.since - b.since)
+    .map((e) => e.item);
 }
 
 export function shuffle(list, rng = Math.random) {

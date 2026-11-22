@@ -48,7 +48,8 @@ yourself: **Didn't know**, **Guessed**, **Knew it** or **Easy!** ("Which one do 
 A word's card shows how far each review has come; **Mark as known** puts a word you already know
 straight to learned in both, so it comes up only now and then. The list is grouped by progress,
 least known first: **New** (never reviewed), **Learning**, **Learned** and **Confident** (a word
-reaches these only when both reviews have).
+reaches these only when both reviews have). Above them, **Least known** repeats every word you
+didn't know in either review, the longest-unknown first, so you can find them in one place.
 
 **Sentences** — your sentences: the sentence, its reading (optional, kana), a translation and
 notes. Paste a sentence with readings in brackets and its translation at the end, and **Parse**

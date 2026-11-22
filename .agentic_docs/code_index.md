@@ -142,11 +142,14 @@ shuffled. `progressGroup`
 (P18): an item reviewed in several directions is New only if never answered in any, Learned /
 Confident only when every direction is, otherwise Learning; `PROGRESS_GROUPS` lists them least
 known first; `groupByProgress(items, scoresOf)` splits a list into them, empty groups left out.
+`leastKnown(items, statsOf)` (P28) picks the items unknown in any direction, longest unknown
+first (`unknownSince`, else `lastSeen`) — the list's `LEAST_KNOWN` copy group, shown above the
+progress groups; the items stay in their own group too.
 
 **Exposes**: `UNSEEN`, `SCORE_MIN`, `SCORE_MAX`, `INITIAL_SCORE`, `LEARNING_AT`, `LEARNED_AT`, `CONFIDENT_AT`,
 `DEMOTION_SCORE`, `RATING_*`, `RATINGS`, `STATE_*`, `STATES`, `RUN_SIZES`, `NEW_FIRST`, `RECHECK_FIRST`, `MAX_NEW_TOTAL`,
 `STALE_CAP_DAYS`, `CONFIDENT_FACTOR`, `stateOf`, `isUnknown`, `isRating`,
-`applyRating`, `knownScore`, `isKnown`, `PROGRESS_GROUPS`, `progressGroup`, `groupByProgress`, `shuffle`, `maintenanceWeight`, `buildRun`, `countStates`
+`applyRating`, `knownScore`, `isKnown`, `PROGRESS_GROUPS`, `progressGroup`, `groupByProgress`, `LEAST_KNOWN`, `leastKnown`, `shuffle`, `maintenanceWeight`, `buildRun`, `countStates`
 
 ## words
 
@@ -338,7 +341,8 @@ points) that the word sheet, the sentence sheet and the kanji card build their p
 
 **File**: `js/words/words-ui.js` · **Layer**: presentation
 
-Words tab (review panel; a toolbar panel with the labelled search; the list in progress groups
+Words tab (review panel; a toolbar panel with the labelled search; the list: a Least known copy
+group first (`review.leastKnown`, P28), then the progress groups
 New · Learning · Learned · Confident by `review.progressGroup`, empty groups hidden, newest first
 inside a group, two columns from 720 px), word sheet (hero: the word and its reading with a
 progress panel — both directions as lit steps and "Mark as known" until both are learned —
@@ -366,7 +370,8 @@ summary — shows its accent (`readingNode` → `dom.jaReading` with `W.accentVi
 **File**: `js/sentences/sentences-ui.js` · **Layer**: presentation
 
 Sentences tab (review panel for the sentences with a translation, or a hint when none has one; the
-labelled search toolbar; the list in progress groups via `review.groupByProgress`, one column,
+labelled search toolbar; the list: a Least known copy group (`review.leastKnown`, P28), then the
+progress groups via `review.groupByProgress`, one column,
 newest first inside a group; an untranslated row reads "No translation — not in reviews" and has no
 state bars), sentence sheet (reading, a progress panel laid out as the word sheet's — both directions
 and Mark as known, or "Add a translation to review this sentence" — translation, notes, Edit,

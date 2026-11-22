@@ -214,6 +214,12 @@ const grouped = R.groupByProgress(['a', 'b', 'c', 'd'], (id) => ({ a: [7, 7], b:
 check('groupByProgress: least known first, empty groups left out, order kept inside a group',
   grouped.map((g) => g.id + ':' + g.items.join('')).join() === 'unseen:b,learning:d,learned:ac',
   grouped.map((g) => g.id + ':' + g.items.join('')).join());
+const stats = (score, unknownSince = 0, lastSeen = 0) => ({ score, unknownSince, lastSeen });
+const least = R.leastKnown(['a', 'b', 'c', 'd', 'e', 'f'], (id) => ({
+  a: [stats(1, 50), stats(7)], b: [stats(-1), stats(-1)], c: [stats(8), stats(0, 30)],
+  d: [stats(0, 40), stats(1, 20)], e: [stats(2), stats(6)], f: [stats(1, 0, 10), stats(-1)] })[id]);
+check('leastKnown: unknown in any direction, longest unknown first (lastSeen when unknownSince is missing)',
+  least.join('') === 'fdca' && R.LEAST_KNOWN.id === 'least-known' && R.leastKnown([], () => []).length === 0, least.join(''));
 check('ratings are four, lowest first', R.RATINGS.map((r) => r.value).join() === '-3,-1,2,4');
 
 const items = (n, offset = 0) => Array.from({ length: n }, (_, i) => ({ id: 'w' + (i + offset), addedAt: i + offset }));
