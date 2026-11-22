@@ -1,5 +1,20 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-22] Least known: Copy and Quiz for words (P29)
+
+Owner copies the least-known words onto paper for writing practice, and wanted a quick in-app check.
+Copy: the whole Least known list as `kanji⇥reading⇥meaning` lines (`-` for a kana word). Quiz (name
+"Drill" declined): new rule module `js/review/quiz.js` (`quizRun`, `quizScore` — show −1, right step
++1 —, `promoted`, `pickOptions`), `words.quizPlan` / `quizCandidates` / `copyText`, new screen module
+`js/review/quiz-ui.js` with `#screen-quiz` / `#screen-quiz-summary`; the summary lists only words leaving
+unknown, with Undo/Redo via the new `storage.restoreReview`, or a general note when none. `dom.listGroup`
+takes `actions` (Copy and Quiz sit on the Least known heading); a sheet picks the direction. `sw.js` v28
+with both new files. Selftest +7, smoke +8 (Copy with a stubbed clipboard, sheet counts, scoring, summary,
+Undo, the none-promoted note); scenes `quiz`, `quiz-summary` and shots for them. Bug met on the way: native
+`replaceChildren` does not flatten an array the way `dom.h` does. `uv run tools/check.py`: ALL CHECKS PASSED.
+Then, owner: a quiz must not affect run order. New `storage.setQuizScore` writes the score (and clears
+`unknownSince` when a word leaves unknown) but never `seen` or `lastSeen`; smoke +1 checks both stay.
+
 ## [2026-11-22] Least known group on the Words and Sentences lists (P28)
 
 Owner asked for the unknown items in one place, to copy onto paper for writing drills. New pure

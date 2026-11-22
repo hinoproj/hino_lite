@@ -1,5 +1,5 @@
-// [MODULE] words | Pure word rules: input cleanup and validation, pitch-accent notation in the reading (P23), morae, pasted-block split (P20), kanji extraction, duplicate key, reveal plan per mode (notes and example folded, P24), search
-// [IFACE] layer: domain | in: word drafts, pasted blocks, query strings, a library-membership test -> out: clean words with their accent, accent splits, filled fields, errors, kanji lists, card plans | crosses: []
+// [MODULE] words | Pure word rules: input cleanup and validation, pitch-accent notation in the reading (P23), morae, pasted-block split (P20), kanji extraction, duplicate key, reveal plan per mode (notes and example folded, P24), quiz steps and option candidates, copy text for paper (P29), search
+// [IFACE] layer: domain | in: word drafts, pasted blocks, query strings, a library-membership test -> out: clean words with their accent, accent splits, filled fields, errors, kanji lists, card plans, quiz steps, option texts, copy text | crosses: []
 // [GRAPH] needs: [romaji] | feeds: [words-ui, sentences-ui, kanji-card, kanji-ui, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
 
@@ -217,6 +217,48 @@ export function cardPlan(word, track) {
   return has('writing')
     ? { prompt: 'writing', steps: [{ button: 'Show reading', keys: ['reading'] }, last('Show meaning', ['meaning'])] }
     : { prompt: 'reading', steps: [last('Show meaning', ['meaning'])] };
+}
+
+/**
+ * The quiz's steps for one word (P29): each shows some fields and asks for one more, picked
+ * from options (review/quiz.js).
+ *
+ *   Japanese → meaning   writing -> reading, then writing + reading -> meaning
+ *                        (no writing: reading -> meaning)
+ *   Meaning → Japanese   meaning -> reading, then meaning + reading -> writing
+ *                        (no writing: meaning -> reading)
+ *
+ * A kana word has one step only, so a quiz never raises it (the owner's call).
+ */
+export function quizPlan(word, track) {
+  const kanji = Boolean(clean(word.writing));
+  if (track === TRACK_RECALL) {
+    return [{ show: ['meaning'], ask: 'reading' }].concat(kanji ? [{ show: ['meaning', 'reading'], ask: 'writing' }] : []);
+  }
+  return kanji
+    ? [{ show: ['writing'], ask: 'reading' }, { show: ['writing', 'reading'], ask: 'meaning' }]
+    : [{ show: ['reading'], ask: 'meaning' }];
+}
+
+/**
+ * Other words' texts that may stand as wrong options in one quiz step. A word that shows the
+ * same as the prompt in every shown field is left out: its answer could be right too (今日 is
+ * きょう and こんにち).
+ */
+export function quizCandidates(word, step, words) {
+  return words
+    .filter((w) => w.id !== word.id && clean(w[step.ask]) && !step.show.every((k) => clean(w[k]) === clean(word[k])))
+    .map((w) => clean(w[step.ask]));
+}
+
+/**
+ * Words for pen and paper (P29): one per line, kanji, reading and meaning separated by tabs, so
+ * a paste makes three columns. A kana word's kanji is "-"; the reading is plain kana (the
+ * accent is stored beside it); a line break inside a field becomes "; ".
+ */
+export function copyText(words) {
+  const cell = (value) => clean(value).replace(/\s*[\r\n\t]+\s*/g, '; ');
+  return words.map((w) => [cell(w.writing) || '-', cell(w.reading), cell(w.meaning)].join('\t')).join('\n');
 }
 
 /** Search across every field; a rōmaji or katakana query also matches the reading it spells. */

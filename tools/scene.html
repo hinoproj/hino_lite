@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- [MODULE] scene | Screenshot helper: seeds sample data and drives the app (full-window iframe) to one named screen
-     [IFACE] layer: tooling | in: ?scene=words|word|word-form|review|review-full|review-open|kanji|card|kana|sentences|sentence|sentence-review|sentence-form|sentence-words|kanji-review|kanji-review-step|kanji-read-review[&theme=dark|light|kids] -> out: the app showing that screen | crosses: [browser DOM, localStorage]
+     [IFACE] layer: tooling | in: ?scene=words|word|word-form|review|review-full|review-open|kanji|card|kana|sentences|sentence|sentence-review|sentence-form|sentence-words|kanji-review|kanji-review-step|kanji-read-review|quiz|quiz-tablet|quiz-summary[&theme=dark|light|kids] -> out: the app showing that screen | crosses: [browser DOM, localStorage]
      [GRAPH] needs: [index] | feeds: [check] | group: tooling
      [STATE] stateful | persists: overwrites hino_lite_v2 in this browser profile | raises: nothing
 
@@ -39,8 +39,9 @@ const words = [
 const kanji = {};
 ['勉', '強', '学', '校', '先', '生', '食'].forEach((ch, i) => { kanji[ch] = { addedAt: now - (9 - i) * day, removed: false }; });
 const reviews = {
-  'words.read': { w1: { score: 7, seen: 3, lastSeen: now - 2 * day }, w2: { score: 2, seen: 2, lastSeen: now - day }, w3: { score: 16, seen: 6, lastSeen: now - 4 * day } },
-  'words.recall': { w1: { score: 1, seen: 2, lastSeen: now - 2 * day }, w3: { score: 6, seen: 3, lastSeen: now - 4 * day } },
+  'words.read': { w1: { score: 7, seen: 3, lastSeen: now - 2 * day }, w2: { score: 2, seen: 2, lastSeen: now - day }, w3: { score: 16, seen: 6, lastSeen: now - 4 * day },
+    w4: { score: 1, seen: 1, lastSeen: now - day, unknownSince: now - day } },
+  'words.recall': { w1: { score: 1, seen: 2, lastSeen: now - 2 * day, unknownSince: now - 2 * day }, w3: { score: 6, seen: 3, lastSeen: now - 4 * day } },
   'kanji.read': { 学: { score: 6, seen: 2, lastSeen: now - day }, 生: { score: 2, seen: 1, lastSeen: now - day } },
   'kanji.recall': {},
   'sentences.read': { s1: { score: 7, seen: 3, lastSeen: now - 2 * day }, s2: { score: 2, seen: 1, lastSeen: now - day } },
@@ -77,7 +78,7 @@ async function waitFor(fn, timeout = 20000) {
 }
 const hash = { words: 'words', word: 'words', 'word-form': 'words', review: 'words', 'review-full': 'words', 'review-open': 'words', kanji: 'kanji', card: 'kanji/学', kana: 'kana',
   sentences: 'sentences', sentence: 'sentences', 'sentence-review': 'sentences', 'sentence-form': 'sentences',
-  'sentence-words': 'sentences', 'kanji-review': 'kanji', 'kanji-review-step': 'kanji', 'kanji-read-review': 'kanji' }[scene] || 'kana';
+  'sentence-words': 'sentences', 'kanji-review': 'kanji', 'kanji-review-step': 'kanji', 'kanji-read-review': 'kanji', quiz: 'words', 'quiz-summary': 'words' }[scene] || 'kana';
 await new Promise((resolve) => { frame.onload = resolve; frame.src = '../index.html#' + hash; });
 const w = frame.contentWindow;
 const d = frame.contentDocument;
@@ -126,6 +127,21 @@ if (scene === 'word-form') {
   }
   await revealAll();
   if (scene === 'review-open') d.querySelector('.review-fold summary').click();
+} else if (scene === 'quiz' || scene === 'quiz-summary') {
+  // quiz: 先生 (unknown in Japanese → meaning), the right reading picked, then a wrong meaning.
+  // quiz-summary: 勉強 (unknown in Meaning → Japanese) answered right twice: it leaves Least known.
+  const track = scene === 'quiz' ? 'words.read' : 'words.recall';
+  const answer = scene === 'quiz' ? { reading: 'せんせい', meaning: 'teacher' } : { reading: 'べんきょう', writing: '勉強' };
+  const pick = (right) => [...d.querySelectorAll('#quiz-options button')].find((b) => (b.textContent === answer[b.closest('#quiz-options').dataset.ask]) === right).click();
+  d.getElementById('btn-quiz-least').click();
+  await sleep(100);
+  d.querySelector('#quiz-sheet .mode-row[data-quiz-track="' + track + '"] button.primary').click();
+  await sleep(100);
+  pick(true);
+  d.getElementById('btn-quiz-next').click();
+  await sleep(50);
+  pick(scene === 'quiz-summary');
+  if (scene === 'quiz-summary') { d.getElementById('btn-quiz-next').click(); await sleep(50); }
 } else if (scene === 'sentence') {
   d.querySelector('#sentence-list .sentence-row[data-id="s1"]').click();
   await waitFor(() => d.getElementById('sentence-view'));

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- [MODULE] index | Page shell: tab and focus screens, kana markup with the timer ring, sheet layer, tab bar, PWA hooks
+<!-- [MODULE] index | Page shell: tab and focus screens (review and quiz runs among them), kana markup with the timer ring, sheet layer, tab bar, PWA hooks
      [IFACE] layer: presentation | in: nothing -> out: DOM nodes the UI modules fill and bind by id | crosses: [browser DOM]
      [GRAPH] needs: [app-css, review-css, words-css, sentences-css, kanji-css, main] | feeds: [browser-smoke, scene] | group: presentation
      [STATE] stateless | persists: nothing | raises: nothing -->
@@ -116,6 +116,10 @@
   <!-- Self-rated review run and summary (words and kanji): js/review/review-ui.js -->
   <section class="screen" id="screen-review" hidden></section>
   <section class="screen" id="screen-review-summary" hidden></section>
+
+  <!-- Quiz of least-known words and its summary (P29): js/review/quiz-ui.js -->
+  <section class="screen" id="screen-quiz" hidden></section>
+  <section class="screen" id="screen-quiz-summary" hidden></section>
 
   <!-- Kanji: filled by js/kanji/kanji-ui.js -->
   <section class="screen wide" id="screen-kanji" data-tab="kanji" hidden></section>

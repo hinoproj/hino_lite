@@ -1,6 +1,6 @@
-// [MODULE] selftest | Browser-run assertions over the pure modules: kana tables and rules, rōmaji, review, words, sentences, kanji, storage normalize
+// [MODULE] selftest | Browser-run assertions over the pure modules: kana tables and rules, rōmaji, review, the quiz, words, sentences, kanji, storage normalize
 // [IFACE] layer: tooling | in: nothing -> out: report in #out and POSTed to /__report, ending SELFTEST PASSED/FAILED | crosses: [browser DOM, local HTTP server]
-// [GRAPH] needs: [kana-data, kana-srs, romaji, review, words, sentences, kanji, kanji-index, storage] | feeds: [selftest-page] | group: tooling
+// [GRAPH] needs: [kana-data, kana-srs, romaji, review, quiz, words, sentences, kanji, kanji-index, storage] | feeds: [selftest-page] | group: tooling
 // [STATE] stateless | persists: nothing | raises: nothing
 
 /**
@@ -13,6 +13,7 @@ import { KANA_DATA as DATA } from '../js/kana/kana-data.js';
 import { KanaSRS as SRS } from '../js/kana/kana-srs.js';
 import * as RJ from '../js/core/romaji.js';
 import * as R from '../js/review/review.js';
+import * as Q from '../js/review/quiz.js';
 import * as W from '../js/words/words.js';
 import * as S from '../js/sentences/sentences.js';
 import * as K from '../js/kanji/kanji.js';
@@ -220,6 +221,36 @@ const least = R.leastKnown(['a', 'b', 'c', 'd', 'e', 'f'], (id) => ({
   d: [stats(0, 40), stats(1, 20)], e: [stats(2), stats(6)], f: [stats(1, 0, 10), stats(-1)] })[id]);
 check('leastKnown: unknown in any direction, longest unknown first (lastSeen when unknownSince is missing)',
   least.join('') === 'fdca' && R.LEAST_KNOWN.id === 'least-known' && R.leastKnown([], () => []).length === 0, least.join(''));
+// Quiz of least-known items (P29)
+check('quiz score: shown costs 1, each right step earns 1, floor 0',
+  Q.quizScore(1, 2) === 2 && Q.quizScore(1, 1) === 1 && Q.quizScore(1, 0) === 0 && Q.quizScore(0, 0) === 0 &&
+    Q.quizScore(0, 2) === 1 && Q.quizScore(0, 1) === 0);
+check('quiz promotion: out of unknown only', Q.promoted(1, 2) && !Q.promoted(1, 1) && !Q.promoted(0, 0) && !Q.promoted(7, 8));
+const quizStats = { a: stats(1, 30), b: stats(8), c: stats(0, 10), d: stats(-1), e: stats(1, 20) };
+const quizItems = ['a', 'b', 'c', 'd', 'e'];
+check('quiz run: only the items unknown in its direction, longest unknown first, up to the size',
+  Q.quizRun(quizItems, (id) => quizStats[id], 2).slice().sort().join('') === 'ce' &&
+    Q.quizRun(quizItems, (id) => quizStats[id], 10).slice().sort().join('') === 'ace');
+const opts = Q.pickOptions('a', [['b', 'a', '', 'b'], ['c'], ['d', 'e']]);
+check('quiz options: the answer and 3 others, no repeats, pools in order',
+  opts.length === 4 && opts.includes('a') && opts.includes('b') && opts.includes('c') && new Set(opts).size === 4 &&
+    Q.pickOptions('a', [['b', 'c', 'd', 'e'], ['x']]).every((o) => o !== 'x') &&
+    Q.pickOptions('a', [['b'], []]).slice().sort().join() === 'a,b', opts.join());
+check('quiz plan: kanji -> reading -> meaning, meaning -> reading -> kanji; a kana word one step',
+  W.quizPlan({ writing: '学校' }, W.TRACK_READ).map((s) => s.show.join('+') + '>' + s.ask).join() === 'writing>reading,writing+reading>meaning' &&
+    W.quizPlan({ writing: '' }, W.TRACK_READ).map((s) => s.show.join('+') + '>' + s.ask).join() === 'reading>meaning' &&
+    W.quizPlan({ writing: '学校' }, W.TRACK_RECALL).map((s) => s.show.join('+') + '>' + s.ask).join() === 'meaning>reading,meaning+reading>writing' &&
+    W.quizPlan({ writing: '' }, W.TRACK_RECALL).map((s) => s.show.join('+') + '>' + s.ask).join() === 'meaning>reading');
+const kyou = { id: 1, writing: '今日', reading: 'きょう', meaning: 'today' };
+const quizWords = [kyou, { id: 2, writing: '今日', reading: 'こんにち', meaning: 'these days' },
+  { id: 3, writing: '明日', reading: 'あした', meaning: 'tomorrow' }, { id: 4, writing: '', reading: 'テレビ', meaning: 'TV' }];
+check('quiz candidates: not the word itself, not a word the prompt cannot tell apart, not an empty field',
+  W.quizCandidates(kyou, { show: ['writing'], ask: 'reading' }, quizWords).join() === 'あした,テレビ' &&
+    W.quizCandidates(kyou, { show: ['meaning', 'reading'], ask: 'writing' }, quizWords).join() === '今日,明日',
+  W.quizCandidates(kyou, { show: ['writing'], ask: 'reading' }, quizWords).join());
+check('copy text: kanji, reading, meaning by tabs; "-" for a kana word; line breaks become "; "',
+  W.copyText([{ writing: '勉強', reading: 'べんきょう', meaning: 'study\nlearning' }, { writing: '', reading: 'テレビ', meaning: 'TV' }]) ===
+    '勉強\tべんきょう\tstudy; learning\n-\tテレビ\tTV');
 check('ratings are four, lowest first', R.RATINGS.map((r) => r.value).join() === '-3,-1,2,4');
 
 const items = (n, offset = 0) => Array.from({ length: n }, (_, i) => ({ id: 'w' + (i + offset), addedAt: i + offset }));

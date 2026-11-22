@@ -1,6 +1,6 @@
 // [MODULE] review | Pure rules for self-rated reviews (words, kanji, sentences): ratings, scores, knowledge labels, progress groups and the least-known group for lists, run composition
 // [IFACE] layer: domain | in: scores, ratings, item lists with stats -> out: new scores, state labels, run item lists | crosses: []
-// [GRAPH] needs: [] | feeds: [review-ui, words-ui, sentences-ui, kanji-ui, kanji-card, selftest] | group: domain
+// [GRAPH] needs: [] | feeds: [review-ui, quiz, quiz-ui, words-ui, sentences-ui, kanji-ui, kanji-card, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
 
 /**

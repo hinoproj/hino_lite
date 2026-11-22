@@ -50,6 +50,13 @@ straight to learned in both, so it comes up only now and then. The list is group
 least known first: **New** (never reviewed), **Learning**, **Learned** and **Confident** (a word
 reaches these only when both reviews have). Above them, **Least known** repeats every word you
 didn't know in either review, the longest-unknown first, so you can find them in one place.
+**Copy** puts that whole list on the clipboard, one word per line as kanji, reading and meaning
+separated by tabs (`-` for a kana word), so a paste makes three columns for writing practice on
+paper. **Quiz** asks the words you didn't know in one direction (as many as a run holds),
+multiple choice: **Japanese → meaning** shows the kanji, you pick its reading, then its meaning;
+**Meaning → Japanese** shows the meaning, you pick the reading, then the kanji (a kana word has
+one step). Right picks raise a word a little, wrong ones lower it; the end of a quiz lists the
+words that leave Least known, each with **Undo** to keep it there.
 
 **Sentences** — your sentences: the sentence, its reading (optional, kana), a translation and
 notes. Paste a sentence with readings in brackets and its translation at the end, and **Parse**

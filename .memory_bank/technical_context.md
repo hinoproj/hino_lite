@@ -49,6 +49,12 @@ Full graph, boundaries and per-module notes: `.agentic_docs/code_index.md`. Rule
   Learning; `isKnown`'s "both learned" bar, so the list and "Mark as known" agree. Above them
   sits **Least known** (`review.leastKnown`, P28): a copy of the items unknown (0–1) in either
   direction, longest unknown first (the run's tier-1 order); search filters it like the rest.
+- **Least known: Copy and Quiz** (P29, words only): Copy → `words.copyText` on the clipboard. The quiz
+  is rules in `review/quiz.js` (run, score, options) + `words.quizPlan`/`quizCandidates`, screens in
+  `review/quiz-ui.js` (`#screen-quiz`, `#screen-quiz-summary`); it scores into the same tracks as the
+  self-rated review but through `storage.setQuizScore`: the score (and `unknownSince` when a word leaves
+  unknown) only, never `seen` or `lastSeen`, so the quiz moves a word's state but not run order (owner).
+  Undo is `storage.restoreReview` with the entry copied before the answer.
 - **Reveal plans are rules** (`words.cardPlan`, `kanji.cardPlan`); the shared `review-ui` renders
   any plan through an adapter's part renderers. Notes, then the example, always come last (they contain the word).
   An adapter may lay parts out from the plan (the kanji adapter puts stroke order beside the glyph when

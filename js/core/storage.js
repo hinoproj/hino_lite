@@ -1,6 +1,6 @@
-// [MODULE] storage | The learner's data: settings, kana scores, words, sentences, kanji list, review scores; backup export/import
+// [MODULE] storage | The learner's data: settings, kana scores, words, sentences, kanji list, review scores (and a quiz's Undo: an entry put back as it was); backup export/import
 // [IFACE] layer: infrastructure | in: records computed by the rule modules, backup JSON, other tabs' saves -> out: reads, export text | crosses: [browser localStorage, StorageManager]
-// [GRAPH] needs: [] | feeds: [main, theme, backup, shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui, selftest] | group: infrastructure
+// [GRAPH] needs: [] | feeds: [main, theme, backup, shell, kana-ui, words-ui, sentences-ui, review-ui, quiz-ui, kanji-ui, kanji-card, settings-ui, selftest] | group: infrastructure
 // [STATE] stateful | persists: localStorage key hino_lite_v2 | raises: nothing (every storage access is guarded)
 
 /**
@@ -427,6 +427,27 @@ export function setReviewScore(track, id, score) {
   entry.lastSeen = Date.now();
   entry.unknownSince = 0;
   state.reviews[track][id] = entry;
+  touch();
+}
+
+/**
+ * Store a quiz's score (P29), computed by quiz.quizScore, and whether it is "unknown". Only the
+ * score moves: `seen` and `lastSeen` stay, so the quiz never changes a run's order (owner); a card
+ * still unknown keeps its `unknownSince` (or the `lastSeen` a run ranks it by), one that left gets 0.
+ */
+export function setQuizScore(track, id, score, unknown) {
+  if (!state.reviews[track]) state.reviews[track] = {};
+  const entry = state.reviews[track][id] || { score: -1, seen: 0, lastSeen: 0, unknownSince: 0 };
+  entry.score = score;
+  entry.unknownSince = unknown ? (entry.unknownSince || entry.lastSeen) : 0;
+  state.reviews[track][id] = entry;
+  touch();
+}
+
+/** Put a review entry back as it was, from a copy of `reviewStats` (the quiz's Undo and Redo, P29). */
+export function restoreReview(track, id, entry) {
+  if (!state.reviews[track]) state.reviews[track] = {};
+  state.reviews[track][id] = { ...entry };
   touch();
 }
 

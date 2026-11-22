@@ -1,4 +1,4 @@
-/* [MODULE] app-css | Visual layer: dark/light/kids themes, shell (tabs, sheet, banner, toast), shared controls (incl. the list toolbar and titled list sections), a reading's accent (bold nucleus, FLAT label, its tip), kana screens
+/* [MODULE] app-css | Visual layer: dark/light/kids themes, shell (tabs, sheet, banner, toast), shared controls (incl. the list toolbar and titled list sections, with buttons on a heading), a reading's accent (bold nucleus, FLAT label, its tip), kana screens
    [IFACE] layer: presentation | in: class names and data-* attributes set by the UI modules -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -637,6 +637,10 @@ button[disabled]:active { transform: none; }
 .list-group { margin-top: 22px; }
 .group-head { display: flex; align-items: center; gap: 8px; font-size: 17px; margin: 0 0 10px; }
 .group-head::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+/* A group heading with buttons after its hairline (dom.js listGroup `actions`) */
+.group-bar { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; }
+.group-bar .group-head { flex: 1; margin: 0; }
+.group-actions { display: flex; gap: 8px; }
 
 .actions { align-items: center; }
 .stat-grid.four { grid-template-columns: repeat(4, 1fr); }

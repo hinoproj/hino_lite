@@ -1,6 +1,6 @@
 // [MODULE] shell | Screen switching, bottom tabs, the sheet overlay, the back stack (Android back button), backup reminder
 // [IFACE] layer: presentation | in: tab renderers, screen ids, back handlers -> out: visible screen, tab bar state, history entries | crosses: [browser DOM, History API]
-// [GRAPH] needs: [dom, storage, backup] | feeds: [main, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui] | group: presentation
+// [GRAPH] needs: [dom, storage, backup] | feeds: [main, kana-ui, words-ui, sentences-ui, review-ui, quiz-ui, kanji-ui, kanji-card, settings-ui] | group: presentation
 // [STATE] stateful | persists: nothing (in-memory back stack) | raises: nothing
 
 import { $, h, button, formatDaysAgo } from './dom.js';

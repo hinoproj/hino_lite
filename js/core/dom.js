@@ -1,6 +1,6 @@
-// [MODULE] dom | Tiny DOM helpers: element builder, Japanese-text spans, a word's reading with its accent (bold mora or a FLAT label with its explanation tip), toast, segmented control, labelled parts, list toolbar groups, titled list sections, one-line field that takes a pasted block, confirm seam
+// [MODULE] dom | Tiny DOM helpers: element builder, Japanese-text spans, a word's reading with its accent (bold mora or a FLAT label with its explanation tip), toast, segmented control, labelled parts, list toolbar groups, titled list sections (buttons at the end of a heading), one-line field that takes a pasted block, confirm seam
 // [IFACE] layer: presentation | in: tag names, props, children -> out: DOM nodes | crosses: [browser DOM]
-// [GRAPH] needs: [] | feeds: [shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui] | group: presentation
+// [GRAPH] needs: [] | feeds: [shell, kana-ui, words-ui, sentences-ui, review-ui, quiz-ui, kanji-ui, kanji-card, settings-ui] | group: presentation
 // [STATE] stateless | persists: nothing | raises: nothing
 
 /**
@@ -155,10 +155,14 @@ export function filterGroup(caption, control, { forId, className } = {}) {
     h(forId ? 'label' : 'span', { class: 'filter-label', for: forId }, caption), control);
 }
 
-/** A titled list section (`.list-group`, app.css): heading, count and a hairline, then the content. */
-export function listGroup(title, count, content, { className, dataset } = {}) {
+/**
+ * A titled list section (`.list-group`, app.css): heading, count and a hairline, then the content.
+ * `actions` (buttons) sit at the end of the heading's row, after the hairline.
+ */
+export function listGroup(title, count, content, { className, dataset, actions } = {}) {
+  const head = h('h2', { class: 'group-head' }, title, h('span', { class: 'sub' }, String(count)));
   return h('section', { class: 'list-group' + (className ? ' ' + className : ''), dataset },
-    h('h2', { class: 'group-head' }, title, h('span', { class: 'sub' }, String(count))), content);
+    actions ? h('div', { class: 'group-bar' }, head, h('div', { class: 'group-actions' }, actions)) : head, content);
 }
 
 /** A labelled block of a card or a review step (`.part`, app.css): the label, then any content. */

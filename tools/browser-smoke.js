@@ -1,4 +1,4 @@
-// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji and both kanji reviews, backup, sentences, pasted blocks, pitch accent in readings and back navigation
+// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji and both kanji reviews, backup, sentences, pasted blocks, pitch accent in readings, the Least known Copy and Quiz, and back navigation
 // [IFACE] layer: tooling | in: nothing -> out: report in #out and POSTed to /__report, ending SMOKE PASSED/FAILED | crosses: [browser DOM, localStorage, Cache Storage API, local HTTP server]
 // [GRAPH] needs: [index] | feeds: [browser-smoke-page] | group: tooling
 // [STATE] stateful | persists: clears hino_lite_v2 and the library cache before running | raises: nothing
@@ -332,6 +332,72 @@ async function wordReviews() {
     groups === 'least-known,learning,learned' && Boolean($('.word-group[data-group="learned"] .word-row[data-id="' + tv.id + '"]')) &&
       !leastIds().includes(tv.id) && leastIds().length === 2 &&
       w.getComputedStyle($('#word-list .word-grid')).gridTemplateColumns.split(' ').length === 2, groups);
+
+  // Least known: Copy and Quiz (P29). 勉強 and 学校 are unknown in Meaning → Japanese (score 1).
+  let copied = null;
+  Object.defineProperty(w.navigator, 'clipboard', { configurable: true, value: { writeText: (t) => { copied = t; return Promise.resolve(); } } });
+  $('#btn-copy-least').click();
+  await waitFor(() => copied !== null);
+  log('Copy puts every least-known word on the clipboard: kanji, reading, meaning by tabs',
+    copied.split('\n').length === 2 && copied.includes('\tべんきょう\tstudy') && copied.includes('学校\tがっこう\tschool'), copied);
+
+  $('#btn-quiz-least').click();
+  await waitFor(() => $('#quiz-sheet'));
+  const quizStart = (t) => $('#quiz-sheet .mode-row[data-quiz-track="' + t + '"] button.primary');
+  log('the quiz sheet counts the words unknown in each direction',
+    quizStart('words.read').disabled && !quizStart('words.recall').disabled &&
+      $('#quiz-sheet .mode-row[data-quiz-track="words.recall"]').textContent.includes('2 words'));
+  quizStart('words.recall').click();
+  await waitFor(() => visible('screen-quiz'));
+  log('the quiz replaces the sheet', !visible('sheet-layer') && $('#quiz-count').textContent === '1 / 2', $('#quiz-count').textContent);
+
+  const quizWord = () => Object.values(saved().words).find((x) => x.meaning === $('.quiz-card .review-prompt').textContent);
+  const option = (pred) => $$('#quiz-options button').find((b) => pred(b.textContent));
+  const answerQuiz = async (readingRight) => {
+    const order = [];
+    let ok = true;
+    for (let i = 0; i < 2; i++) {
+      const word = quizWord();
+      order.push(word);
+      if (!word || $$('#quiz-options button').length !== 3 || $('#quiz-ask').textContent !== 'Pick the reading') { ok = false; break; }
+      option((t) => (readingRight(i) ? t === word.reading : t !== word.reading)).click();
+      await sleep(20);
+      if (!$('#quiz-options button[data-mark="correct"]') || (!readingRight(i) && !$('#quiz-options button[data-mark="wrong"]'))) ok = false;
+      $('#btn-quiz-next').click();
+      await sleep(20);
+      if ($('#quiz-ask').textContent !== 'Pick the kanji' || !$('.quiz-card .review-step')) ok = false;
+      option((t) => t === word.writing).click();
+      await sleep(20);
+      $('#btn-quiz-next').click();
+      await sleep(40);
+    }
+    return { order, ok };
+  };
+  const first = await answerQuiz((i) => i === 0);
+  await waitFor(() => visible('screen-quiz-summary'));
+  const [won, kept] = first.order;
+  const rec = (x) => store().reviewStats('words.recall', x.id);
+  log('meaning → reading → kanji; two right steps lift 1 to 2, one right step keeps 1',
+    first.ok && rec(won).score === 2 && rec(kept).score === 1, rec(won).score + ',' + rec(kept).score);
+  log('the quiz leaves run order alone: seen and last seen unchanged, the kept word\'s unknown-since too',
+    [won, kept].every((x) => rec(x).seen === recall[x.id].seen && rec(x).lastSeen === recall[x.id].lastSeen) &&
+      rec(kept).unknownSince === recall[kept.id].unknownSince && rec(won).unknownSince === 0);
+  log('the summary lists only the word leaving Least known',
+    $$('#screen-quiz-summary .quiz-promoted').length === 1 && $('#screen-quiz-summary .quiz-promoted').dataset.id === won.id);
+  $('#screen-quiz-summary .quiz-undo').click();
+  log('Undo returns it to Least known with the quiz cancelled',
+    rec(won).score === 1 && rec(won).unknownSince === recall[won.id].unknownSince &&
+      $('#screen-quiz-summary .quiz-promoted').dataset.undone === 'true' && $('#screen-quiz-summary .quiz-undo').textContent === 'Redo');
+
+  $('#btn-quiz-again').click();
+  await waitFor(() => visible('screen-quiz'));
+  const second = await answerQuiz(() => false);
+  await waitFor(() => visible('screen-quiz-summary'));
+  log('with nothing promoted the summary says so', second.ok && !$('#screen-quiz-summary .quiz-promoted') &&
+    /No word leaves Least known/.test($('#quiz-summary-note').textContent) && rec(won).score === 1 && rec(kept).score === 1);
+  $('#btn-quiz-done').click();
+  await waitFor(() => visible('screen-words'));
+  log('Done returns to the list; both words still Least known', leastIds().length === 2, leastIds().join());
 }
 
 // --- Kanji --------------------------------------------------------------------

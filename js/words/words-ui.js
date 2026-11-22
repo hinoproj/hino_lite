@@ -1,6 +1,6 @@
-// [MODULE] words-ui | Words tab: review panel, labelled search toolbar, list with a Least known copy above the progress groups (two columns when wide), add/edit form with rōmaji suggestions, accent preview and pasted-block fill with Undo, word sheet with progress panel, word review adapter; every reading shows its accented mora in bold
+// [MODULE] words-ui | Words tab: review panel, labelled search toolbar, list with a Least known copy above the progress groups (Copy and Quiz on its heading, P29; two columns when wide), add/edit form with rōmaji suggestions, accent preview and pasted-block fill with Undo, word sheet with progress panel, word review and quiz adapters; every reading shows its accented mora in bold
 // [IFACE] layer: presentation | in: DOM events, prefilled drafts (from the kanji card) -> out: rendered words screens, saved words, enrolled kanji, words marked as known | crosses: [browser DOM]
-// [GRAPH] needs: [words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card] | feeds: [main, kanji-card] | group: presentation
+// [GRAPH] needs: [words, romaji, kanji, review, review-ui, quiz, quiz-ui, storage, shell, dom, kanji-card] | feeds: [main, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
 
 import * as W from './words.js';
@@ -8,6 +8,8 @@ import { toHiragana, toKatakana, hasLatin } from '../core/romaji.js';
 import * as K from '../kanji/kanji.js';
 import * as R from '../review/review.js';
 import { startReview, trackPanel, stateDots, trackRow } from '../review/review-ui.js';
+import * as Q from '../review/quiz.js';
+import { startQuiz } from '../review/quiz-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
 import { $, h, ja, jaReading, button, confirmAction, toast, filterGroup, listGroup, part, pasteBlockField } from '../core/dom.js';
@@ -77,9 +79,88 @@ function fillList(list, words) {
   const least = R.leastKnown(matches, wordStats);
   const groups = [...(least.length ? [{ ...R.LEAST_KNOWN, items: least }] : []), ...R.groupByProgress(matches, wordScores)].map((g) =>
     listGroup(g.label, g.items.length, h('div', { class: 'word-grid' }, g.items.map(wordRow)),
-      { className: 'word-group', dataset: { group: g.id } }));
+      { className: 'word-group', dataset: { group: g.id }, actions: g.id === R.LEAST_KNOWN.id ? leastKnownActions() : null }));
   list.replaceChildren(...groups);
   if (words.length && !groups.length) list.append(h('p', { class: 'muted' }, 'No word matches “' + query + '”.'));
+}
+
+// --- Least known: Copy and Quiz (P29) -------------------------------------
+
+/** Every least-known word, whatever the search shows: Copy and the quiz take the whole list. */
+function leastKnownWords() {
+  return R.leastKnown(W.sortForList(store.listWords()), wordStats);
+}
+
+function leastKnownActions() {
+  return [
+    button('Copy', copyLeastKnown, 'small ghost', { id: 'btn-copy-least' }),
+    button('Quiz', openQuizSheet, 'small', { id: 'btn-quiz-least' })
+  ];
+}
+
+async function copyLeastKnown() {
+  const words = leastKnownWords();
+  try {
+    await navigator.clipboard.writeText(W.copyText(words));
+    toast('Copied ' + words.length + (words.length === 1 ? ' word' : ' words'));
+  } catch (err) {
+    console.warn('[words-ui.js][copyLeastKnown] could not copy to the clipboard: ' + (err && err.message));
+    toast('Could not copy — the browser refused the clipboard');
+  }
+}
+
+const QUIZ_INFO = {
+  [W.TRACK_READ]: 'See the word, pick its reading, then its meaning.',
+  [W.TRACK_RECALL]: 'See the meaning, pick the reading, then the kanji.'
+};
+
+/** The quiz's start sheet: one row per direction, counting the words unknown in it. */
+function openQuizSheet() {
+  shell.openSheet(h('div', { id: 'quiz-sheet' },
+    h('div', { class: 'sheet-head' }, h('h2', null, 'Quiz'),
+      button('✕', shell.closeSheet, 'icon-btn ghost', { 'aria-label': 'Close' })),
+    h('p', { class: 'muted' }, 'Pick the right answer for the words you did not know yet.'),
+    W.TRACKS.map((track) => {
+      const count = composeQuiz(track).length;
+      return h('div', { class: 'mode-row', dataset: { quizTrack: track } },
+        h('div', null, h('div', { class: 'mode-name' }, W.TRACK_INFO[track].label),
+          h('div', { class: 'mode-desc' }, QUIZ_INFO[track])),
+        button('Start', () => startWordQuiz(track), 'primary', { disabled: !count }),
+        h('div', { class: 'mode-progress meter-label' }, count ? count + (count === 1 ? ' word' : ' words') : 'Nothing to quiz here'));
+    })), { label: 'Quiz' });
+}
+
+function composeQuiz(track) {
+  return Q.quizRun(store.listWords(), (word) => store.reviewStats(track, word.id), store.getSettings().runSize);
+}
+
+/** Wrong options come from the least-known words first, then the learning ones, then the rest (P29). */
+function quizOptions(word, step) {
+  const words = store.listWords();
+  const least = new Set(R.leastKnown(words, wordStats));
+  const learning = words.filter((w) => !least.has(w) && R.progressGroup(wordScores(w)) === R.STATE_LEARNING);
+  const rest = words.filter((w) => !least.has(w) && !learning.includes(w));
+  return Q.pickOptions(word[step.ask], [[...least], learning, rest].map((pool) => W.quizCandidates(word, step, pool)));
+}
+
+function startWordQuiz(track) {
+  const items = composeQuiz(track);
+  if (!items.length) return;
+  startQuiz({
+    title: 'Quiz',
+    modeLabel: W.TRACK_INFO[track].label,
+    track,
+    items,
+    plan: (word) => W.quizPlan(word, track),
+    answer: (word, key) => word[key],
+    options: quizOptions,
+    askLabel: (key) => 'Pick the ' + W.FIELD_LABELS[key].toLowerCase(),
+    renderPart: renderWordPart,
+    renderOption: (text, key) => (key === 'meaning' ? text : ja(text)),
+    label: (word) => headlineNode(word, 'summary-item'),
+    onExit: renderWords,
+    again: () => composeQuiz(track)
+  });
 }
 
 function wordRow(word) {

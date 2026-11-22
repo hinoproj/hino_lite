@@ -11,20 +11,22 @@ boundaries and `group:` values: on any conflict with an `AGENTS.md`, this file w
 | kanji-index | js/kanji/kanji-index.js | data | — | kanji, library, selftest | data | — |
 | romaji | js/core/romaji.js | domain | — | words, words-ui, sentences, sentences-ui, kanji, selftest | domain | — |
 | kana-srs | js/kana/kana-srs.js | domain | kana-data | kana-ui, selftest | domain | — |
-| review | js/review/review.js | domain | — | review-ui, words-ui, sentences-ui, kanji-ui, kanji-card, selftest | domain | — |
+| review | js/review/review.js | domain | — | review-ui, quiz, quiz-ui, words-ui, sentences-ui, kanji-ui, kanji-card, selftest | domain | — |
+| quiz | js/review/quiz.js | domain | review | quiz-ui, words-ui, selftest | domain | — |
 | words | js/words/words.js | domain | romaji | words-ui, sentences-ui, kanji-card, kanji-ui, selftest | domain | — |
 | sentences | js/sentences/sentences.js | domain | romaji | sentences-ui, selftest | domain | — |
 | kanji | js/kanji/kanji.js | domain | kanji-index, romaji | kanji-ui, kanji-card, words-ui, sentences-ui, library, selftest | domain | — |
-| storage | js/core/storage.js | infrastructure | — | main, theme, backup, shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui, selftest | infrastructure | browser localStorage, StorageManager |
+| storage | js/core/storage.js | infrastructure | — | main, theme, backup, shell, kana-ui, words-ui, sentences-ui, review-ui, quiz-ui, kanji-ui, kanji-card, settings-ui, selftest | infrastructure | browser localStorage, StorageManager |
 | library | js/kanji/library.js | infrastructure | kanji-index, kanji | kanji-ui, kanji-card, main | infrastructure | network:data/library, Cache Storage API |
 | sw | sw.js | infrastructure | — | main | infrastructure | Cache Storage API |
-| dom | js/core/dom.js | presentation | — | shell, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui | presentation | browser DOM |
+| dom | js/core/dom.js | presentation | — | shell, kana-ui, words-ui, sentences-ui, review-ui, quiz-ui, kanji-ui, kanji-card, settings-ui | presentation | browser DOM |
 | theme | js/core/theme.js | presentation | storage | main, kana-ui, review-ui, settings-ui | presentation | browser DOM |
 | backup | js/core/backup.js | presentation | storage | shell, settings-ui | presentation | browser downloads, FileReader |
-| shell | js/core/shell.js | presentation | dom, storage, backup | main, kana-ui, words-ui, sentences-ui, review-ui, kanji-ui, kanji-card, settings-ui | presentation | browser DOM, History API |
+| shell | js/core/shell.js | presentation | dom, storage, backup | main, kana-ui, words-ui, sentences-ui, review-ui, quiz-ui, kanji-ui, kanji-card, settings-ui | presentation | browser DOM, History API |
 | kana-ui | js/kana/kana-ui.js | presentation | kana-data, kana-srs, storage, theme, shell, dom | main | presentation | browser DOM |
 | review-ui | js/review/review-ui.js | presentation | review, storage, theme, shell, dom | words-ui, sentences-ui, kanji-ui, kanji-card | presentation | browser DOM |
-| words-ui | js/words/words-ui.js | presentation | words, romaji, kanji, review, review-ui, storage, shell, dom, kanji-card | main, kanji-card | presentation | browser DOM |
+| quiz-ui | js/review/quiz-ui.js | presentation | quiz, review, storage, shell, dom | words-ui | presentation | browser DOM |
+| words-ui | js/words/words-ui.js | presentation | words, romaji, kanji, review, review-ui, quiz, quiz-ui, storage, shell, dom, kanji-card | main, kanji-card | presentation | browser DOM |
 | sentences-ui | js/sentences/sentences-ui.js | presentation | sentences, words, kanji, romaji, review, review-ui, storage, shell, dom | main, kanji-card | presentation | browser DOM |
 | kanji-card | js/kanji/kanji-card.js | presentation | kanji, library, words, review, review-ui, storage, shell, dom, words-ui, sentences-ui | kanji-ui, words-ui | presentation | browser DOM |
 | kanji-ui | js/kanji/kanji-ui.js | presentation | kanji, words, library, review, review-ui, storage, shell, dom, kanji-card | main | presentation | browser DOM |
@@ -39,7 +41,7 @@ boundaries and `group:` values: on any conflict with an `AGENTS.md`, this file w
 | build-library | tools/build_library.py | tooling | — | — | tooling | filesystem |
 | check | tools/check.py | tooling | selftest-page, browser-smoke-page, scene | — | tooling | filesystem, local HTTP server, Chrome process |
 | selftest-page | tools/selftest.html | tooling | selftest | check | tooling | browser DOM |
-| selftest | tools/selftest.js | tooling | kana-data, kana-srs, romaji, review, words, sentences, kanji, kanji-index, storage | selftest-page | tooling | browser DOM, local HTTP server |
+| selftest | tools/selftest.js | tooling | kana-data, kana-srs, romaji, review, quiz, words, sentences, kanji, kanji-index, storage | selftest-page | tooling | browser DOM, local HTTP server |
 | browser-smoke-page | tools/browser-smoke.html | tooling | browser-smoke | check | tooling | browser DOM |
 | browser-smoke | tools/browser-smoke.js | tooling | index | browser-smoke-page | tooling | browser DOM, localStorage, Cache Storage API, local HTTP server |
 | scene | tools/scene.html | tooling | index | check | tooling | browser DOM, localStorage |
@@ -57,7 +59,7 @@ imported, so the edge is recorded here and in the Cross-cutting table of `AGENTS
 | StorageManager | storage | write | `navigator.storage.persist()` at boot asks the browser not to evict the data. |
 | network:data/library | library | in | The 12 level files (data + strokes per level), fetched once with `cache: 'no-store'`. |
 | Cache Storage API | sw, library, browser-smoke | read/write | `sw` owns `hino-lite-app-v*`; `library` owns `hino-lite-library-<version>`. `sw` never deletes library buckets. |
-| browser DOM | dom, theme, shell, kana-ui, review-ui, words-ui, sentences-ui, kanji-card, kanji-ui, settings-ui, main, index, selftest-page, selftest, browser-smoke-page, browser-smoke, scene | read/write | Learner text only through `textContent`; `html:` only for generated SVG. |
+| browser DOM | dom, theme, shell, kana-ui, review-ui, quiz-ui, words-ui, sentences-ui, kanji-card, kanji-ui, settings-ui, main, index, selftest-page, selftest, browser-smoke-page, browser-smoke, scene | read/write | Learner text only through `textContent`; `html:` only for generated SVG. |
 | History API | shell | read/write | One history entry per focus screen or open sheet, so Android's back button walks back. |
 | browser downloads, FileReader | backup | out / in | Backup export (a `.json` download) and import. |
 | service worker | main | out | Registration only. |
@@ -70,9 +72,9 @@ imported, so the edge is recorded here and in the Cross-cutting table of `AGENTS
 | Group | Meaning | Members |
 | --- | --- | --- |
 | data | Static tables with no behaviour (one generated) | kana-data, kanji-index |
-| domain | Pure rules: no DOM, no storage, no network | romaji, kana-srs, review, words, sentences, kanji |
+| domain | Pure rules: no DOM, no storage, no network | romaji, kana-srs, review, quiz, words, sentences, kanji |
 | infrastructure | Owns a browser/platform storage or network API | storage, library, sw |
-| presentation | Screens, markup, styling, event handling | dom, theme, backup, shell, kana-ui, review-ui, words-ui, sentences-ui, kanji-card, kanji-ui, settings-ui, main, app-css, review-css, words-css, sentences-css, kanji-css, index |
+| presentation | Screens, markup, styling, event handling | dom, theme, backup, shell, kana-ui, review-ui, quiz-ui, words-ui, sentences-ui, kanji-card, kanji-ui, settings-ui, main, app-css, review-css, words-css, sentences-css, kanji-css, index |
 | tooling | Developer-only builds and checks, never in the app's load path | build-library, check, selftest-page, selftest, browser-smoke-page, browser-smoke, scene |
 
 ---
@@ -151,6 +153,20 @@ progress groups; the items stay in their own group too.
 `STALE_CAP_DAYS`, `CONFIDENT_FACTOR`, `stateOf`, `isUnknown`, `isRating`,
 `applyRating`, `knownScore`, `isKnown`, `PROGRESS_GROUPS`, `progressGroup`, `groupByProgress`, `LEAST_KNOWN`, `leastKnown`, `shuffle`, `maintenanceWeight`, `buildRun`, `countStates`
 
+## quiz
+
+**File**: `js/review/quiz.js` · **Layer**: domain
+
+The multiple-choice quiz of least-known items (P29). `quizRun(items, statsOf, size)`: the items
+unknown in one direction (`review.leastKnown` on that track), longest unknown first, up to `size`,
+shuffled. `quizScore(score, rightSteps)`: showing an item costs `SHOW_COST` 1, each right step earns
+`STEP_POINTS` 1 (two steps: +1 / 0 / −1; one step: 0 / −1), floor 0. `promoted(before, after)`: out of
+unknown. `pickOptions(answer, pools)`: the answer and up to `OPTION_COUNT` − 1 other texts drawn at
+random from the pools in order (least known, learning, the rest), empty and repeated texts skipped,
+shuffled.
+
+**Exposes**: `OPTION_COUNT`, `SHOW_COST`, `STEP_POINTS`, `quizRun`, `quizScore`, `promoted`, `pickOptions`
+
 ## words
 
 **File**: `js/words/words.js` · **Layer**: domain
@@ -176,9 +192,14 @@ brackets, and counts `morae` (small ゃゅょぁ… join the kana before; っ, �
 left over stays in the reading and `validate` refuses it. `formatAccent` writes the notation back
 for the form; `accentSplit` gives `{before, mora, after}` for display, null when nothing is
 highlighted; `accentView` gives `{marked, flat}` for display (FLAT only when the accent is 0); `splitFlatMark` lets rōmaji suggestions work on the reading without its mark.
+Quiz (P29): `quizPlan(word, track)` — Japanese → meaning: writing → reading, then writing + reading →
+meaning (kana word: reading → meaning); Meaning → Japanese: meaning → reading, then meaning + reading →
+writing (kana word: meaning → reading). `quizCandidates(word, step, words)` gives other words' texts for
+the asked field, leaving out a word the prompt cannot tell apart (same text in every shown field).
+`copyText(words)`: one line per word, `writing⇥reading⇥meaning`, `-` for a kana word's writing.
 
 **Exposes**: `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`, `FIELDS`, `FIELD_LABELS`, `FLAT_MARK`,
-`morae`, `splitAccent`, `formatAccent`, `accentSplit`, `accentView`, `splitFlatMark`, `parsePaste`, `normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `matchesQuery`, `sortForList`
+`morae`, `splitAccent`, `formatAccent`, `accentSplit`, `accentView`, `splitFlatMark`, `parsePaste`, `normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `quizPlan`, `quizCandidates`, `copyText`, `matchesQuery`, `sortForList`
 
 ## sentences
 
@@ -240,7 +261,7 @@ Stores values computed by the rule modules and applies no rule itself.
 **Exposes**: `STORAGE_KEY`, `APP_ID`, `VERSION`, `THEMES`, `BACKUP_NUDGE_MS`, `normalize`, `load`,
 `save`, `isAvailable`, `requestPersistence`, `isPersisted`, `getSettings`, `setRunSize`, `setTheme`,
 `kanaStats`, `recordKana`, `listWords`, `getWord`, `saveWord`, `deleteWord`, `listSentences`,
-`getSentence`, `saveSentence`, `deleteSentence`, `kanjiEntry`,
+`getSentence`, `saveSentence`, `deleteSentence`, `kanjiEntry`, `setQuizScore`, `restoreReview`,
 `isEnrolled`, `listKanji`, `enrollKanji`, `removeKanji`, `reviewStats`, `recordReview`,
 `setReviewScore`, `exportText`, `markBackedUp`, `backupStatus`, `importText`, `reset`, `raw`
 
@@ -270,7 +291,7 @@ library files from their cache too. Bump `CACHE_NAME` on every release.
 
 `h()` element builder (text as text, `html:` for trusted markup), `ja()` for Japanese spans,
 `button`, `segmented`, `part` (a labelled block of a card or review step), `filterGroup` (a labelled group of a list toolbar), `listGroup` (a titled
-list section with a hairline heading), `pasteBlockField` (a textarea that takes one typed line and
+list section with a hairline heading; `actions` put buttons at the end of the heading's row), `pasteBlockField` (a textarea that takes one typed line and
 a pasted block: Enter moves to the next field instead of breaking the line, so a line break can only
 come from a paste — the context menu, Ctrl+V or a phone keyboard's clipboard strip, which fires no
 paste event; the block goes to a callback with the value from before the paste, a single line just
@@ -337,12 +358,31 @@ points) that the word sheet, the sentence sheet and the kanji card build their p
 
 **Exposes**: `startReview`, `trackPanel`, `meter`, `stateDots`, `trackRow`
 
+## quiz-ui
+
+**File**: `js/review/quiz-ui.js` · **Layer**: presentation
+
+The quiz screens (P29, `#screen-quiz`, `#screen-quiz-summary`), given an adapter: `plan(item)` steps,
+`answer`, `options`, `askLabel`, `renderPart` (the review adapter's) and `renderOption`. Each step:
+the shown fields on the review card (the first as the prompt, the rest as a `.review-step`), "Pick
+the …", four options in the kana drill's `.options` grid; a pick marks the right option green and a
+wrong pick red, then Next / Next word / Finish. An item is scored when its last step is answered
+(`quiz.quizScore` → `storage.setQuizScore`: the score only, never `seen` or `lastSeen`, so run order is
+untouched), with copies of its entry before and after. The summary
+lists only the items `quiz.promoted` out of unknown, each with Undo / Redo
+(`storage.restoreReview`); with none, one general note. "Quiz again" / Done. Started from the quiz
+sheet, it takes over the sheet's back entry.
+
+**Exposes**: `startQuiz`
+
 ## words-ui
 
 **File**: `js/words/words-ui.js` · **Layer**: presentation
 
 Words tab (review panel; a toolbar panel with the labelled search; the list: a Least known copy
-group first (`review.leastKnown`, P28), then the progress groups
+group first (`review.leastKnown`, P28; Copy puts the whole list on the clipboard via `W.copyText`, Quiz
+opens a sheet with one Start per direction counting its unknown words, then `quiz-ui` with
+`W.quizPlan`, options from least known → learning → the rest — P29), then the progress groups
 New · Learning · Learned · Confident by `review.progressGroup`, empty groups hidden, newest first
 inside a group, two columns from 720 px), word sheet (hero: the word and its reading with a
 progress panel — both directions as lit steps and "Mark as known" until both are learned —
@@ -483,7 +523,8 @@ server; `shots` screenshots `scene.html` scenes (including the word sheet, the w
 **Files**: `tools/selftest.html`, `tools/selftest.js` · **Layer**: tooling
 
 Imports the shipped rule modules as they are and asserts kana tables/rules, rōmaji conversion,
-review scoring, progress groups and run composition, word (pasted blocks), sentence (Parse, pasted blocks, candidates, tracks,
+review scoring, progress groups, the least-known group and run composition, the quiz (score, run,
+options, plans, candidates, copy text), word (pasted blocks), sentence (Parse, pasted blocks, candidates, tracks,
 reviewability, reveal plans) and kanji rules, storage
 normalisation.
 
@@ -506,7 +547,9 @@ plain sentence with a rōmaji reading, search, a kanji card listing and opening 
 and editing a sentence enrolling its kanji (a removed one stays removed), edit without prompt, backup, delete keeps words), pasted blocks (P20: the one-line Kanji field and Enter moving on, a
 single line losing its break, word and kana-word blocks, sentence block with its readings reaching the
 prompt, Undo back to the fields before the paste),
-another tab's save taken over and newer-version keys kept, Android back, service worker install.
+the Least known group (P28: order, copy in Learning, search) with Copy and the quiz (P29: the sheet's
+counts, meaning → reading → kanji, scoring, seen and last seen untouched, a summary of only the promoted word, Undo, the note when
+none is promoted), another tab's save taken over and newer-version keys kept, Android back, service worker install.
 
 ## scene
 
@@ -514,4 +557,4 @@ another tab's save taken over and newer-version keys kept, Android back, service
 
 Seeds sample data and drives the app (iframe sized to the requested width) to one screen for
 `check.py shots` (the kanji-review scenes walk the run to 学's card, which has a word and a sentence;
-`review-full` walks the word run to 勉強, which has notes and an example, and reveals it all; `review-open` also opens the fold); holds its load event on `/__delay` so the screenshot waits for real work.
+`review-full` walks the word run to 勉強, which has notes and an example, and reveals it all; `review-open` also opens the fold; `quiz` stops on 先生's meaning step with a wrong pick, `quiz-summary` promotes 勉強); holds its load event on `/__delay` so the screenshot waits for real work.
