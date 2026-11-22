@@ -7,7 +7,7 @@ import * as R from './review.js';
 import * as store from '../core/storage.js';
 import { isKids, cheer, summaryCheer } from '../core/theme.js';
 import * as shell from '../core/shell.js';
-import { $, h, button, segmented } from '../core/dom.js';
+import { $, h, fill, button, segmented } from '../core/dom.js';
 
 const RATING_HINTS = { missed: 'nothing came', guessed: 'not sure', knew: 'got it', easy: 'instantly' };
 const CHEER_MS = 700;
@@ -163,7 +163,7 @@ function renderCard() {
         ? button('Show all', () => { run.revealed = steps.length; renderCard(); }, 'ghost', { id: 'btn-reveal-all' })
         : null);
 
-  screen.replaceChildren(
+  fill(screen,
     h('div', { class: 'topbar' },
       button('← Quit', shell.leave, 'icon-btn ghost', { id: 'btn-review-quit' }),
       h('h1', null, run.config.title + ' ', h('span', { class: 'sub' }, run.config.modeLabel))),
@@ -220,7 +220,7 @@ function finish() {
     r.after >= R.LEARNED_AT && (r.before < R.LEARNED_AT));
 
   const screen = $('screen-review-summary');
-  screen.replaceChildren(
+  fill(screen,
     h('div', { class: 'topbar' },
       button('← Back', shell.leave, 'icon-btn ghost', { id: 'btn-review-summary-back' }),
       h('h1', null, config.title + ' ', h('span', { class: 'sub' }, config.modeLabel))),

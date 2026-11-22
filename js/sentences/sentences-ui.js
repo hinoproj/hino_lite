@@ -11,7 +11,7 @@ import * as R from '../review/review.js';
 import { startReview, trackPanel, stateDots, trackRow } from '../review/review-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, ja, button, confirmAction, toast, filterGroup, listGroup, part, pasteBlockField } from '../core/dom.js';
+import { $, h, fill, ja, button, confirmAction, toast, filterGroup, listGroup, part, pasteBlockField } from '../core/dom.js';
 
 let query = '';
 
@@ -35,7 +35,7 @@ export function renderSentences() {
     oninput: (e) => { query = e.target.value; fillList(list, sentences); }
   });
 
-  screen.replaceChildren(
+  fill(screen,
     h('div', { class: 'topbar' },
       h('h1', null, 'Sentences ', h('span', { class: 'sub' }, sentences.length + (sentences.length === 1 ? ' sentence' : ' sentences'))),
       button('+ Add sentence', () => openSentenceForm(), 'primary', { id: 'btn-add-sentence' })),
@@ -243,7 +243,7 @@ function openSentenceForm(prefill = {}, { id = null, swap = false } = {}) {
     saveFromForm(inputs, errors, id, known);
   });
 
-  $('screen-sentence-form').replaceChildren(
+  fill($('screen-sentence-form'),
     h('div', { class: 'topbar' },
       button('← Back', shell.leave, 'icon-btn ghost', { id: 'btn-sentence-form-back' }),
       h('h1', null, id ? 'Edit sentence' : 'New sentence')),
@@ -279,7 +279,7 @@ function saveFromForm(inputs, errors, id, known) {
 function openWordPrompt(sentence, rows) {
   shell.swapBack(() => renderSentences());
   const example = S.exampleFor(sentence);
-  $('screen-sentence-words').replaceChildren(
+  fill($('screen-sentence-words'),
     h('div', { class: 'topbar' },
       button('← Done', shell.leave, 'icon-btn ghost', { id: 'btn-prompt-back' }),
       h('h1', null, 'Word cards')),

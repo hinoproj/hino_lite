@@ -7,7 +7,7 @@ Binding local contract for this repository. Read this before editing anything he
 - Project context: `.memory_bank/` — `projectbrief.md`, `technical_context.md`, `progress_context.md`
 - Module graph, boundary map, group registry: `.agentic_docs/code_index.md` (**authoritative** —
   it wins over this file on any conflict about module names, edges or groups)
-- Current build step and the owner's decisions (P1–P14): `.agentic_docs/current_task.md`
+- Current build step and the owner's decisions (P-numbers): `.agentic_docs/current_task.md`
 - Per-file 4-line headers (`[MODULE]`/`[IFACE]`/`[GRAPH]`/`[STATE]`) sit at the top of every
   source file, including `index.html`, the stylesheets and the tools
 
@@ -55,6 +55,8 @@ add one and register it in the Child Index below.
     screens, flows or persistence extends `tools/browser-smoke.js`.
 11. Error/warning logs use the format `[<filename>][<functionName>] <message>: <error>`.
 12. **Commits are the owner's.** Never commit without the go-ahead.
+13. **Redraw with `dom.fill(el, ...children)`**, never the native `replaceChildren` with anything
+    but plain nodes: it prints a `null` child as the text "null" (the conditional parts every screen has).
 
 ## Cross-cutting relations
 
@@ -65,7 +67,7 @@ add one and register it in the Child Index below.
 | `js/kana/kana-data.js` deck ids, item shape or `SHAPE_WEIGHT` | `js/kana/kana-srs.js`, `tools/selftest.js` | `kana-srs` reads `item.r`/`pr`/`consonant`/`vowel`; the selftest asserts deck sizes and parity. |
 | Kana mode ids or `MODE_INFO` in `js/kana/kana-srs.js` | `js/kana/kana-ui.js`, saved data | Mode ids are keys of `state.kana`. |
 | Kana scoring constants or `MISS_LIMIT` | `index.html` Settings (Kana scoring, Kana mistakes), `README.md` | The rules are printed to the learner. |
-| Quiz constants in `js/review/quiz.js` (`SHOW_COST`, `STEP_POINTS`, `OPTION_COUNT`) or a quiz plan (`words.quizPlan`) | `README.md` (Least known: Copy and Quiz), `tools/selftest.js`, the quiz steps `tools/browser-smoke.js` walks | The quiz's step order is described to the learner (its points are not, contract 9). |
+| Quiz constants in `js/review/quiz.js` (`SHOW_COST`, `STEP_POINTS`, `OPTION_COUNT`), a quiz plan (`words.quizPlan`) or the option order (`words.quizPools`, `kanaFit`) | `README.md` (Least known: Copy and Quiz), `tools/selftest.js`, the quiz steps `tools/browser-smoke.js` walks | The quiz's step order is described to the learner (its points are not, contract 9). |
 | Review constants in `js/review/review.js` (ratings, thresholds, `NEW_FIRST` / `RECHECK_FIRST` / `MAX_NEW_TOTAL`, maintenance) | `index.html` Settings "Words, kanji and sentence reviews", `README.md`, `tools/selftest.js`; for `LEARNED_AT` / `CONFIDENT_AT`, the score dots' "7 + 7" in `tools/browser-smoke.js` | The run rule is described to the learner (points are not). The two thresholds size the review card's dot columns (P27); the smoke test pins the owner's 7 + 7, so a new threshold is a design question too. |
 | The AI chat's output format for words and sentences (the owner's gem instructions, outside this repo — P20), including the reading line's accent notation (P23) | `words.parsePaste`, `words.splitAccent`, `sentences.parsePaste`, their `tools/selftest.js` cases, `README.md` | The paste split is by line position: a reordered or added line lands in the wrong field without any error. A changed accent mark is refused as a leftover bracket. |
 | Reveal order (`words.cardPlan`, `kanji.cardPlan`, `sentences.cardPlan`), their step button labels, a step's `fold`, or field names | `js/words/words-ui.js` / `js/kanji/kanji-ui.js` / `js/sentences/sentences-ui.js` part renderers, `README.md`, the plan assertions in `tools/selftest.js`, the button labels `tools/browser-smoke.js` expects | Adapters render the keys the plans name; the kanji adapter draws stroke order beside the glyph only when the plan reveals both in one step. |

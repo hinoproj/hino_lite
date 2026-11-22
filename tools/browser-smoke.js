@@ -1,4 +1,4 @@
-// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji and both kanji reviews, backup, sentences, pasted blocks, pitch accent in readings, the Least known Copy and Quiz, and back navigation
+// [MODULE] browser-smoke | End-to-end UI check: drives the real app in an iframe through kana, words, reviews, kanji and both kanji reviews, backup, sentences, pasted blocks, pitch accent in readings, the Least known Copy and Quiz (the next step after a pause), no stray "null" text, and back navigation
 // [IFACE] layer: tooling | in: nothing -> out: report in #out and POSTed to /__report, ending SMOKE PASSED/FAILED | crosses: [browser DOM, localStorage, Cache Storage API, local HTTP server]
 // [GRAPH] needs: [index] | feeds: [browser-smoke-page] | group: tooling
 // [STATE] stateful | persists: clears hino_lite_v2 and the library cache before running | raises: nothing
@@ -148,7 +148,8 @@ async function addWord(fields, pick) {
 
 async function words() {
   await tab('words');
-  log('words tab starts with an empty state', Boolean($('#screen-words .empty')));
+  log('words tab starts with an empty state, no stray "null" text (dom.fill)',
+    Boolean($('#screen-words .empty')) && !/null/.test($('#screen-words').textContent));
 
   $('#btn-add-word').click();
   await waitFor(() => visible('screen-word-form'));
@@ -278,6 +279,7 @@ async function wordReviews() {
     folds > 0, String(folds));
   await waitFor(() => visible('screen-review-summary'));
   log('summary counts three "Easy!"', $('.stat.easy .value').textContent === '3');
+  log('the review summary has no stray "null" text (dom.fill)', !/null/.test($('#screen-review-summary').textContent));
   const reviews = saved().reviews['words.read'];
   log('a first "Easy!" makes a word learned (8)', Object.values(reviews).length === 3 && Object.values(reviews).every((e) => e.score === 8));
   $('#btn-review-done').click();
@@ -360,12 +362,12 @@ async function wordReviews() {
       const word = quizWord();
       order.push(word);
       if (!word || $$('#quiz-options button').length !== 3 || $('#quiz-ask').textContent !== 'Pick the reading') { ok = false; break; }
+      if (/null/.test($('#screen-quiz').textContent)) ok = false;
       option((t) => (readingRight(i) ? t === word.reading : t !== word.reading)).click();
       await sleep(20);
       if (!$('#quiz-options button[data-mark="correct"]') || (!readingRight(i) && !$('#quiz-options button[data-mark="wrong"]'))) ok = false;
-      $('#btn-quiz-next').click();
-      await sleep(20);
-      if ($('#quiz-ask').textContent !== 'Pick the kanji' || !$('.quiz-card .review-step')) ok = false;
+      if ($('#btn-quiz-next') || $('#quiz-ask').textContent !== 'Pick the reading') ok = false;
+      if (!await waitFor(() => $('#quiz-ask').textContent === 'Pick the kanji') || !$('.quiz-card .review-step')) ok = false;
       option((t) => t === word.writing).click();
       await sleep(20);
       $('#btn-quiz-next').click();
@@ -377,7 +379,7 @@ async function wordReviews() {
   await waitFor(() => visible('screen-quiz-summary'));
   const [won, kept] = first.order;
   const rec = (x) => store().reviewStats('words.recall', x.id);
-  log('meaning → reading → kanji; two right steps lift 1 to 2, one right step keeps 1',
+  log('meaning → reading → kanji (step 2 follows a pick by itself, "Next word" only after the last); two right steps lift 1 to 2, one right step keeps 1',
     first.ok && rec(won).score === 2 && rec(kept).score === 1, rec(won).score + ',' + rec(kept).score);
   log('the quiz leaves run order alone: seen and last seen unchanged, the kept word\'s unknown-since too',
     [won, kept].every((x) => rec(x).seen === recall[x.id].seen && rec(x).lastSeen === recall[x.id].lastSeen) &&

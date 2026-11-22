@@ -10,7 +10,7 @@ import * as R from '../review/review.js';
 import { startReview, trackPanel, stateDots } from '../review/review-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, ja, jaReading, button, segmented, toast, filterGroup, listGroup, part } from '../core/dom.js';
+import { $, h, fill, ja, jaReading, button, segmented, toast, filterGroup, listGroup, part } from '../core/dom.js';
 import { openKanjiCard, readingsNode, partsList, markKanji } from './kanji-card.js';
 
 const REVIEW_WORDS = 4;       // the learner's words and sentences on a review card: it must fit a phone
@@ -53,7 +53,7 @@ function buildScreen() {
     oninput: (e) => { view.query = e.target.value; fillSections(sections); }
   });
 
-  $('screen-kanji').replaceChildren(
+  fill($('screen-kanji'),
     h('div', { class: 'topbar' },
       h('h1', null, 'Kanji ', h('span', { class: 'sub' }, mineCount + ' in your list'))),
     h('div', { id: 'library-status' }),

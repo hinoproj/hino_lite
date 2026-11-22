@@ -1,4 +1,4 @@
-// [MODULE] quiz-ui | Multiple-choice quiz of least-known items (P29): each item in steps, four options per step, right/wrong marks, Next; the summary lists only the items leaving Least known, each with Undo/Redo
+// [MODULE] quiz-ui | Multiple-choice quiz of least-known items (P29): each item in steps, four options per step, right/wrong marks (a wrong pick shakes), the next step after a 0.5 s pause, "Next word" after the last; the summary lists only the items leaving Least known, each with Undo/Redo
 // [IFACE] layer: presentation | in: a composed quiz + an adapter (steps, options, part renderers) -> out: rendered quiz/summary, quiz scores (score only, never run order) | crosses: [browser DOM]
 // [GRAPH] needs: [quiz, review, storage, shell, dom] | feeds: [words-ui] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -7,9 +7,12 @@ import * as Q from './quiz.js';
 import * as R from './review.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, button } from '../core/dom.js';
+import { $, h, fill, button } from '../core/dom.js';
 
-let quiz = null;   // { config, items, index, step, steps, options, picked, right, results }
+// A pick before the last step shows its marks this long, then the next step comes by itself (owner).
+const STEP_PAUSE_MS = 500;
+
+let quiz = null;   // { config, items, index, step, steps, options, picked, right, results, pause }
 
 /**
  * Start a quiz. `config`:
@@ -45,6 +48,7 @@ function begin(config, items) {
 }
 
 function exitQuiz(config) {
+  if (quiz) clearTimeout(quiz.pause);
   quiz = null;
   config.onExit();
 }
@@ -80,7 +84,7 @@ function renderCard() {
     return i === picked ? 'wrong' : null;
   };
 
-  $('screen-quiz').replaceChildren(
+  fill($('screen-quiz'),
     h('div', { class: 'topbar' },
       button('← Quit', shell.leave, 'icon-btn ghost', { id: 'btn-quiz-quit' }),
       h('h1', null, config.title + ' ', h('span', { class: 'sub' }, config.modeLabel))),
@@ -99,24 +103,28 @@ function renderCard() {
         'data-mark': mark(text, i),
         onclick: () => pick(i)
       }, config.renderOption(text, ask)))),
-    picked === null ? null : h('div', { class: 'review-controls' },
-      button(lastStep ? (quiz.index === quiz.items.length - 1 ? 'Finish' : 'Next word') : 'Next', next, 'primary big', { id: 'btn-quiz-next' })));
+    picked !== null && lastStep ? h('div', { class: 'review-controls' },
+      button(quiz.index === quiz.items.length - 1 ? 'Finish' : 'Next word', nextItem, 'primary big', { id: 'btn-quiz-next' })) : null);
 }
 
+/** Mark the pick. Before the last step the next step follows after a pause; the last step waits for "Next word". */
 function pick(i) {
   if (!quiz || quiz.picked !== null) return;
   quiz.picked = i;
   if (quiz.options[i] === quiz.config.answer(current(), quiz.steps[quiz.step].ask)) quiz.right += 1;
   renderCard();
+  if (quiz.step < quiz.steps.length - 1) quiz.pause = setTimeout(nextStep, STEP_PAUSE_MS);
 }
 
-function next() {
+function nextStep() {
+  if (!quiz) return;
+  quiz.pause = 0;
+  quiz.step += 1;
+  startStep();
+}
+
+function nextItem() {
   if (!quiz || quiz.picked === null) return;
-  if (quiz.step < quiz.steps.length - 1) {
-    quiz.step += 1;
-    startStep();
-    return;
-  }
   record();
   quiz.index += 1;
   if (quiz.index >= quiz.items.length) finish();
@@ -139,7 +147,7 @@ function finish() {
   const { config, results } = quiz;
   const leaving = results.filter((r) => Q.promoted(r.before.score, r.after.score));
 
-  $('screen-quiz-summary').replaceChildren(
+  fill($('screen-quiz-summary'),
     h('div', { class: 'topbar' },
       button('← Back', shell.leave, 'icon-btn ghost', { id: 'btn-quiz-summary-back' }),
       h('h1', null, config.title + ' ', h('span', { class: 'sub' }, config.modeLabel))),
@@ -166,7 +174,7 @@ function promotedRow(config, result) {
     const undone = store.reviewStats(track, result.item.id).score === result.before.score;
     const state = R.stateOf(undone ? result.before.score : result.after.score);
     row.dataset.undone = String(undone);
-    row.replaceChildren(
+    fill(row,
       h('div', { class: 'item' }, config.label(result.item)),
       h('div', { class: 'state', dataset: { state } }, undone ? 'stays in Least known' : state),
       button(undone ? 'Redo' : 'Undo', () => {

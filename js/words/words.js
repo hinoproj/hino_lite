@@ -1,4 +1,4 @@
-// [MODULE] words | Pure word rules: input cleanup and validation, pitch-accent notation in the reading (P23), morae, pasted-block split (P20), kanji extraction, duplicate key, reveal plan per mode (notes and example folded, P24), quiz steps and option candidates, copy text for paper (P29), search
+// [MODULE] words | Pure word rules: input cleanup and validation, pitch-accent notation in the reading (P23), morae, pasted-block split (P20), kanji extraction, duplicate key, reveal plan per mode (notes and example folded, P24), quiz steps and option pools (options whose kana fit the prompt first), copy text for paper (P29), search
 // [IFACE] layer: domain | in: word drafts, pasted blocks, query strings, a library-membership test -> out: clean words with their accent, accent splits, filled fields, errors, kanji lists, card plans, quiz steps, option texts, copy text | crosses: []
 // [GRAPH] needs: [romaji] | feeds: [words-ui, sentences-ui, kanji-card, kanji-ui, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
@@ -241,14 +241,56 @@ export function quizPlan(word, track) {
 }
 
 /**
- * Other words' texts that may stand as wrong options in one quiz step. A word that shows the
- * same as the prompt in every shown field is left out: its answer could be right too (今日 is
- * きょう and こんにち).
+ * Wrong-option pools for one quiz step, in the order to draw from. `groups` are the word lists in
+ * the owner's order (least known, learning, the rest). When the step shows kana an option must
+ * agree with, the options that agree come first from every group, then the near misses, then the
+ * rest (owner, P29): otherwise 強い would read …い and only one option would end that way. A
+ * step with no such kana keeps the groups' order alone.
+ *
+ * A word that shows the same as the prompt in every shown field is left out: its answer could be
+ * right too (今日 is きょう and こんにち). So are the word itself and empty fields.
  */
-export function quizCandidates(word, step, words) {
-  return words
+export function quizPools(word, step, groups) {
+  const fit = optionFit(word, step);
+  const scored = groups.map((group) => group
     .filter((w) => w.id !== word.id && clean(w[step.ask]) && !step.show.every((k) => clean(w[k]) === clean(word[k])))
-    .map((w) => clean(w[step.ask]));
+    .map((w) => ({ text: clean(w[step.ask]), fit: fit(w) })));
+  const levels = [...new Set(scored.flat().map((c) => c.fit))].sort((a, b) => b - a);
+  return levels.flatMap((level) => scored.map((pool) => pool.filter((c) => c.fit === level).map((c) => c.text)));
+}
+
+/** How a candidate word agrees with the kana the step shows: its reading under a shown writing, its writing over a shown reading. */
+function optionFit(word, step) {
+  if (step.ask === 'reading' && step.show.includes('writing')) return (w) => kanaFit(word.writing, w.reading);
+  if (step.ask === 'writing' && step.show.includes('reading')) return (w) => kanaFit(w.writing, word.reading);
+  return () => 0;
+}
+
+// Kana in a writing: hiragana and ー, after katakana is folded into hiragana.
+const KANA_RUN_RE = /[ぁ-ゖー]+/g;
+
+/**
+ * Whether a reading could belong to a writing, judged by its kana alone: each kanji run stands for
+ * any kana, each kana must match (強い fits たかい, 起きる fits できる, a writing without kana fits
+ * every reading). Infinity when it fits; otherwise how many of the writing's trailing kana the
+ * reading ends with (起きる / たべる: 1, the る), so a near miss ranks above a plain miss.
+ */
+export function kanaFit(writing, reading) {
+  const w = katakanaToHiragana(clean(writing));
+  const r = katakanaToHiragana(clean(reading));
+  let pattern = '';
+  let last = 0;
+  for (const m of w.matchAll(KANA_RUN_RE)) {
+    if (m.index > last) pattern += '.+';
+    pattern += m[0];
+    last = m.index + m[0].length;
+  }
+  if (last < w.length) pattern += '.+';
+  if (new RegExp('^' + pattern + '$', 'u').test(r)) return Infinity;
+  const tail = last === w.length ? (w.match(/[ぁ-ゖー]+$/) || [''])[0] : '';
+  let shared = 0;
+  while (shared < tail.length && r.endsWith(tail.slice(tail.length - shared - 1))) shared += 1;
+  return shared;
 }
 
 /**

@@ -1,4 +1,4 @@
-// [MODULE] dom | Tiny DOM helpers: element builder, Japanese-text spans, a word's reading with its accent (bold mora or a FLAT label with its explanation tip), toast, segmented control, labelled parts, list toolbar groups, titled list sections (buttons at the end of a heading), one-line field that takes a pasted block, confirm seam
+// [MODULE] dom | Tiny DOM helpers: element builder and its child rules for redrawing an element (fill), Japanese-text spans, a word's reading with its accent (bold mora or a FLAT label with its explanation tip), toast, segmented control, labelled parts, list toolbar groups, titled list sections (buttons at the end of a heading), one-line field that takes a pasted block, confirm seam
 // [IFACE] layer: presentation | in: tag names, props, children -> out: DOM nodes | crosses: [browser DOM]
 // [GRAPH] needs: [] | feeds: [shell, kana-ui, words-ui, sentences-ui, review-ui, quiz-ui, kanji-ui, kanji-card, settings-ui] | group: presentation
 // [STATE] stateless | persists: nothing | raises: nothing
@@ -28,6 +28,16 @@ export function h(tag, props, ...children) {
     else if (key.startsWith('on') && typeof value === 'function') el.addEventListener(key.slice(2), value);
     else el.setAttribute(key, value === true ? '' : String(value));
   });
+  append(el, children);
+  return el;
+}
+
+/**
+ * Replace an element's children by h()'s rules: arrays flattened, null and false skipped. Redraw a
+ * screen with this, not the native replaceChildren, which prints a null child as the text "null".
+ */
+export function fill(el, ...children) {
+  el.replaceChildren();
   append(el, children);
   return el;
 }

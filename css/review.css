@@ -1,4 +1,4 @@
-/* [MODULE] review-css | Self-rated review run: card with score dots in its side padding beside a centred prompt, step-by-step reveal (a word's notes and example folded under one toggle, a size smaller on a phone; its kanji, reading and meaning centred there), reveal buttons, rating row, help sheet, summary; the quiz (P29: options, its summary of words leaving Least known); the kanji review's glyph beside its stroke order and the learner's word and sentence rows; the progress panel on the word sheet and kanji card
+/* [MODULE] review-css | Self-rated review run: card with score dots in its side padding beside a centred prompt, step-by-step reveal (a word's notes and example folded under one toggle, a size smaller on a phone; its kanji, reading and meaning centred there), reveal buttons, rating row, help sheet, summary; the quiz (P29: options, a wrong pick shaking unless motion is reduced, its summary of words leaving Least known); the kanji review's glyph beside its stroke order and the learner's word and sentence rows; the progress panel on the word sheet and kanji card
    [IFACE] layer: presentation | in: classes and data-* set by review-ui.js, the words/kanji adapters, words-ui.js and kanji-card.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -195,6 +195,17 @@
    meanings are text, a size down, and may run to two lines. */
 .quiz-ask { margin: 14px 0 0; color: var(--muted); font-size: 14px; text-align: center; }
 .quiz-options .text-option { font-size: 18px; line-height: 1.3; white-space: pre-line; overflow-wrap: anywhere; padding: 10px; }
+/* A wrong pick shakes through the 0.5 s pause before the next step; a right one only turns green
+   (the Kids theme keeps its own pop and shake, app.css). No motion when the device asks for less. */
+.quiz-option[data-mark="wrong"] { animation: quiz-shake .45s ease; }
+@keyframes quiz-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .options button[data-mark] { animation: none !important; }
+}
 #quiz-summary-list .review-row { grid-template-columns: 1fr auto auto; }
 #quiz-summary-list .item { font-size: 22px; }
 #quiz-summary-list .state { font-size: 13px; color: var(--muted); border-left: 4px solid var(--state); padding-left: 8px; }

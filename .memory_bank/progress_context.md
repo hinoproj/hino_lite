@@ -1,5 +1,19 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-22] Quiz flow and option fit (P30); stray "null" text fixed
+
+Owner, from the phone: (1) step 2 should come without a button, after a 0.5 s look at the marks — a
+wrong pick shakes, a right one does not move; the last step keeps "Next word"; (2) a "null" under the
+options; (3) the okurigana gave the reading away (強い → only one option ending in い). Done: `quiz-ui`
+pauses `STEP_PAUSE_MS` 500 then `nextStep`, the timer cleared on exit; `review.css` `quiz-shake`, none
+under `prefers-reduced-motion`. `words.kanaFit` (kanji runs = any kana, kana literal; Infinity on a fit,
+else matching trailing kana) and `words.quizPools` (replaces `quizCandidates`: fit levels first, each in
+least known → learning → rest). Word-type matching declined by the owner. The "null" was the native
+`replaceChildren` printing a null child; the same bug sat in the review summary (outside Kids, and with
+nothing newly learned), the empty Words screen and the Kanji screen with no kanji. New `dom.fill`, used by
+every screen redraw (contract 13). `sw.js` v29. Selftest +2, smoke: the pause, no Next before the last
+step, no "null" on three screens. `uv run tools/check.py`: ALL CHECKS PASSED.
+
 ## [2026-11-22] Least known: Copy and Quiz for words (P29)
 
 Owner copies the least-known words onto paper for writing practice, and wanted a quick in-app check.

@@ -194,12 +194,16 @@ for the form; `accentSplit` gives `{before, mora, after}` for display, null when
 highlighted; `accentView` gives `{marked, flat}` for display (FLAT only when the accent is 0); `splitFlatMark` lets rōmaji suggestions work on the reading without its mark.
 Quiz (P29): `quizPlan(word, track)` — Japanese → meaning: writing → reading, then writing + reading →
 meaning (kana word: reading → meaning); Meaning → Japanese: meaning → reading, then meaning + reading →
-writing (kana word: meaning → reading). `quizCandidates(word, step, words)` gives other words' texts for
-the asked field, leaving out a word the prompt cannot tell apart (same text in every shown field).
+writing (kana word: meaning → reading). `quizPools(word, step, groups)` gives other words' texts for
+the asked field as pools to draw from, leaving out a word the prompt cannot tell apart (same text in
+every shown field); where the step shows kana an option must agree with (a writing over a reading
+choice, a reading under a kanji choice) the pools run best `kanaFit` first, each fit in the groups'
+order (P30). `kanaFit(writing, reading)`: kanji runs stand for any kana, kana must match — Infinity
+when it fits, else how many trailing kana match.
 `copyText(words)`: one line per word, `writing⇥reading⇥meaning`, `-` for a kana word's writing.
 
 **Exposes**: `TRACK_READ`, `TRACK_RECALL`, `TRACKS`, `TRACK_INFO`, `FIELDS`, `FIELD_LABELS`, `FLAT_MARK`,
-`morae`, `splitAccent`, `formatAccent`, `accentSplit`, `accentView`, `splitFlatMark`, `parsePaste`, `normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `quizPlan`, `quizCandidates`, `copyText`, `matchesQuery`, `sortForList`
+`morae`, `splitAccent`, `formatAccent`, `accentSplit`, `accentView`, `splitFlatMark`, `parsePaste`, `normalizeDraft`, `validate`, `duplicateKey`, `extractKanji`, `headline`, `cardPlan`, `quizPlan`, `quizPools`, `kanaFit`, `copyText`, `matchesQuery`, `sortForList`
 
 ## sentences
 
@@ -289,7 +293,8 @@ library files from their cache too. Bump `CACHE_NAME` on every release.
 
 **File**: `js/core/dom.js` · **Layer**: presentation
 
-`h()` element builder (text as text, `html:` for trusted markup), `ja()` for Japanese spans,
+`h()` element builder (text as text, `html:` for trusted markup), `fill(el, ...children)` to redraw an
+element by `h()`'s child rules (the native `replaceChildren` prints a `null` child as "null"), `ja()` for Japanese spans,
 `button`, `segmented`, `part` (a labelled block of a card or review step), `filterGroup` (a labelled group of a list toolbar), `listGroup` (a titled
 list section with a hairline heading; `actions` put buttons at the end of the heading's row), `pasteBlockField` (a textarea that takes one typed line and
 a pasted block: Enter moves to the next field instead of breaking the line, so a line break can only
@@ -300,7 +305,7 @@ smoke test answers.
 
 `jaReading` draws a word's reading with its accent from `words.accentView`: the nucleus in bold (`.accent-mora`), or a FLAT label (`.accent-flat`) whose tip (`#tip`, one for the app, placed under or above its label) explains a flat word; the tip opens on mouse hover, and on a tap or Enter only when `tappable` (a list row or a review card owns its tap); a press elsewhere, Escape, scroll or back closes it (`hideTip`).
 
-**Exposes**: `$`, `h`, `ja`, `jaReading`, `hideTip`, `button`, `segmented`, `part`, `filterGroup`, `listGroup`, `pasteBlockField`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
+**Exposes**: `$`, `h`, `fill`, `ja`, `jaReading`, `hideTip`, `button`, `segmented`, `part`, `filterGroup`, `listGroup`, `pasteBlockField`, `confirmAction`, `notify`, `toast`, `formatDaysAgo`
 
 ## theme
 
@@ -366,7 +371,8 @@ The quiz screens (P29, `#screen-quiz`, `#screen-quiz-summary`), given an adapter
 `answer`, `options`, `askLabel`, `renderPart` (the review adapter's) and `renderOption`. Each step:
 the shown fields on the review card (the first as the prompt, the rest as a `.review-step`), "Pick
 the …", four options in the kana drill's `.options` grid; a pick marks the right option green and a
-wrong pick red, then Next / Next word / Finish. An item is scored when its last step is answered
+wrong pick red (shaking, unless motion is reduced); before the last step the next one follows after
+`STEP_PAUSE_MS` 500, the last step waits for Next word / Finish (P30). An item is scored when its last step is answered
 (`quiz.quizScore` → `storage.setQuizScore`: the score only, never `seen` or `lastSeen`, so run order is
 untouched), with copies of its entry before and after. The summary
 lists only the items `quiz.promoted` out of unknown, each with Undo / Redo
@@ -382,7 +388,8 @@ sheet, it takes over the sheet's back entry.
 Words tab (review panel; a toolbar panel with the labelled search; the list: a Least known copy
 group first (`review.leastKnown`, P28; Copy puts the whole list on the clipboard via `W.copyText`, Quiz
 opens a sheet with one Start per direction counting its unknown words, then `quiz-ui` with
-`W.quizPlan`, options from least known → learning → the rest — P29), then the progress groups
+`W.quizPlan`, options by `W.quizPools`: kana that fit the prompt first, each fit from least known →
+learning → the rest — P29, P30), then the progress groups
 New · Learning · Learned · Confident by `review.progressGroup`, empty groups hidden, newest first
 inside a group, two columns from 720 px), word sheet (hero: the word and its reading with a
 progress panel — both directions as lit steps and "Mark as known" until both are learned —
@@ -485,7 +492,7 @@ KANA_DATA, library} for tests and debugging.
 
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
 controls, among them the list toolbar `.filters` and the titled list sections `.list-group`, a reading's accent (`.accent-mora` bold, coloured `--muted-accent` only in the list's and sheet's grey readings; the `.accent-flat` label and its `.tip`); kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
-review card (its minimum height on the prompt zone, which centres the prompt; the `.score-dots` columns out in the card's side padding, `--card-pad-x`), ratings, help, summary; a word's notes and example (`.part-text.extra`) a size smaller on a phone, its kanji, reading and meaning (`.part.main`) centred there; the `.review-fold` toggle (a part label in the accent colour with a turning chevron; one folded part hides its own label); the kanji review's glyph beside its stroke order — side by side
+review card (its minimum height on the prompt zone, which centres the prompt; the `.score-dots` columns out in the card's side padding, `--card-pad-x`), ratings, help, summary; the quiz's options (a wrong pick shakes, no motion under `prefers-reduced-motion`); a word's notes and example (`.part-text.extra`) a size smaller on a phone, its kanji, reading and meaning (`.part.main`) centred there; the `.review-fold` toggle (a part label in the accent colour with a turning chevron; one folded part hides its own label); the kanji review's glyph beside its stroke order — side by side
 via `:has()`, stacked and centred without it — and the `.use-row`s of words and sentences), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field and Notes stretched beside Reading and Meaning from 900 px, the Parse bar both forms use, word sheet with its hero row, meaning beside kanji (the kanji column as wide as the progress panel, `--hero-panel`), notes and example as full-width rows;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
 `css/sentences.css` (progress-group rows with state bars, one column; form; sheet with
@@ -524,7 +531,7 @@ server; `shots` screenshots `scene.html` scenes (including the word sheet, the w
 
 Imports the shipped rule modules as they are and asserts kana tables/rules, rōmaji conversion,
 review scoring, progress groups, the least-known group and run composition, the quiz (score, run,
-options, plans, candidates, copy text), word (pasted blocks), sentence (Parse, pasted blocks, candidates, tracks,
+options, plans, candidates and their kana fit, copy text), word (pasted blocks), sentence (Parse, pasted blocks, candidates, tracks,
 reviewability, reveal plans) and kanji rules, storage
 normalisation.
 
@@ -548,8 +555,8 @@ and editing a sentence enrolling its kanji (a removed one stays removed), edit w
 single line losing its break, word and kana-word blocks, sentence block with its readings reaching the
 prompt, Undo back to the fields before the paste),
 the Least known group (P28: order, copy in Learning, search) with Copy and the quiz (P29: the sheet's
-counts, meaning → reading → kanji, scoring, seen and last seen untouched, a summary of only the promoted word, Undo, the note when
-none is promoted), another tab's save taken over and newer-version keys kept, Android back, service worker install.
+counts, meaning → reading → kanji with step 2 coming by itself, scoring, seen and last seen untouched, a summary of only the promoted word, Undo, the note when
+none is promoted), no stray "null" text on the empty Words screen, the review summary and the quiz, another tab's save taken over and newer-version keys kept, Android back, service worker install.
 
 ## scene
 

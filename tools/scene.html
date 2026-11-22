@@ -138,8 +138,7 @@ if (scene === 'word-form') {
   d.querySelector('#quiz-sheet .mode-row[data-quiz-track="' + track + '"] button.primary').click();
   await sleep(100);
   pick(true);
-  d.getElementById('btn-quiz-next').click();
-  await sleep(50);
+  await sleep(700);
   pick(scene === 'quiz-summary');
   if (scene === 'quiz-summary') { d.getElementById('btn-quiz-next').click(); await sleep(50); }
 } else if (scene === 'sentence') {

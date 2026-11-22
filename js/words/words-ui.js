@@ -12,7 +12,7 @@ import * as Q from '../review/quiz.js';
 import { startQuiz } from '../review/quiz-ui.js';
 import * as store from '../core/storage.js';
 import * as shell from '../core/shell.js';
-import { $, h, ja, jaReading, button, confirmAction, toast, filterGroup, listGroup, part, pasteBlockField } from '../core/dom.js';
+import { $, h, fill, ja, jaReading, button, confirmAction, toast, filterGroup, listGroup, part, pasteBlockField } from '../core/dom.js';
 import { openKanjiCard } from '../kanji/kanji-card.js';
 
 let query = '';
@@ -55,7 +55,7 @@ export function renderWords() {
     oninput: (e) => { query = e.target.value; fillList(list, words); }
   });
 
-  screen.replaceChildren(
+  fill(screen,
     h('div', { class: 'topbar' },
       h('h1', null, 'Words ', h('span', { class: 'sub' }, words.length + (words.length === 1 ? ' word' : ' words'))),
       button('+ Add word', () => openWordForm(), 'primary', { id: 'btn-add-word' })),
@@ -134,13 +134,13 @@ function composeQuiz(track) {
   return Q.quizRun(store.listWords(), (word) => store.reviewStats(track, word.id), store.getSettings().runSize);
 }
 
-/** Wrong options come from the least-known words first, then the learning ones, then the rest (P29). */
+/** Wrong options: those whose kana fit the prompt first, each fit from the least-known words, then the learning ones, then the rest (P29). */
 function quizOptions(word, step) {
   const words = store.listWords();
   const least = new Set(R.leastKnown(words, wordStats));
   const learning = words.filter((w) => !least.has(w) && R.progressGroup(wordScores(w)) === R.STATE_LEARNING);
   const rest = words.filter((w) => !least.has(w) && !learning.includes(w));
-  return Q.pickOptions(word[step.ask], [[...least], learning, rest].map((pool) => W.quizCandidates(word, step, pool)));
+  return Q.pickOptions(word[step.ask], W.quizPools(word, step, [[...least], learning, rest]));
 }
 
 function startWordQuiz(track) {
@@ -371,7 +371,7 @@ export function openWordForm(prefill = {}, { id = null, swap = false } = {}) {
     saveFromForm(inputs, errors, id);
   });
 
-  $('screen-word-form').replaceChildren(
+  fill($('screen-word-form'),
     h('div', { class: 'topbar' },
       button('← Back', shell.leave, 'icon-btn ghost', { id: 'btn-word-form-back' }),
       h('h1', null, id ? 'Edit word' : 'New word')),

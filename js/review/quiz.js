@@ -33,8 +33,9 @@ export function promoted(before, after) {
 
 /**
  * The options for one step: the answer and up to OPTION_COUNT - 1 other texts, drawn at random
- * from the first pool, then the next (the owner's order: least known, then learning, then the
- * rest). Empty texts, the answer's own text and repeats are skipped. Shuffled.
+ * from the first pool, then the next (for words, `words.quizPools`: kana that fit the prompt
+ * first, each fit from least known, then learning, then the rest). Empty texts, the answer's own
+ * text and repeats are skipped. Shuffled.
  */
 export function pickOptions(answer, pools, rng = Math.random) {
   const taken = new Set([answer]);

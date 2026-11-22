@@ -55,7 +55,9 @@ separated by tabs (`-` for a kana word), so a paste makes three columns for writ
 paper. **Quiz** asks the words you didn't know in one direction (as many as a run holds),
 multiple choice: **Japanese → meaning** shows the kanji, you pick its reading, then its meaning;
 **Meaning → Japanese** shows the meaning, you pick the reading, then the kanji (a kana word has
-one step). Right picks raise a word a little, wrong ones lower it; the end of a quiz lists the
+one step). After a pick, the next step comes by itself; after the last, tap **Next word**. The
+options agree with the kana you see (強い offers readings ending in い), so the ending alone does
+not give the answer away. Right picks raise a word a little, wrong ones lower it; the end of a quiz lists the
 words that leave Least known, each with **Undo** to keep it there.
 
 **Sentences** — your sentences: the sentence, its reading (optional, kana), a translation and

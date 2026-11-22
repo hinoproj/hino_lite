@@ -245,9 +245,27 @@ const kyou = { id: 1, writing: '今日', reading: 'きょう', meaning: 'today' 
 const quizWords = [kyou, { id: 2, writing: '今日', reading: 'こんにち', meaning: 'these days' },
   { id: 3, writing: '明日', reading: 'あした', meaning: 'tomorrow' }, { id: 4, writing: '', reading: 'テレビ', meaning: 'TV' }];
 check('quiz candidates: not the word itself, not a word the prompt cannot tell apart, not an empty field',
-  W.quizCandidates(kyou, { show: ['writing'], ask: 'reading' }, quizWords).join() === 'あした,テレビ' &&
-    W.quizCandidates(kyou, { show: ['meaning', 'reading'], ask: 'writing' }, quizWords).join() === '今日,明日',
-  W.quizCandidates(kyou, { show: ['writing'], ask: 'reading' }, quizWords).join());
+  W.quizPools(kyou, { show: ['writing'], ask: 'reading' }, [quizWords]).flat().join() === 'あした,テレビ' &&
+    W.quizPools(kyou, { show: ['meaning', 'reading'], ask: 'writing' }, [quizWords]).flat().join() === '今日,明日',
+  W.quizPools(kyou, { show: ['writing'], ask: 'reading' }, [quizWords]).flat().join());
+check('kana fit: kanji stand for any kana, kana must match; a near miss counts its matching ending',
+  W.kanaFit('強い', 'たかい') === Infinity && W.kanaFit('強い', 'ツヨイ') === Infinity && W.kanaFit('強い', 'おきる') === 0 &&
+    W.kanaFit('起きる', 'できる') === Infinity && W.kanaFit('起きる', 'たべる') === 1 && W.kanaFit('起きる', 'のむ') === 0 &&
+    W.kanaFit('食べ物', 'たべもの') === Infinity && W.kanaFit('食べ物', 'のみもの') === 0 &&
+    W.kanaFit('お茶', 'おちゃ') === Infinity && W.kanaFit('お茶', 'ちゃ') === 0 &&
+    W.kanaFit('学校', 'つよい') === Infinity && W.kanaFit('ボール箱', 'ぼーるばこ') === Infinity,
+  [['強い', 'たかい'], ['強い', 'ツヨイ'], ['強い', 'おきる'], ['起きる', 'できる'], ['起きる', 'たべる'], ['起きる', 'のむ'], ['食べ物', 'たべもの'],
+    ['食べ物', 'のみもの'], ['お茶', 'おちゃ'], ['お茶', 'ちゃ'], ['学校', 'つよい'], ['ボール箱', 'ぼーるばこ']].map(([a, b]) => W.kanaFit(a, b)).join());
+const strong = { id: 's', writing: '強い', reading: 'つよい', meaning: 'strong' };
+const fitWords = [{ id: 'a', writing: '台所', reading: 'だいどころ', meaning: 'kitchen' },
+  { id: 'b', writing: '起きる', reading: 'おきる', meaning: 'to wake up' },
+  { id: 'c', writing: '高い', reading: 'たかい', meaning: 'tall' }, { id: 'd', writing: '見る', reading: 'みる', meaning: 'to see' }];
+const fitPools = (step, groups) => W.quizPools(strong, step, groups).filter((p) => p.length).map((p) => p.join('+')).join(' | ');
+check('quiz pools: options whose kana fit come first from every group, each fit in the groups\' order',
+  fitPools({ show: ['writing'], ask: 'reading' }, [[fitWords[0], fitWords[1]], [fitWords[2]]]) === 'たかい | だいどころ+おきる' &&
+    fitPools({ show: ['meaning', 'reading'], ask: 'writing' }, [[fitWords[1], fitWords[2]], [fitWords[0], fitWords[3]]]) === '高い | 台所 | 起きる | 見る' &&
+    fitPools({ show: ['writing', 'reading'], ask: 'meaning' }, [[fitWords[1]], [fitWords[2]]]) === 'to wake up | tall',
+  fitPools({ show: ['meaning', 'reading'], ask: 'writing' }, [[fitWords[1], fitWords[2]], [fitWords[0], fitWords[3]]]));
 check('copy text: kanji, reading, meaning by tabs; "-" for a kana word; line breaks become "; "',
   W.copyText([{ writing: '勉強', reading: 'べんきょう', meaning: 'study\nlearning' }, { writing: '', reading: 'テレビ', meaning: 'TV' }]) ===
     '勉強\tべんきょう\tstudy; learning\n-\tテレビ\tTV');
