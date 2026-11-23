@@ -1,5 +1,20 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-23] Review: ratings pinned on a phone; long meanings sized down once revealed
+
+Owner: in Meaning → Japanese a long meaning (up to 5 lines) pushed the rating buttons below the fold
+on the phone. Truncating the prompt was considered and dropped (the learner rereads it to rate).
+Done: a fully revealed card carries `.done` (`review-ui`); at ≤ 520 px its `.review-controls` is
+`position: sticky; bottom: 0`, dressed like the tab bar (the review screen has none), buttons 56 px;
+wider screens keep the ratings after the card. The "Which one do I press?" link moved out of the
+controls into `.rating-help` after them, so the pinned row is four buttons only. `words-ui`
+`meaningSize` tags a meaning (prompt or revealed answer, both word tracks) `long` past 40 characters
+and `longer` past 80; `review.css` sizes them down only on a `.done` card (prompt 28 → 22 → 19 px,
+answer 19 → 17 → 16 px). `CACHE_NAME` v30. Smoke test: one new assertion (`.done`, short meaning
+unsized, ratings unpinned at 900 px, help link outside); a 96-character meaning was checked in
+phone screenshots for both tracks with a temporary scene edit, since reverted. `check.py`: ALL
+CHECKS PASSED.
+
 ## [2026-11-22] Quiz flow and option fit (P30); stray "null" text fixed
 
 Owner, from the phone: (1) step 2 should come without a button, after a 0.5 s look at the marks — a

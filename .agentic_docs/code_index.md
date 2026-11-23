@@ -355,7 +355,7 @@ one per point, the left column up to `LEARNED_AT`, the right up to `CONFIDENT_AT
 state's colour, rings on a card never answered; the score from before the answer, unchanged by a
 rating — contract 9); the main button / card tap reveals the next step, "Show all"
 reveals the rest; a step's `fold` keys render under one `<details class="review-fold">` toggle, closed
-on every new card (P24); a fully revealed card is no longer a button (no role, tap or keys), then four rating buttons and the "Which one do I press?" help (no points). Kids
+on every new card (P24); a fully revealed card is no longer a button (no role, tap or keys) and carries `.done`, then four rating buttons in `.review-controls` and, outside them in `.rating-help`, the "Which one do I press?" help (no points). Kids
 theme cheers a good rating. Summary: counts per rating, newly learned, per-item rows, "Run again"
 (accepts a promise). Also the `trackPanel` (run length + one row per track) and `stateDots` used
 by the three tabs, and `trackRow` (a direction's name, state and four steps lit up to the state, no
@@ -397,7 +397,9 @@ under them on a phone, beside them from 720 px; then meaning and kanji chips as 
 side by side from 720 px with the kanji column starting under the progress panel (a meaning
 without kanji spans the row), then notes and the example, each across the full width (`.part.wide`);
 Edit/Delete on the right), the word review's kanji, reading and meaning as `.part.main` (centred on a phone) and its notes and
-example as `.part-text.extra` (a size smaller on a phone),
+example as `.part-text.extra` (a size smaller on a phone); a meaning past ~40 characters, as the
+Meaning → Japanese prompt or the revealed answer, carries `long` (past ~80, `longer`) — `meaningSize`,
+sized down by `review.css` only on a `.done` card,
 add/edit form (Kanji, Reading, Meaning | Notes in a grid, two columns from 900 px where Notes stretch
 to the column's height; Example below the grid at full width, still a textarea because words made
 from a sentence keep sentence and translation on two lines; the Kanji field is a one-line textarea via `dom.pasteBlockField`, so a pasted block
@@ -492,7 +494,7 @@ KANA_DATA, library} for tests and debugging.
 
 **Files**: `css/app.css` (themes, state colours, shell: tab bar, sheet, banner, toast; shared
 controls, among them the list toolbar `.filters` and the titled list sections `.list-group`, a reading's accent (`.accent-mora` bold, coloured `--muted-accent` only in the list's and sheet's grey readings; the `.accent-flat` label and its `.tip`); kana screens), `css/review.css` (track panel, the cards' progress panel and step rows,
-review card (its minimum height on the prompt zone, which centres the prompt; the `.score-dots` columns out in the card's side padding, `--card-pad-x`), ratings, help, summary; the quiz's options (a wrong pick shakes, no motion under `prefers-reduced-motion`); a word's notes and example (`.part-text.extra`) a size smaller on a phone, its kanji, reading and meaning (`.part.main`) centred there; the `.review-fold` toggle (a part label in the accent colour with a turning chevron; one folded part hides its own label); the kanji review's glyph beside its stroke order — side by side
+review card (its minimum height on the prompt zone, which centres the prompt; the `.score-dots` columns out in the card's side padding, `--card-pad-x`), ratings (on a phone, ≤ 520 px, a `.done` card's `.review-controls` sticks to the bottom edge dressed like the tab bar, buttons 56 px; wider screens keep them after the card), a long meaning's `.long` / `.longer` steps on a `.done` card (prompt 28 → 22 → 19 px, revealed meaning 19 → 17 → 16 px), help, summary; the quiz's options (a wrong pick shakes, no motion under `prefers-reduced-motion`); a word's notes and example (`.part-text.extra`) a size smaller on a phone, its kanji, reading and meaning (`.part.main`) centred there; the `.review-fold` toggle (a part label in the accent colour with a turning chevron; one folded part hides its own label); the kanji review's glyph beside its stroke order — side by side
 via `:has()`, stacked and centred without it — and the `.use-row`s of words and sentences), `css/words.css` (progress-group grid, two columns from 720 px, word rows, form with the one-line Kanji field and Notes stretched beside Reading and Meaning from 900 px, the Parse bar both forms use, word sheet with its hero row, meaning beside kanji (the kanji column as wide as the progress panel, `--hero-panel`), notes and example as full-width rows;
 its `.field*` classes serve the sentence form too; the word sheet's field grid),
 `css/sentences.css` (progress-group rows with state bars, one column; form; sheet with
@@ -540,7 +542,7 @@ normalisation.
 **Files**: `tools/browser-smoke.html`, `tools/browser-smoke.js` · **Layer**: tooling
 
 Drives the real app in an iframe: kana runs and themes, word add/validate/duplicate/edit/search,
-both word reviews (notes and example folded and closed, the revealed card not a button, the toggle opening them, the example `.extra`; reading and meaning `.part.main`) and the rating help, the word sheet's meaning and kanji row with the kanji under the progress panel, both sentence reviews (only translated sentences, the reveal
+both word reviews (notes and example folded and closed, the revealed card not a button, the toggle opening them, the example `.extra`; reading and meaning `.part.main`; a revealed card `.done`, a short meaning unsized, the ratings unpinned at the 900 px frame with the help link outside them) and the rating help, the word sheet's meaning and kanji row with the kanji under the progress panel, both sentence reviews (only translated sentences, the reveal
 steps, own tracks), the sentence list's groups, the sentence sheet's panel and Mark as known, an
 untranslated sentence's hint, scores dropped with a deleted sentence, the word list's progress groups (New, then Learning /
 Learned after reviews and Mark as known; two columns at tablet width), library download, Mine/All/levels/search and the labelled

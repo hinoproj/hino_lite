@@ -294,6 +294,11 @@ async function wordReviews() {
     if ($('#btn-reveal-all')) $('#btn-reveal-all').click(); else $('#btn-reveal').click();
     await sleep(20);
     if (i === 0) {
+      const controls = $('.review-card.done + .review-controls');
+      log('a revealed card is .done; a short meaning keeps its size; the ratings follow the card on a wide screen (pinned only on a phone), the help link outside them',
+        Boolean(controls) && !/\blong/.test($('.review-prompt .prompt-text').className) &&
+          w.getComputedStyle(controls).position === 'static' && !controls.querySelector('#btn-rating-help') && Boolean($('.rating-help #btn-rating-help')),
+        controls && w.getComputedStyle(controls).position);
       $('#btn-rating-help').click();
       await waitFor(() => $('#rating-help'));
       log('rating help opens without any points in it', Boolean($('#rating-help')) && !/[+−-]\d/.test($('#rating-help').textContent));

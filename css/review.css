@@ -1,4 +1,4 @@
-/* [MODULE] review-css | Self-rated review run: card with score dots in its side padding beside a centred prompt, step-by-step reveal (a word's notes and example folded under one toggle, a size smaller on a phone; its kanji, reading and meaning centred there), reveal buttons, rating row, help sheet, summary; the quiz (P29: options, a wrong pick shaking unless motion is reduced, its summary of words leaving Least known); the kanji review's glyph beside its stroke order and the learner's word and sentence rows; the progress panel on the word sheet and kanji card
+/* [MODULE] review-css | Self-rated review run: card with score dots in its side padding beside a centred prompt, step-by-step reveal (a word's notes and example folded under one toggle, a size smaller on a phone; its kanji, reading and meaning centred there; a long meaning a size or two smaller once revealed), reveal buttons, rating row (pinned to the bottom edge on a phone once revealed), help sheet, summary; the quiz (P29: options, a wrong pick shaking unless motion is reduced, its summary of words leaving Least known); the kanji review's glyph beside its stroke order and the learner's word and sentence rows; the progress panel on the word sheet and kanji card
    [IFACE] layer: presentation | in: classes and data-* set by review-ui.js, the words/kanji adapters, words-ui.js and kanji-card.js -> out: rendered styling | crosses: []
    [GRAPH] needs: [] | feeds: [index] | group: presentation
    [STATE] stateless | persists: nothing | raises: nothing */
@@ -142,6 +142,15 @@
 
 .review-controls { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; align-items: center; }
 .review-controls > button.primary.big { flex: 1 1 220px; }
+.rating-help { margin-top: 12px; }
+
+/* A fully revealed card (review-ui.js adds .done): a word's long meaning, as the prompt or as the
+   revealed answer, steps down a size past ~40 characters and again past ~80 (words-ui.js meaningSize),
+   so the rating row stays near the card. Before that the prompt keeps its full size. */
+.review-card.done .prompt-text.long { font-size: 22px; }
+.review-card.done .prompt-text.longer { font-size: 19px; }
+.review-card.done .part-text.long { font-size: 17px; }
+.review-card.done .part-text.longer { font-size: 16px; }
 
 .rating-row {
   flex: 1 1 100%;
@@ -222,6 +231,19 @@
 
 @media (max-width: 520px) {
   .rating-row { grid-template-columns: 1fr 1fr; }
+  /* A phone pins a fully revealed card's ratings to the screen's bottom edge (the review screen
+     has no tab bar), dressed like the tab bar, so a long card never hides them; the help link and
+     the verdict follow in the page. Wider screens keep the ratings after the card. */
+  .review-card.done + .review-controls {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 14px -16px 0;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+  }
+  .review-card.done + .review-controls .rating { min-height: 56px; }
   .prompt-ja { font-size: 52px; }
   .prompt-ja.long { font-size: 36px; }
   /* A word's notes and example: long text inside the card's padding inside the screen's */

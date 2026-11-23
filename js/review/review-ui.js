@@ -1,4 +1,4 @@
-// [MODULE] review-ui | Self-rated review run for words, kanji and sentences: score dots beside the prompt, step-by-step reveal (a step's folded parts under one toggle), four rating buttons, help sheet, summary; shared track panel, state dots and progress rows
+// [MODULE] review-ui | Self-rated review run for words, kanji and sentences: score dots beside the prompt, step-by-step reveal (a step's folded parts under one toggle), a fully revealed card marked .done, four rating buttons with the help link after them, help sheet, summary; shared track panel, state dots and progress rows
 // [IFACE] layer: presentation | in: a composed run + an adapter (card plan, part renderers) -> out: rendered run/summary, recorded ratings | crosses: [browser DOM]
 // [GRAPH] needs: [review, storage, theme, shell, dom] | feeds: [words-ui, sentences-ui, kanji-ui, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -143,7 +143,8 @@ function renderCard() {
 
   // Until fully revealed the card is one tap target, like the main button. Then it is plain text,
   // so a fold's toggle is not a control nested inside a button, and its keys are not swallowed.
-  const card = h('div', done ? { class: 'review-card' } : {
+  // .done also lets review.css step a long meaning down a size and, on a phone, pin the ratings.
+  const card = h('div', done ? { class: 'review-card done' } : {
     class: 'review-card', role: 'button', tabindex: '0', 'aria-label': steps[run.revealed].button,
     onclick: () => revealNext(steps.length),
     onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); revealNext(steps.length); } }
@@ -155,8 +156,7 @@ function renderCard() {
     ? h('div', { class: 'review-controls' },
       h('div', { class: 'rating-row' }, R.RATINGS.map((r) =>
         h('button', { type: 'button', class: 'rating ' + r.id, dataset: { rating: String(r.value) }, onclick: () => rate(r.value) },
-          h('span', { class: 'rating-hint' }, RATING_HINTS[r.id]), h('b', null, r.label)))),
-      button('Which one do I press?', openHelp, 'link-btn', { id: 'btn-rating-help' }))
+          h('span', { class: 'rating-hint' }, RATING_HINTS[r.id]), h('b', null, r.label)))))
     : h('div', { class: 'review-controls' },
       button(steps[run.revealed].button, () => revealNext(steps.length), 'primary big', { id: 'btn-reveal' }),
       steps.length - run.revealed > 1
@@ -172,6 +172,8 @@ function renderCard() {
       h('div', { class: 'run-count', id: 'review-count' }, (run.index + 1) + ' / ' + run.items.length)),
     card,
     controls,
+    // Outside the controls, so a phone's pinned rating row stays four buttons high (review.css)
+    done ? h('div', { class: 'rating-help' }, button('Which one do I press?', openHelp, 'link-btn', { id: 'btn-rating-help' })) : null,
     h('div', { class: 'verdict', id: 'review-verdict' }));
 }
 

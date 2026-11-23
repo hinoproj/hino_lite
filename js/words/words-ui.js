@@ -1,4 +1,4 @@
-// [MODULE] words-ui | Words tab: review panel, labelled search toolbar, list with a Least known copy above the progress groups (Copy and Quiz on its heading, P29; two columns when wide), add/edit form with rōmaji suggestions, accent preview and pasted-block fill with Undo, word sheet with progress panel, word review and quiz adapters; every reading shows its accented mora in bold
+// [MODULE] words-ui | Words tab: review panel, labelled search toolbar, list with a Least known copy above the progress groups (Copy and Quiz on its heading, P29; two columns when wide), add/edit form with rōmaji suggestions, accent preview and pasted-block fill with Undo, word sheet with progress panel, word review and quiz adapters (a long meaning tagged long/longer for review.css); every reading shows its accented mora in bold
 // [IFACE] layer: presentation | in: DOM events, prefilled drafts (from the kanji card) -> out: rendered words screens, saved words, enrolled kanji, words marked as known | crosses: [browser DOM]
 // [GRAPH] needs: [words, romaji, kanji, review, review-ui, quiz, quiz-ui, storage, shell, dom, kanji-card] | feeds: [main, kanji-card] | group: presentation
 // [STATE] stateful | persists: via storage | raises: nothing
@@ -414,19 +414,24 @@ function composeRun(track) {
     .filter(Boolean);
 }
 
+/** A meaning's length step: past ~40 characters 'long', past ~80 'longer' (review.css sizes them down on a fully revealed card). */
+function meaningSize(value) {
+  return value.length > 80 ? ' longer' : value.length > 40 ? ' long' : '';
+}
+
 function renderWordPart(word, key, asPrompt) {
   const value = word[key];
   if (!value) return null;
   if (asPrompt) {
     const className = 'prompt-ja' + (value.length > 6 ? ' long' : '');
-    if (key === 'meaning') return h('div', { class: 'prompt-text' }, value);
+    if (key === 'meaning') return h('div', { class: 'prompt-text' + meaningSize(value) }, value);
     return key === 'reading' ? readingNode(word, className, 'div') : ja(value, className, 'div');
   }
   // Kanji, reading and meaning: the answer itself, centred under the prompt on a phone (review.css .part.main)
   const main = (node) => { node.classList.add('main'); return node; };
   if (key === 'writing') return main(part(W.FIELD_LABELS.writing, ja(value, 'part-ja big', 'div')));
   if (key === 'reading') return main(part(W.FIELD_LABELS.reading, readingNode(word, 'part-ja', 'div')));
-  if (key === 'meaning') return main(part(W.FIELD_LABELS.meaning, h('div', { class: 'part-text pre' }, value)));
+  if (key === 'meaning') return main(part(W.FIELD_LABELS.meaning, h('div', { class: 'part-text pre' + meaningSize(value) }, value)));
   // Notes and example: the card's secondary text, a size smaller on a phone (review.css .extra)
   return part(W.FIELD_LABELS[key], h('div', { class: 'part-text pre extra', lang: key === 'example' ? 'ja' : null }, value));
 }

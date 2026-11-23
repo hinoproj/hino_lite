@@ -64,6 +64,8 @@ Full graph, boundaries and per-module notes: `.agentic_docs/code_index.md`. Rule
   An adapter may lay parts out from the plan (the kanji adapter puts stroke order beside the glyph when
   the plan reveals both in one step), but never decides what is revealed when. A review card is one
   tap target: nothing on it is a button, so anything the learner would otherwise open is shown in full.
+  Once fully revealed (`.done`) it may be resized but never cut: on a phone the ratings are pinned
+  to the bottom edge, and a long word meaning steps down a font size instead of being truncated.
   Beside its prompt the card shows its score as dots (P27; columns sized by `LEARNED_AT` and
   `CONFIDENT_AT`), read once when the card renders: a rating never re-renders them (contract 9).
 - **Storage**: one JSON document in `localStorage` (`hino_lite_v2`) = the backup format (`app:
