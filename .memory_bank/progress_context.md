@@ -1,5 +1,18 @@
 # Progress Context — Hino Lite (formerly kana_srs)
 
+## [2026-11-24] Pasted word: `[examples]` section and a block end (P31)
+
+The gem's word answer now ends its notes with an `[examples]` line, puts several examples under it
+(`sentence - translation`, readings in brackets), and ends the word with `---`. Before, that block
+filled Notes with everything (examples included) and left Example empty. Owner's calls: only the first
+word of a multi-word paste fills the form (no batch add); `[noun]`/`[kanji]` section lines stay
+verbatim in Notes; bracketed readings in examples stay as written (plain text, no furigana). Done:
+`words.parsePaste` cuts the block at the first dashes-only line (leading ones skipped), then splits
+on an `[examples]` line (`[example]`, full-width brackets, any case) — notes before it, examples after,
+one per line; without the tag the older rules hold. `CACHE_NAME` v31; README paste paragraph; P31 in
+`current_task.md`. Selftest +3 (the owner's block, block end, tag variants). `uv run tools/check.py`:
+ALL CHECKS PASSED (selftest 210/210, smoke 170/170).
+
 ## [2026-11-23] Review: ratings pinned on a phone; long meanings sized down once revealed
 
 Owner: in Meaning → Japanese a long meaning (up to 5 lines) pushed the rating buttons below the fold

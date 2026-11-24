@@ -23,8 +23,11 @@ An adverb or noun indicating a small quantity or degree.
 The first line is the writing (a kana word repeats its kana there, and is saved without a writing),
 then the reading with its accent mark and the meaning; the last line becomes the example (the
 sentence and its translation on one line, or dashes only — `-`, `---` — for no example), and any
-line between the meaning and the last becomes the notes. An older kana block that starts with its
-reading still works.
+line between the meaning and the last becomes the notes. The examples may instead come as lines
+under an `[examples]` line, one sentence and its translation per line; the notes are then every
+line between the meaning and `[examples]`, section lines such as `[noun]` or `[kanji]` included.
+A line of dashes only ends the word: whatever follows it (the next word of a longer answer) is
+left out. An older kana block that starts with its reading still works.
 **Undo** puts the form back as it was before the paste.
 
 The reading may carry its pitch accent: `[きょ]う` marks the accented mora, `とけい [flat]` says there

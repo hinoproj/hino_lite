@@ -418,6 +418,20 @@ check('pasted word: blank lines and CRLF are skipped; one line is not a block',
   W.parsePaste('\r\n少し\r\n\r\n  すこし  \r\n').reading === 'すこし' && W.parsePaste('少し\n') === null && W.parsePaste('') === null);
 check('pasted word: the reading line keeps its accent notation for the form',
   W.parsePaste('時計\nとけい [flat]\nclock; watch\n[noun] One word for both.\n時計を見る。 - Look at the clock.').reading === 'とけい [flat]');
+const sectioned = '新聞\nしんぶん [flat]\nnewspaper; newsprint\n[noun]\n• use: only the paper itself\n[kanji]\n• history: it first meant "news"\n' +
+  '[examples]\n毎朝(まいあさ)新聞(しんぶん)を読みます(よみます)。 - I read the newspaper every morning.\n古い(ふるい)新聞(しんぶん)で包みました(つつみました)。 - I wrapped it in old newspaper.\n---';
+check('pasted word (P31): the lines under [examples] are the example, the section tags above them stay in the notes',
+  pasted(sectioned) === JSON.stringify({ writing: '新聞', reading: 'しんぶん [flat]', meaning: 'newspaper; newsprint',
+    notes: '[noun]\n• use: only the paper itself\n[kanji]\n• history: it first meant "news"',
+    example: '毎朝(まいあさ)新聞(しんぶん)を読みます(よみます)。 - I read the newspaper every morning.\n古い(ふるい)新聞(しんぶん)で包みました(つつみました)。 - I wrapped it in old newspaper.' }),
+  pasted(sectioned));
+check('pasted word (P31): a dashes line ends the block; dashes before it are skipped',
+  pasted('---\n' + sectioned + '\n時計\nとけい\nclock\n[examples]\n時計を見る。 - Look at the clock.\n---') === pasted(sectioned) &&
+    JSON.stringify(W.parsePaste('時計\nとけい\nclock\nA noun.\n---\n少し\nすこし\na little\n少し待って。 - Wait.')) ===
+    JSON.stringify({ writing: '時計', reading: 'とけい', meaning: 'clock', notes: 'A noun.', example: '' }));
+check('pasted word (P31): [example] and ［Examples］ open the examples too; an empty section is no example',
+  W.parsePaste('時計\nとけい\nclock\n［Examples］\n時計を見る。 - Look.').example === '時計を見る。 - Look.' &&
+    W.parsePaste('時計\nとけい\nclock\nA noun.\n[example]\n---').example === '' && W.parsePaste('時計\nとけい\nclock\nA noun.\n[example]').notes === 'A noun.');
 
 // Pitch accent in the reading (P23)
 const accentOf = (text) => JSON.stringify(W.splitAccent(text));

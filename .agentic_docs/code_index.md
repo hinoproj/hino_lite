@@ -182,7 +182,12 @@ is the writing when it holds a kanji or line 2 is a kana reading (P25: a kana wo
 kana; a writing equal to the reading is dropped; otherwise the older block that starts with its
 reading), then reading, meaning (bullets kept); after the meaning the last line is the example
 (`sentence - translation` on one line; dashes only = no example) and every line between is the
-notes (2026-11-16; before, the order was the reverse);
+notes (2026-11-16; before, the order was the reverse). P31: an `[examples]` line (also `[example]`,
+full-width brackets, any case) opens the example lines, one `sentence - translation` per line, joined
+with line breaks; the notes are then the lines between the meaning and the tag, section tags
+(`[noun]`, `[kanji]`) kept as written. A dashes-only line ends the block (what follows — the next
+word of a longer answer — is ignored; leading dashes lines are skipped), and as the block's last line
+without `[examples]` it still means no example;
 null for fewer than two lines. `FIELDS` lists the fields in display order: notes before example.
 Pitch accent (P23): the reading field takes the gem's notation — `[きょ]う` (the bracket marks the
 accented mora; around several morae, the last), `とけい [flat]` (no accented mora), or nothing (not

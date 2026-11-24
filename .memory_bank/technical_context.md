@@ -81,7 +81,9 @@ Full graph, boundaries and per-module notes: `.agentic_docs/code_index.md`. Rule
   candidates for the prompt are re-derived from the saved sentence plus Parse's words, so edits
   after Parse are safe. Conjugated forms stay as written; meanings are never prefilled (owner, P13).
 - **Pasted blocks are split by line position** (`words.parsePaste`, `sentences.parsePaste`, P20),
-  matching the owner's AI chat gem's output format; a sentence's first line goes through the
+  matching the owner's AI chat gem's output format; a word block may carry its examples under an
+  `[examples]` line and ends at a dashes-only line (P31: the rest of the paste is ignored, no batch
+  add); a sentence's first line goes through the
   unchanged `readAnnotations`. The receiving fields (word Kanji, Sentence) are one-line textareas
   (`dom.pasteBlockField`): an `<input>` strips pasted line breaks, and detection runs on `input`
   rather than `paste` because a phone keyboard's clipboard strip fires no paste event. A typed Enter
@@ -106,6 +108,6 @@ and downloads again on the next Kanji-tab visit.
 
 ## Verification
 
-- `uv run tools/check.py` — selftest (181 checks) + UI smoke (152 checks), must end `ALL CHECKS PASSED`
+- `uv run tools/check.py` — selftest (210 checks) + UI smoke (170 checks), must end `ALL CHECKS PASSED`
 - `uv run tools/check.py shots OUT` — screenshots at 390×844 and 1280×800 for visual review
 - `uv run tools/check.py serve` — local server with correct MIME types

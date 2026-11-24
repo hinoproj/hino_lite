@@ -1,4 +1,4 @@
-// [MODULE] words | Pure word rules: input cleanup and validation, pitch-accent notation in the reading (P23), morae, pasted-block split (P20), kanji extraction, duplicate key, reveal plan per mode (notes and example folded, P24), quiz steps and option pools (options whose kana fit the prompt first), copy text for paper (P29), search
+// [MODULE] words | Pure word rules: input cleanup and validation, pitch-accent notation in the reading (P23), morae, pasted-block split (P20; an [examples] section, P31), kanji extraction, duplicate key, reveal plan per mode (notes and example folded, P24), quiz steps and option pools (options whose kana fit the prompt first), copy text for paper (P29), search
 // [IFACE] layer: domain | in: word drafts, pasted blocks, query strings, a library-membership test -> out: clean words with their accent, accent splits, filled fields, errors, kanji lists, card plans, quiz steps, option texts, copy text | crosses: []
 // [GRAPH] needs: [romaji] | feeds: [words-ui, sentences-ui, kanji-card, kanji-ui, selftest] | group: domain
 // [STATE] stateless | persists: nothing | raises: nothing
@@ -110,8 +110,10 @@ export function splitFlatMark(text) {
   return FLAT_RE.test(value) ? { body: value.replace(FLAT_RE, ''), flat: true } : { body: value, flat: false };
 }
 
-// A pasted example line of dashes only ("-", "---") stands for "no example".
-const NO_EXAMPLE_RE = /^-+$/;
+// A pasted line of dashes only ("-", "---") ends the block; as its last line it stands for "no example".
+const DASHES_RE = /^-+$/;
+// "[examples]" opens the block's example lines (P31).
+const EXAMPLES_TAG_RE = /^[[［]\s*examples?\s*[\]］]$/i;
 
 /**
  * A pasted block in the AI chat's word format (P20), one field per line, empty lines skipped:
@@ -119,9 +121,15 @@ const NO_EXAMPLE_RE = /^-+$/;
  *   少し                                   writing (a kana word repeats its kana here)
  *   すこし                                  reading, with its accent notation (P23)
  *   • a little • a small amount • slightly  meaning (bullets kept)
- *   An adverb or noun …                     notes (every line between the meaning and the last)
+ *   An adverb or noun …                     notes (every line between the meaning and the example)
  *   少し待ってください。 - Wait a little.     example (the last line: sentence - translation;
  *                                            dashes only, "-" or "---", mean no example)
+ *
+ * The example may instead come as lines under an `[examples]` line (P31), one
+ * `sentence - translation` per line; the notes are then every line between the meaning and
+ * the tag, section tags such as `[noun]` kept as written. A line of dashes only ends the
+ * block: anything after it (the next word of a longer answer) is ignored, and so are dashes
+ * lines before the block starts.
  *
  * The first line is the writing when it holds a kanji or when the second line is a kana
  * reading; otherwise the block is the older kana format that starts with the reading. A
@@ -130,14 +138,20 @@ const NO_EXAMPLE_RE = /^-+$/;
  */
 export function parsePaste(text) {
   const rows = String(text == null ? '' : text).split(/\r\n?|\n/).map((line) => line.trim()).filter(Boolean);
+  while (rows.length && DASHES_RE.test(rows[0])) rows.shift();
   if (rows.length < 2) return null;
   const hasWriting = HAN_RE.test(rows[0]) || isKana(splitAccent(rows[1]).reading);
   let writing = hasWriting ? rows.shift() : '';
   const [reading = '', meaning = '', ...rest] = rows;
   if (writing === splitAccent(reading).reading) writing = '';
-  let example = rest.length ? rest.pop() : '';
-  if (NO_EXAMPLE_RE.test(example)) example = '';
-  return { writing, reading, meaning, notes: rest.join('\n'), example };
+  const end = rest.findIndex((line) => DASHES_RE.test(line));
+  const body = end < 0 ? rest : rest.slice(0, end);
+  const tag = body.findIndex((line) => EXAMPLES_TAG_RE.test(line));
+  if (tag >= 0) {
+    return { writing, reading, meaning, notes: body.slice(0, tag).join('\n'), example: body.slice(tag + 1).join('\n') };
+  }
+  const example = end < 0 && body.length ? body.pop() : '';
+  return { writing, reading, meaning, notes: body.join('\n'), example };
 }
 
 /**
